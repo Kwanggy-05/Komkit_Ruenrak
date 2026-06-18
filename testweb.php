@@ -1,0 +1,430 @@
+<?php
+require_once "db/connect.php";
+
+$searchQuery = trim($_GET['q'] ?? '');
+$snippets = [];
+if($searchQuery !== ''){
+    $result = $control->searchSnippets($searchQuery);
+    if($result){
+        $snippets = $result->fetchAll(PDO::FETCH_ASSOC);
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snippet Box</title>
+    <style>
+        /* นำเข้าฟอนต์ Inter เพื่อให้ใกล้เคียงกับภาพต้นฉบับมากที่สุด */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,700;0,800;1,700;1,800&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: #f4f5f6; /* สีพื้นหลังเทาอ่อนตามภาพ */
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            /* เพิ่มขอบสีดำรอบนอกสุดให้เหมือนในรูปเป๊ะๆ (ถ้าไม่ต้องการสามารถลบออกได้) */
+            border: 2px solid #000; 
+        }
+
+        /* --- Header Section --- */
+        header {
+            background-color: #ffffff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 24px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon svg {
+            width: 32px;
+            height: 32px;
+            display: block;
+        }
+
+        .logo-text {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .header-center {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 1;
+            justify-content: center;
+            margin-left: -50px; /* ขยับให้ตรงกลางมากขึ้น */
+        }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            padding: 6px 16px;
+            background-color: #fff;
+            width: 300px;
+        }
+
+        .search-bar svg {
+            width: 16px;
+            height: 16px;
+            color: #888;
+            margin-right: 8px;
+        }
+
+        .search-bar input {
+            border: none;
+            outline: none;
+            width: 100%;
+            font-size: 0.85rem;
+            color: #333;
+        }
+
+        .search-bar input::placeholder {
+            color: #bbb;
+        }
+
+        .search-form { width: 100%; display: flex; align-items: center; gap: 10px; }
+        .search-input { flex: 1; border: none; outline: none; font-size: 0.85rem; color: #333; background: transparent; }
+        .search-submit { border: none; background: #000; color: #fff; padding: 10px 16px; border-radius: 14px; cursor: pointer; font-size: 0.85rem; }
+        .search-submit:hover { background: #222; }
+
+        .language-dropdown {
+            display: flex;
+            align-items: center;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            color: #333;
+            font-weight: 600;
+            cursor: pointer;
+            gap: 6px;
+        }
+
+        .language-dropdown svg {
+            width: 12px;
+            height: 12px;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 24px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid #000;
+            transition: all 0.2s;
+        }
+
+        .btn-register {
+            background-color: #fff;
+            color: #000;
+        }
+
+        .btn-login {
+            background-color: #000;
+            color: #fff;
+        }
+
+        /* --- Main Hero Section --- */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding-bottom: 5vh;
+        }
+
+        .hero-container {
+            max-width: 600px;
+            width: 100%;
+            padding: 0 20px;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            line-height: 1.15;
+            color: #000;
+            margin-bottom: 40px;
+            letter-spacing: -0.03em;
+        }
+
+        .hero-title .normal {
+            font-style: normal;
+            font-weight: 800;
+        }
+
+        .hero-title .gray-italic {
+            color: #888;
+            font-style: italic;
+            font-weight: 800;
+        }
+
+        .hero-title .black-italic {
+            font-style: italic;
+            font-weight: 800;
+        }
+
+        .action-button {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            background-color: #fff;
+            border: 1px solid #666;
+            border-radius: 12px;
+            padding: 10px 15px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+        }
+
+        .action-button:hover {
+            border-color: #000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .icon-box {
+            background-color: #000;
+            color: #fff;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+
+        .icon-box svg {
+            width: 18px;
+            height: 18px;
+            stroke-width: 2.5;
+        }
+
+        .action-text {
+            font-size: 1.25rem;
+            color: #222;
+            font-weight: 400;
+        }
+
+        .results {
+            margin-top: 40px;
+            width: 100%;
+            max-width: 1120px;
+        }
+
+        .result-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+            color: #333;
+            font-size: 0.95rem;
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 18px;
+        }
+
+        .result-card {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 18px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            text-decoration: none;
+            color: inherit;
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .result-card:hover {
+            box-shadow: 0 18px 40px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+        }
+
+        .result-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #111;
+        }
+
+        .result-description {
+            font-size: 0.94rem;
+            color: #444;
+            min-height: 52px;
+        }
+
+        .result-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            font-size: 0.82rem;
+            color: #666;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid #ddd;
+            background: #f8f8f8;
+            color: #555;
+            font-size: 0.78rem;
+        }
+
+        .badge-public {
+            background: #e6f6ff;
+            color: #0366a6;
+            border: 1px solid #bfe8ff;
+        }
+
+        .badge-protected {
+            background: #fff4e6;
+            color: #b45309;
+            border: 1px solid #ffd8a8;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <div class="logo-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                    <path d="M7 10L5 12L7 14"></path>
+                    <path d="M17 10L19 12L17 14"></path>
+                    <line x1="13" y1="9" x2="11" y2="15"></line>
+                </svg>
+            </div>
+            <div class="logo-text">Snippet Box</div>
+        </div>
+
+        <div class="header-center">
+            <div class="search-bar">
+                <form method="GET" class="search-form">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input class="search-input" type="text" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>" placeholder="Search title, description, code, or tags">
+                    <button type="submit" class="search-submit">Search</button>
+                </form>
+            </div>
+            <div class="language-dropdown">
+                All Languages
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </div>
+        </div>
+
+        <div class="header-right">
+          <a href="register.php"><button class="btn btn-register">Register</button></a>
+            
+            <a href="login.php"><button class="btn btn-login">Login</button></a>
+        </div>
+    </header>
+
+    <main>
+        <div class="hero-container">
+            <h1 class="hero-title">
+                <span class="normal">A</span> 
+                <span class="gray-italic">powerful</span> 
+                <span class="normal">way to<br></span>
+                <span class="black-italic">organize your code<br>
+                and make it easier<br>
+                to find.</span>
+            </h1>
+
+            <button class="action-button">
+                <div class="icon-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                </div>
+                <span class="action-text">Search by language, tags, or content</span>
+            </button>
+
+            <button class="action-button">
+                <div class="icon-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                </div>
+                <span class="action-text">Search by language, tags, or content</span>
+            </button>
+        </div>
+
+        <?php if($searchQuery !== ''): ?>
+            <div class="results">
+                <div class="result-info">
+                    <div><?php echo count($snippets); ?> results for "<?php echo htmlspecialchars($searchQuery); ?>" (public/protected only)</div>
+                    <a href="testweb.php" class="btn btn-register" style="padding: 8px 16px; font-size: 0.85rem;">Clear search</a>
+                </div>
+                <?php if(count($snippets) === 0): ?>
+                    <div style="padding:20px;border:1px solid #ddd;border-radius:16px;background:#fff;">No matching snippets found.</div>
+                <?php else: ?>
+                    <div class="result-grid">
+                        <?php foreach($snippets as $row): ?>
+                            <a class="result-card" href="viewcode.php?view=<?php echo urlencode($row['snippet_id']); ?>">
+                                <div class="result-title"><?php echo htmlspecialchars($row['title']); ?></div>
+                                <div class="result-description"><?php echo htmlspecialchars(mb_strimwidth($row['description'] ?? '', 0, 120, '...')); ?></div>
+                                <div class="result-meta">
+                                    <span class="tag"><?php echo htmlspecialchars($row['language_name'] ?? 'Language'); ?></span>
+                                    <?php if(!empty($row['tags'])): ?>
+                                        <?php foreach(explode(', ', $row['tags']) as $tagName): ?>
+                                            <span class="tag"><?php echo htmlspecialchars($tagName); ?></span>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                    <span class="tag <?php echo ($row['visibility'] === 'public') ? 'badge-public' : 'badge-protected'; ?>"><?php echo ucfirst(htmlspecialchars($row['visibility'])); ?></span>
+                                </div>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+    </main>
+
+</body>
+</html>
