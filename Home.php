@@ -399,7 +399,7 @@ if($searchQuery !== ''){
             <div class="results">
                 <div class="result-info">
                     <div><?php echo count($snippets); ?> results for "<?php echo htmlspecialchars($searchQuery); ?>" (public/protected only)</div>
-                    <a href="testweb.php" class="btn btn-register" style="padding: 8px 16px; font-size: 0.85rem;">Clear search</a>
+                    <a href="Home.php" class="btn btn-register" style="padding: 8px 16px; font-size: 0.85rem;">Clear search</a>
                 </div>
                 <?php if(count($snippets) === 0): ?>
                     <div style="padding:20px;border:1px solid #ddd;border-radius:16px;background:#fff;">No matching snippets found.</div>

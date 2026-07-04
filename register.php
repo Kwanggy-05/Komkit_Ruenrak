@@ -2,14 +2,31 @@
 require_once "layout/session.php";
 require_once "db/connect.php";
 
+$error = "";
+$firstname = "";
+$lastname = "";
+$username = "";
+
 if($_SERVER["REQUEST_METHOD"]=="POST"){
-    $firstname = $_POST["firstname"];
-    $lastname = $_POST["lastname"];
-    $username = $_POST["username"];
-    $password = $_POST["password"];
-    $new_password =md5($password.$username);
-    $result=$user->insertUser($firstname,$lastname,$username,$password);
-    header("Location:login.php");
+    $firstname = trim($_POST["firstname"] ?? "");
+    $lastname = trim($_POST["lastname"] ?? "");
+    $username = trim($_POST["username"] ?? "");
+    $password = $_POST["password"] ?? "";
+    $confirmPassword = $_POST["confirm_password"] ?? "";
+
+    if($firstname === "" || $lastname === "" || $username === "" || $password === ""){
+        $error = "กรุณากรอกข้อมูลให้ครบถ้วน";
+    } elseif($password !== $confirmPassword) {
+        $error = "รหัสผ่านกับยืนยันรหัสผ่านไม่ตรงกัน";
+    } else {
+        $result = $user->insertUser($firstname, $lastname, $username, $password);
+        if($result){
+            header("Location:login.php");
+            exit;
+        } else {
+            $error = "ชื่อผู้ใช้นี้ถูกใช้งานแล้ว";
+        }
+    }
 }
 ?>
 
@@ -99,6 +116,17 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
             width: 220px;
         }
 
+        .form-error {
+            width: 100%;
+            margin-bottom: 20px;
+            padding: 12px 16px;
+            border: 1px solid #e53935;
+            border-radius: 10px;
+            background: #ffe6e6;
+            color: #b71c1c;
+            font-size: 14px;
+        }
+
         .form-group-center {
             display: flex;
             flex-direction: column;
@@ -141,7 +169,7 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
 </head>
 <body>
     <div class="container">
-        <a href="testweb.php"><button class="back-btn" type="button">Back</button></a>
+        <a href="Home.php"><button class="back-btn" type="button">Back</button></a>
         
 
         <div class="card">
@@ -158,18 +186,21 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
                 <span style="display:none;"><?php "Register" ?></span> </h1>
 
             <form method="POST" action="<?php echo htmlentities($_SERVER['PHP_SELF']) ?>">
+                <?php if($error !== ""): ?>
+                    <div class="form-error"><?php echo htmlspecialchars($error); ?></div>
+                <?php endif; ?>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="firstname">First name</label>
                         <input type="text" name="firstname"
-                        value="<?php if($_SERVER["REQUEST_METHOD"]=="POST") echo $_POST["firstname"]; ?>"
+                        value="<?php echo htmlspecialchars($firstname); ?>"
                         >
                     </div>
 
                     <div class="form-group">
-                        <label for="lastname">Laast name</label>
+                        <label for="lastname">Last name</label>
                         <input type="text" name="lastname"
-                        value="<?php if($_SERVER["REQUEST_METHOD"]=="POST") echo $_POST["lastname"]; ?>"
+                        value="<?php echo htmlspecialchars($lastname); ?>"
                         >
                     </div>
                 </div>

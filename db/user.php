@@ -29,9 +29,21 @@ class User{
         
         
     }
+    function countUsers(){
+        try{
+            $sql="SELECT COUNT(*) as num FROM user";
+            $stmt=$this->db->prepare($sql);
+            $stmt->execute();
+            $result=$stmt->fetch();
+            return (int)$result["num"];
+        }catch(PDOException $e){
+            echo $e->getMessage();
+            return 0;
+        }
+    }
     function getUserByUsername($username){
         try{
-            $sql="SELECT COUNT(*) as num FROM user WHERE username=:username";
+            $sql="SELECT COUNT(*) as num FROM user WHERE BINARY username=:username";
             $stmt=$this->db->prepare($sql);
             $stmt->bindParam(":username",$username);
             $stmt->execute();
@@ -44,12 +56,11 @@ class User{
     }
     function getUser($username,$password){
         try{
-            $sql="SELECT * FROM user WHERE 
-            username=:username AND password=:password";
+            $sql="SELECT * FROM user WHERE BINARY username=:username AND password=:password";
             $stmt=$this->db->prepare($sql);
             
-            $stmt->bindParam("username",$username);
-            $stmt->bindParam("password",$password);
+            $stmt->bindParam(":username",$username);
+            $stmt->bindParam(":password",$password);
             $stmt->execute();
             $result=$stmt->fetch();
             return $result;

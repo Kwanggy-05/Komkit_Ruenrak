@@ -314,7 +314,7 @@ if(isset($_POST["submit"])){
 </head>
 <body>
     
-    <a href="testweb.html" class="back-btn">Back</a>
+    <a href="Home.html" class="back-btn">Back</a>
     
     <h1>สร้าง Snippet Box</h1>
     

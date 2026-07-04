@@ -2,14 +2,14 @@
 require_once "layout/session.php";
 require_once "db/connect.php";
 
+$hasAnyUser = $user->countUsers();
+
 if($_SERVER["REQUEST_METHOD"]=="POST"){
-    
-    
     $username = $_POST["username"];
     $password = $_POST["password"];
     $new_password =md5($password.$username);
     $result=$user->getUser($username,$new_password);
-    
+
     if($result){
         $_SESSION["username"] = $username;
         $_SESSION["userid"] = $result["user_id"];
@@ -160,7 +160,7 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
 </head>
 <body>
     <div class="container">
-        <a href="testweb.php"><button class="back-btn" type="button">Back</button></a>
+        <a href="Home.php"><button class="back-btn" type="button">Back</button></a>
         
 
         <div class="card">
@@ -194,7 +194,9 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
                     <div class="forgot-password">Forget password?</div>
                 </div>
                 <?php
-            if($_SERVER["REQUEST_METHOD"]=="POST" && !$result){
+            if($hasAnyUser === 0){
+                echo '<div class="error-alert">โปรดสมัครสมาชิก</div>';
+            } elseif($_SERVER["REQUEST_METHOD"]=="POST" && !$result){
                 echo '<div class="error-alert">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</div>';
             }
             ?>
