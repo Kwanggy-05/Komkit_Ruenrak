@@ -303,11 +303,47 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
         }
         
         .language-tag { 
-            color: #3b82f6; 
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             border: 1px solid #3b82f6; 
             border-radius: 24px; 
             padding: 4px 20px; 
             font-size: 15px; 
+            font-weight: 500;
+            line-height: 1;
+            background: #fff;
+        }
+
+        .language-tag.language-html {
+            color: #E34F26;
+            border-color: #E34F26;
+        }
+
+        .language-tag.language-python {
+            color: #3776AB;
+            border-color: #3776AB;
+        }
+
+        .language-tag.language-javascript {
+            color: #F7DF1E;
+            border-color: #F7DF1E;
+            /* background: #F7DF1E; */
+        }
+
+        .language-tag.language-php {
+            color: #777BB4;
+            border-color: #777BB4;
+        }
+
+        .language-tag.language-sql {
+            color: #00758F;
+            border-color: #00758F;
+        }
+
+        .language-tag.language-css {
+            color: #1572B6;
+            border-color: #1572B6;
         }
         
         .card-right { 
@@ -547,6 +583,24 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
                 <?php else: ?>
                     <?php foreach($snippets as $row): ?>
                         <?php $isBookmarked = in_array((int)$row['snippet_id'], $bookmarkedIds); ?>
+                        <?php
+                            $languageName = trim((string)($row['language_name'] ?? 'Language'));
+                            $languageKey = strtolower($languageName);
+                            $languageClass = 'language-tag';
+                            if($languageKey === 'html'){
+                                $languageClass .= ' language-html';
+                            }elseif($languageKey === 'python'){
+                                $languageClass .= ' language-python';
+                            }elseif($languageKey === 'javascript' || $languageKey === 'js'){
+                                $languageClass .= ' language-javascript';
+                            }elseif($languageKey === 'php'){
+                                $languageClass .= ' language-php';
+                            }elseif($languageKey === 'sql'){
+                                $languageClass .= ' language-sql';
+                            }elseif($languageKey === 'css'){
+                                $languageClass .= ' language-css';
+                            }
+                        ?>
                         <div class="snippet-card">
                             <div class="card-left">
                                 <?php
@@ -570,7 +624,7 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
                             </div>
                             
                             <div class="card-middle">
-                                <div class="language-tag"><?php echo htmlspecialchars($row['language_name'] ?: 'Language'); ?></div>
+                                <div class="<?php echo htmlspecialchars($languageClass); ?>"><?php echo htmlspecialchars($languageName ?: 'Language'); ?></div>
                             </div>
                             
                             <div class="card-right">

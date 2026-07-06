@@ -60,7 +60,24 @@ if($accessDenied){
         .top-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
         .title-row{display:flex;align-items:center;gap:16px}
         .title-row h2{font-weight:400;margin:0;text-transform:none}
-        .badge{background:#dff3ff;color:#0b6fb3;padding:6px 12px;border-radius:16px;border:1px solid #bfe8ff;font-size:14px}
+        .badge{
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            padding:6px 12px;
+            border-radius:16px;
+            border:1px solid #3b82f6;
+            font-size:14px;
+            font-weight:500;
+            line-height:1;
+            background:#fff;
+        }
+        .badge.language-html{color:#E34F26;border-color:#E34F26}
+        .badge.language-python{color:#3776AB;border-color:#3776AB}
+        .badge.language-javascript{color:#F7DF1E;border-color:#F7DF1E;}
+        .badge.language-php{color:#777BB4;border-color:#777BB4}
+        .badge.language-sql{color:#00758F;border-color:#00758F}
+        .badge.language-css{color:#1572B6;border-color:#1572B6}
         .visibility{padding:6px 12px;border-radius:16px;font-size:14px;border:1px solid #d0d0d0}
         .visibility.public{background:#e6f6ff;color:#0366a6;border-color:#bfe8ff}
         .visibility.protected{background:#fff4e6;color:#b45309;border-color:#ffd8a8}
@@ -105,7 +122,25 @@ if($accessDenied){
         <div class="top-row">
             <div class="title-row">
                 <h2><?php echo htmlspecialchars($snippet['title']); ?></h2>
-                <div class="badge"><?php echo htmlspecialchars($snippet['language_name'] ?? 'Language'); ?></div>
+                <?php
+                    $languageName = trim((string)($snippet['language_name'] ?? 'Language'));
+                    $languageKey = strtolower($languageName);
+                    $languageClass = 'badge';
+                    if($languageKey === 'html'){
+                        $languageClass .= ' language-html';
+                    }elseif($languageKey === 'python'){
+                        $languageClass .= ' language-python';
+                    }elseif($languageKey === 'javascript' || $languageKey === 'js'){
+                        $languageClass .= ' language-javascript';
+                    }elseif($languageKey === 'php'){
+                        $languageClass .= ' language-php';
+                    }elseif($languageKey === 'sql'){
+                        $languageClass .= ' language-sql';
+                    }elseif($languageKey === 'css'){
+                        $languageClass .= ' language-css';
+                    }
+                ?>
+                <div class="<?php echo htmlspecialchars($languageClass); ?>"><?php echo htmlspecialchars($languageName); ?></div>
                 <div class="visibility <?php echo htmlspecialchars($snippet['visibility'] ?? 'private'); ?>"><?php echo ucfirst(htmlspecialchars($snippet['visibility'] ?? 'private')); ?></div>
             </div>
 
