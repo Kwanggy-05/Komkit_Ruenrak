@@ -33,32 +33,26 @@ if($searchQuery !== ''){
     <header>
         <div class="header-left">
             <div class="logo-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
-                    <path d="M7 10L5 12L7 14"></path>
-                    <path d="M17 10L19 12L17 14"></path>
-                    <line x1="13" y1="9" x2="11" y2="15"></line>
-                </svg>
+                
+                <img src="logo/Logo_snippetBox.png" alt="Logo" width=32px height=32px>
             </div>
             <div class="logo-text">Snippet Box</div>
         </div>
 
         <div class="header-center">
             <div class="search-bar">
-                <form method="GET" action="search.php" class="search-form">
-                    <input type="hidden" name="lang" value="<?php echo htmlspecialchars($selectedLanguage); ?>">
+                <form method="GET" action="" class="search-form" id="searchForm">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="8"></circle>
                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
-                    <input class="search-input" type="text" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>" placeholder="Search Snippet">
-                    <button type="submit" class="search-submit">Search</button>
+                    <input class="search-input" type="text" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>" placeholder="Search Snippet" required>
+                    <input type="hidden" name="lang" value="<?php echo htmlspecialchars($selectedLanguage); ?>">
+                    <!-- <button type="submit" class="search-submit">Search</button> -->
                 </form>
             </div>
             <div class="language-dropdown">
-                <form method="GET" action="search.php" style="display: inline;">
+                <form method="GET" action="" style="display: inline;">
                     <input type="hidden" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>">
                     <select name="lang" id="language-filter" onchange="this.form.submit()">
                         <option value="">All Languages</option>
@@ -91,7 +85,7 @@ if($searchQuery !== ''){
                 to find.</span>
             </h1>
 
-            <button class="action-button">
+            <div class="action-button">
                 <div class="icon-box">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="8"></circle>
@@ -99,9 +93,9 @@ if($searchQuery !== ''){
                     </svg>
                 </div>
                 <span class="action-text">Search by language, tags, or content</span>
-            </button>
+            </div>
 
-            <button class="action-button">
+            <div class="action-button">
                 <div class="icon-box">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
@@ -109,8 +103,8 @@ if($searchQuery !== ''){
                         <polyline points="7 3 7 8 15 8"></polyline>
                     </svg>
                 </div>
-                <span class="action-text">Search by language, tags, or content</span>
-            </button>
+                <span class="action-text">Save your code snippets here...</span>
+            </div>
         </div>
     </main>
 

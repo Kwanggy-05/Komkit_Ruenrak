@@ -72,6 +72,7 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
             font-family: 'Inter', sans-serif; 
             background-color: #f6f6f6; 
             color: #000; 
+            justify-content: center;
         }
         
         a { 
@@ -230,6 +231,14 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
             margin-bottom: 24px; 
             margin-left: 12px; 
         }
+        .btn-view-code{
+            background-color: black;
+            color:white;
+            border:1px solid;
+            border-radius: 20px;
+            width: 90px;
+            height:50px;
+        }
         
         /* Snippet Cards */
         .snippet-grid { 
@@ -253,12 +262,18 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
             flex-direction: column; 
             gap: 8px; 
             align-items: flex-start; 
+            flex: 1 1 auto;
+            min-width: 0;
         }
 
         .card-title { 
             font-size: 26px; 
             font-weight: 400; 
             color: #000; 
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .tag-badge {
@@ -284,6 +299,7 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
             flex-grow: 1; 
             display: flex; 
             justify-content: center; 
+            flex-shrink: 0;
         }
         
         .language-tag { 
@@ -298,6 +314,7 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
             display: flex; 
             align-items: center; 
             gap: 24px; 
+            flex-shrink: 0;
         }
         
         .icon-action { 
@@ -468,14 +485,14 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
     <header class="navbar">
         <div class="nav-left">
             <!-- <a href="Home.html" class="btn-outline">Back</a> -->
-            <div class="search-box">
+            <!-- <div class="search-box">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                 <input type="text" placeholder="Search snippet..." disabled>
             </div>
             <div class="dropdown">
                 All Languages
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-            </div>
+            </div> -->
         </div>
         <div class="nav-right">
             
@@ -489,7 +506,7 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
                 </div>
                 <span><?php echo htmlspecialchars($_SESSION['username'] ?? 'Komkit'); ?></span>
             </div>
-            <a href="login.php" class="btn-outline">Log out</a>
+            <a href="login.php" class="btn-outline" onclick="return confirm('ต้องการออกจากระบบหรือไม่?');">Log out</a>
         </div>
     </header>
 
@@ -532,7 +549,13 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
                         <?php $isBookmarked = in_array((int)$row['snippet_id'], $bookmarkedIds); ?>
                         <div class="snippet-card">
                             <div class="card-left">
-                                <div class="card-title"><?php echo htmlspecialchars($row['title'] ?: 'Title'); ?></div>
+                                <?php
+                                    $title = $row['title'] ?: 'Title';
+                                    if(mb_strlen($title, 'UTF-8') > 30){
+                                        $title = mb_substr($title, 0, 30, 'UTF-8') . '...';
+                                    }
+                                ?>
+                                <div class="card-title"><?php echo htmlspecialchars($title); ?></div>
                                 <?php if(!empty($row['tags'])): ?>
                                     <div class="tag-badge">
                                         <?php foreach(explode(', ', $row['tags']) as $tagName): ?>
@@ -540,7 +563,10 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
                                         <?php endforeach; ?>
                                     </div>
                                 <?php endif; ?>
-                                <a href="viewcode.php?view=<?php echo urlencode($row['snippet_id']); ?>" class="btn-view-code">View code</a>
+                                <button class="btn-view-code">
+                                    <a href="viewcode.php?view=<?php echo urlencode($row['snippet_id']); ?>" >View code</a>
+                                </button>
+                                <!-- <a href="viewcode.php?view=<?php echo urlencode($row['snippet_id']); ?>" class="btn-view-code">View code</a> -->
                             </div>
                             
                             <div class="card-middle">
@@ -648,12 +674,12 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
                         this.classList.add('liked');
                         this.title = 'Unlike';
                         countEl.textContent = data.count;
-                        showToast('👍 Liked!');
+                        // showToast('👍 Liked!');
                     } else if(data.status === 'removed') {
                         this.classList.remove('liked');
                         this.title = 'Like';
                         countEl.textContent = data.count;
-                        showToast('👎 Like removed');
+                        // showToast('👎 Like removed');
                     } else if(data.status === 'error') {
                         showToast('⚠ ' + (data.message || 'เกิดข้อผิดพลาด'));
                     }

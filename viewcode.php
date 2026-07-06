@@ -7,10 +7,14 @@ $isBookmarked = false;
 $isLiked = false;
 $likeCount = 0;
 $userId = getCurrentUserId();
+$accessDenied = false;
 
 if(isset($_GET['view']) && is_numeric($_GET['view'])){
     $id = (int)$_GET['view'];
     $snippet = $control->getSnippetById($id, $userId);
+    if($snippet && strtolower((string)($snippet['visibility'] ?? '')) === 'protected' && !$userId){
+        $accessDenied = true;
+    }
     if($snippet && $userId){
         $isBookmarked = $control->isBookmarked($userId, $id);
         $isLiked = $control->isLiked($userId, $id);
@@ -18,6 +22,29 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
     if($snippet){
         $likeCount = $control->getLikeCount($id);
     }
+}
+
+if($accessDenied){
+    ?>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <title>View Snippet</title>
+        <style>
+            body{font-family:Inter,Arial,sans-serif;background:#f4f5f7;color:#111;margin:20px}
+            .back-btn{background:#fff;border:1px solid #888;padding:8px 20px;border-radius:8px;text-decoration:none;color:#111;display:inline-block;margin-bottom:18px}
+            .empty{border:1px dashed #888;background:#fff;padding:24px;border-radius:12px;max-width:360px}
+        </style>
+    </head>
+    <body>
+        <a href="search.php<?php echo isset($_GET['q']) ? '?q=' . urlencode($_GET['q']) . (isset($_GET['lang']) && $_GET['lang'] !== '' ? '&lang=' . urlencode($_GET['lang']) : '') : ''; ?>" class="back-btn">Back</a>
+        <div class="empty">โปรดเข้าสู่ระบบ</div>
+    </body>
+    </html>
+    <?php
+    exit;
 }
 
 ?>
@@ -54,9 +81,11 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
 
         .code-container{margin-top:26px;display:flex;gap:24px}
         .code-box{flex:1;border:1px solid #bdbdbd;border-radius:12px;overflow:hidden;background:#fff;display:flex}
-        .line-numbers{width:56px;background:#efefef;color:#666;text-align:center;padding:12px 6px;font-family:monospace;font-size:13px;line-height:22px;user-select:none}
-        .code-area{flex:1;padding:12px 18px;overflow:auto;font-family:monospace;font-size:14px;white-space:pre-wrap}
-        pre{margin:0;white-space:pre-wrap;word-break:normal}
+        .line-numbers{width:56px;background:#efefef;color:#666;text-align:center;padding:12px 6px;font-family:monospace;font-size:13px;line-height:22px;user-select:none;flex-shrink:0}
+        .line-number{height:22px;line-height:22px}
+        .code-area{flex:1;padding:12px 18px;overflow:auto;font-family:monospace;font-size:14px}
+        .code-content{margin:0}
+        .code-line{height:22px;line-height:22px;white-space:pre}
 
         .meta{width:320px;display:flex;flex-direction:column;gap:18px}
         .image-box{height:140px;border:1px solid #bdbdbd;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;color:#aaa}
@@ -100,7 +129,7 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
         <div class="code-container">
             <div class="code-box">
                 <div class="line-numbers" id="lineNumbers">1</div>
-                <div class="code-area"><pre id="codeContent"><?php echo htmlspecialchars($snippet['source_code']); ?></pre></div>
+                <div class="code-area"><div class="code-content" id="codeContent"><?php echo htmlspecialchars($snippet['source_code']); ?></div></div>
             </div>
 
             <div class="meta">
@@ -140,9 +169,10 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
         const codeEl = document.getElementById('codeContent');
         const linesEl = document.getElementById('lineNumbers');
         if(codeEl){
-            const text = codeEl.innerText || codeEl.textContent;
-            const lines = text.split('\n').length || 1;
-            linesEl.innerHTML = Array.from({length:lines}, (_,i)=>i+1).join('<br>');
+            const text = codeEl.textContent || '';
+            const lines = text.split('\n');
+            linesEl.innerHTML = lines.map((_, i) => `<div class="line-number">${i + 1}</div>`).join('');
+            codeEl.innerHTML = lines.map(line => `<div class="code-line">${line === '' ? '&nbsp;' : line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`).join('');
         }
 
         // copy button

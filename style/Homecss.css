@@ -33,7 +33,7 @@
             gap: 10px;
         }
 
-        .logo-icon svg {
+        .logo-icon img {
             width: 32px;
             height: 32px;
             display: block;
@@ -193,12 +193,12 @@
             border-radius: 12px;
             padding: 10px 15px;
             margin-bottom: 16px;
-            cursor: pointer;
+            cursor: default;
             text-align: left;
             transition: all 0.2s;
         }
 
-        .action-button:hover {
+        .action-button {
             border-color: #000;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
