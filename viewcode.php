@@ -9,6 +9,17 @@ $likeCount = 0;
 $userId = getCurrentUserId();
 $accessDenied = false;
 
+$backUrl = 'snippet_page.php';
+if(isset($_GET['from_search']) && $_GET['from_search'] === '1'){
+    $backUrl = 'search.php';
+    $backParams = [];
+    if(isset($_GET['q'])) $backParams['q'] = $_GET['q'];
+    if(isset($_GET['lang'])) $backParams['lang'] = $_GET['lang'];
+    if(!empty($backParams)){
+        $backUrl .= '?' . http_build_query($backParams);
+    }
+}
+
 if(isset($_GET['view']) && is_numeric($_GET['view'])){
     $id = (int)$_GET['view'];
     $snippet = $control->getSnippetById($id, $userId);
@@ -26,23 +37,10 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
 
 if($accessDenied){
     ?>
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width,initial-scale=1">
-        <title>View Snippet</title>
-        <style>
-            body{font-family:Inter,Arial,sans-serif;background:#f4f5f7;color:#111;margin:20px}
-            .back-btn{background:#fff;border:1px solid #888;padding:8px 20px;border-radius:8px;text-decoration:none;color:#111;display:inline-block;margin-bottom:18px}
-            .empty{border:1px dashed #888;background:#fff;padding:24px;border-radius:12px;max-width:360px}
-        </style>
-    </head>
-    <body>
-        <a href="search.php<?php echo isset($_GET['q']) ? '?q=' . urlencode($_GET['q']) . (isset($_GET['lang']) && $_GET['lang'] !== '' ? '&lang=' . urlencode($_GET['lang']) : '') : ''; ?>" class="back-btn">Back</a>
-        <div class="empty">โปรดเข้าสู่ระบบ</div>
-    </body>
-    </html>
+    <script>
+        alert("Please log in.");
+        window.location.href = "login.php";
+    </script>
     <?php
     exit;
 }
@@ -114,7 +112,7 @@ if($accessDenied){
     </style>
 </head>
 <body>
-    <a href="snippet_page.php" class="back-btn">Back</a>
+    <a href="<?php echo htmlspecialchars($backUrl); ?>" class="back-btn">Back</a>
 
     <?php if(!$snippet): ?>
         <div class="empty">ไม่พบ snippet นี้</div>

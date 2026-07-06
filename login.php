@@ -2,6 +2,12 @@
 require_once "layout/session.php";
 require_once "db/connect.php";
 
+if(getCurrentUserId()){
+    $_SESSION = array();
+    session_destroy();
+    session_start();
+}
+
 $hasAnyUser = $user->countUsers();
 
 if($_SERVER["REQUEST_METHOD"]=="POST"){

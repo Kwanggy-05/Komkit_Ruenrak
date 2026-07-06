@@ -6,14 +6,14 @@ header('Content-Type: application/json');
 
 // ตรวจสอบว่า user login แล้วหรือยัง
 if(!isset($_SESSION['user_id'])){
-    echo json_encode(['status' => 'error', 'message' => 'กรุณาเข้าสู่ระบบก่อน']);
+    echo json_encode(['status' => 'error', 'message' => 'Please log in.']);
     exit;
 }
 
 $user_id = getCurrentUserId();
 
 if(!$user_id){
-    echo json_encode(['status' => 'error', 'message' => 'กรุณาเข้าสู่ระบบก่อน']);
+    echo json_encode(['status' => 'error', 'message' => 'Please log in.']);
     exit;
 }
 

@@ -33,15 +33,15 @@ if($searchQuery !== ''){
     <header>
         <div class="header-left">
             <div class="logo-icon">
-                
-                <img src="logo/Logo_snippetBox.png" alt="Logo" width=32px height=32px>
+                <a href="Home.php"><img src="logo/Logo_snippetBox.png" alt="Logo" width=32px height=32px></a>
+                <!-- <img src="logo/Logo_snippetBox.png" alt="Logo" width=32px height=32px> -->
             </div>
             <div class="logo-text">Snippet Box</div>
         </div>
 
         <div class="header-center">
             <div class="search-bar">
-                <form method="GET" action="" class="search-form" id="searchForm">
+                <form method="GET" action="result.php" class="search-form" id="searchForm">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="8"></circle>
                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -52,7 +52,7 @@ if($searchQuery !== ''){
                 </form>
             </div>
             <div class="language-dropdown">
-                <form method="GET" action="" style="display: inline;">
+                <form method="GET" action="result.php" style="display: inline;">
                     <input type="hidden" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>">
                     <select name="lang" id="language-filter" onchange="this.form.submit()">
                         <option value="">All Languages</option>
