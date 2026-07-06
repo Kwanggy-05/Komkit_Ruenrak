@@ -12,6 +12,7 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
 
     if($result){
         $_SESSION["username"] = $username;
+        $_SESSION["user_id"] = $result["user_id"];
         $_SESSION["userid"] = $result["user_id"];
         header("Location:snippet_page.php");
         exit;

@@ -5,14 +5,14 @@ require_once "db/connect.php";
 
 $searchQuery = trim($_GET['q'] ?? '');
 $showBookmarks = isset($_GET['bookmarks']) && $_GET['bookmarks'] === '1';
-$userId = $_SESSION['userid'] ?? 0;
+$userId = $_SESSION['user_id'] ?? ($_SESSION['userid'] ?? 0);
 
 if($showBookmarks && $userId){
     $result = $control->getBookmarkedSnippets($userId);
 }elseif($searchQuery !== ''){
     $result = $control->searchSnippets($searchQuery);
 }else{
-    $result = $control->getSnippet();
+    $result = $control->getSnippet($userId);
 }
 
 $snippets = [];
@@ -124,13 +124,7 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
             cursor: pointer; 
         }
         
-        .bell-icon { 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            cursor: pointer; 
-            margin-right: 12px; 
-        }
+        
         
         .user-profile { 
             display: flex; 
@@ -414,9 +408,7 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
             </div>
         </div>
         <div class="nav-right">
-            <div class="bell-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
-            </div>
+            
             <div class="user-profile">
                 <div class="avatar">
                     <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -502,12 +494,14 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
                                         <path d="M0 512V48C0 21.49 21.49 0 48 0h288c26.51 0 48 21.49 48 48v464L192 400 0 512z"/>
                                     </svg>
                                 </button>
+                                <?php if((int)($row['user_id'] ?? 0) === (int)$userId): ?>
                                 <a href="createsnippet.php?edit=<?php echo urlencode($row['snippet_id']); ?>" class="icon-action" title="Edit">
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                 </a>
                                 <a href="createsnippet.php?delete=<?php echo urlencode($row['snippet_id']); ?>" class="icon-action" title="Delete" onclick="return confirm('คุณแน่ใจว่าต้องการลบรายการนี้หรือไม่?');">
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                 </a>
+                                <?php endif; ?>
                             </div>
                         </div>
                     <?php endforeach; ?>

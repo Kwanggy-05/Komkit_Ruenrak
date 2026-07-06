@@ -16,7 +16,7 @@ class Control{
         }
     }
 
-    function getSnippet(){
+    function getSnippet($current_user_id = 0){
         try{
             $sql = "SELECT a.*, b.language_name,
                 GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags
@@ -24,9 +24,11 @@ class Control{
                 INNER JOIN language b ON a.language_id = b.language_id
                 LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
                 LEFT JOIN tag t ON st.tag_id = t.tag_id
+                WHERE (a.visibility IN ('public','protected') OR a.user_id = :user_id)
                 GROUP BY a.snippet_id
                 ORDER BY a.snippet_id DESC";
             $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':user_id', $current_user_id, PDO::PARAM_INT);
             $stmt->execute();
             return $stmt;
         }catch(PDOException $e){
@@ -35,7 +37,7 @@ class Control{
         }
     }
 
-    function searchSnippets($keyword){
+    function searchSnippets($keyword, $language_id = null){
         try{
             $sql = "SELECT a.*, b.language_name,
                 GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags
@@ -49,12 +51,20 @@ class Control{
                     OR a.description LIKE :keyword
                     OR a.source_code LIKE :keyword
                     OR t.tag_name LIKE :keyword
-                )
-                GROUP BY a.snippet_id
+                )";
+            
+            if($language_id && $language_id !== ''){
+                $sql .= " AND a.language_id = :language_id";
+            }
+            
+            $sql .= " GROUP BY a.snippet_id
                 ORDER BY a.snippet_id DESC";
             $stmt = $this->db->prepare($sql);
             $searchTerm = '%' . $keyword . '%';
             $stmt->bindParam(':keyword', $searchTerm, PDO::PARAM_STR);
+            if($language_id && $language_id !== ''){
+                $stmt->bindParam(':language_id', $language_id, PDO::PARAM_INT);
+            }
             $stmt->execute();
             return $stmt;
         }catch(PDOException $e){
@@ -63,13 +73,14 @@ class Control{
         }
     }
 
-    function insert($title,$source_code,$description,$visibility,$image_path,$language_id,$tags){
+    function insert($title,$source_code,$description,$visibility,$image_path,$language_id,$tags, $user_id){
         try{
             $this->db->beginTransaction();
 
-            $sql="INSERT INTO snippet(title,source_code,description,visibility,image_path,language_id)
-            VALUES (:title,:source_code,:description,:visibility,:image_path,:language_id)";
+            $sql="INSERT INTO snippet(user_id, title,source_code,description,visibility,image_path,language_id)
+            VALUES (:user_id, :title,:source_code,:description,:visibility,:image_path,:language_id)";
             $stmt=$this->db->prepare($sql);
+            $stmt->bindParam(":user_id", $user_id, PDO::PARAM_INT);
             $stmt->bindParam(":title",$title);
             $stmt->bindParam(":source_code",$source_code);
             $stmt->bindParam(":description",$description);
@@ -109,7 +120,7 @@ class Control{
         }
     }
 
-    function getSnippetById($snippet_id){
+    function getSnippetById($snippet_id, $current_user_id = 0){
         try{
             $sql = "SELECT s.*, l.language_name,
                 GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags
@@ -118,9 +129,11 @@ class Control{
                 LEFT JOIN snippet_tag st ON s.snippet_id = st.snippet_id
                 LEFT JOIN tag t ON st.tag_id = t.tag_id
                 WHERE s.snippet_id = :snippet_id
+                AND (s.visibility IN ('public','protected') OR s.user_id = :user_id)
                 GROUP BY s.snippet_id";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmt->bindParam(":user_id", $current_user_id, PDO::PARAM_INT);
             $stmt->execute();
             return $stmt->fetch(PDO::FETCH_ASSOC);
         }catch(PDOException $e){
@@ -129,11 +142,11 @@ class Control{
         }
     }
 
-    function updateSnippet($snippet_id, $title, $source_code, $description, $visibility, $image_path, $language_id, $tags){
+    function updateSnippet($snippet_id, $title, $source_code, $description, $visibility, $image_path, $language_id, $tags, $user_id){
         try{
             $this->db->beginTransaction();
 
-            $sql = "UPDATE snippet SET title = :title, source_code = :source_code, description = :description, visibility = :visibility, image_path = :image_path, language_id = :language_id WHERE snippet_id = :snippet_id";
+            $sql = "UPDATE snippet SET title = :title, source_code = :source_code, description = :description, visibility = :visibility, image_path = :image_path, language_id = :language_id WHERE snippet_id = :snippet_id AND user_id = :user_id";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(":title", $title);
             $stmt->bindParam(":source_code", $source_code);
@@ -142,6 +155,7 @@ class Control{
             $stmt->bindParam(":image_path", $image_path);
             $stmt->bindParam(":language_id", $language_id);
             $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmt->bindParam(":user_id", $user_id, PDO::PARAM_INT);
             $stmt->execute();
 
             $sql = "DELETE FROM snippet_tag WHERE snippet_id = :snippet_id";
@@ -178,16 +192,24 @@ class Control{
         }
     }
 
-    function deleteSnippet($snippet_id){
+    function deleteSnippet($snippet_id, $user_id){
         try{
             $this->db->beginTransaction();
 
-            $sql = "DELETE FROM snippet_tag WHERE snippet_id = :snippet_id";
+            // Delete snippet row only if it belongs to the user
+            $sql = "DELETE FROM snippet WHERE snippet_id = :snippet_id AND user_id = :user_id";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmt->bindParam(":user_id", $user_id, PDO::PARAM_INT);
             $stmt->execute();
 
-            $sql = "DELETE FROM snippet WHERE snippet_id = :snippet_id";
+            if($stmt->rowCount() === 0){
+                $this->db->rollBack();
+                return false;
+            }
+
+            // Remove any tags attached to the snippet
+            $sql = "DELETE FROM snippet_tag WHERE snippet_id = :snippet_id";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
             $stmt->execute();

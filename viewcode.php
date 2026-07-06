@@ -6,11 +6,11 @@ $snippet = null;
 $isBookmarked = false;
 $isLiked = false;
 $likeCount = 0;
-$userId = $_SESSION['userid'] ?? 0;
+$userId = $_SESSION['user_id'] ?? ($_SESSION['userid'] ?? 0);
 
 if(isset($_GET['view']) && is_numeric($_GET['view'])){
     $id = (int)$_GET['view'];
-    $snippet = $control->getSnippetById($id);
+    $snippet = $control->getSnippetById($id, $userId);
     if($snippet && $userId){
         $isBookmarked = $control->isBookmarked($userId, $id);
         $isLiked = $control->isLiked($userId, $id);

@@ -1,5 +1,6 @@
 <?php
 require_once "db/connect.php";
+require_once "layout/session.php";
 $result = $control->getLanguage();
 
 $snippet_id = null;
@@ -14,15 +15,17 @@ $current_image_path = '';
 $formTitle = 'Create Snippet';
 $formButton = 'Save';
 
+$userId = $_SESSION['user_id'] ?? ($_SESSION['userid'] ?? 0);
+
 if(isset($_GET['delete']) && is_numeric($_GET['delete'])){
-    $control->deleteSnippet((int)$_GET['delete']);
+    $control->deleteSnippet((int)$_GET['delete'], $userId);
     header('Location:snippet_page.php');
     exit;
 }
 
 if(isset($_GET['edit']) && is_numeric($_GET['edit'])){
     $snippet_id = (int)$_GET['edit'];
-    $snippet = $control->getSnippetById($snippet_id);
+    $snippet = $control->getSnippetById($snippet_id, $userId);
     if($snippet){
         $title = $snippet['title'];
         $language_id = $snippet['language_id'];
@@ -67,9 +70,9 @@ if(isset($_POST["submit"])){
     }
 
     if($snippet_id){
-        $status = $control->updateSnippet($snippet_id,$title,$source_code,$description,$visibility,$image_path,$language_id,$tags);
+        $status = $control->updateSnippet($snippet_id,$title,$source_code,$description,$visibility,$image_path,$language_id,$tags, $userId);
     } else {
-        $status = $control->insert($title,$source_code,$description,$visibility,$image_path,$language_id,$tags);
+        $status = $control->insert($title,$source_code,$description,$visibility,$image_path,$language_id,$tags, $userId);
     }
 
     header("Location:snippet_page.php");
