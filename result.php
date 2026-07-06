@@ -14,7 +14,17 @@ if($languageResult){
 }
 
 // Search with language filter
-if($searchQuery !== ''){
+$selectedLanguageName = '';
+if($selectedLanguage !== ''){
+    foreach($languages as $lang){
+        if($lang['language_id'] == $selectedLanguage){
+            $selectedLanguageName = $lang['language_name'];
+            break;
+        }
+    }
+}
+
+if($searchQuery !== '' || $selectedLanguage !== ''){
     $result = $control->searchSnippets($searchQuery, $selectedLanguage);
     if($result){
         $snippets = $result->fetchAll(PDO::FETCH_ASSOC);
@@ -319,16 +329,25 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
 
     <main class="results-container">
         <div class="results-header">
-            <?php if ($searchQuery !== ''): ?>
-                Search results for "<strong><?php echo htmlspecialchars($searchQuery); ?></strong>"
+            <?php if ($searchQuery !== '' && $selectedLanguage !== ''): ?>
+                
+Search results for "<strong><?php echo htmlspecialchars($searchQuery); ?></strong>" in language <strong><?php echo htmlspecialchars($selectedLanguageName); ?></strong>
+            <?php elseif ($searchQuery !== ''): ?>              
+Search results for "<strong><?php echo htmlspecialchars($searchQuery); ?></strong>"
+            <?php elseif ($selectedLanguage !== ''): ?>
+Search results for <strong><?php echo htmlspecialchars($selectedLanguageName); ?></strong>
             <?php else: ?>
-                กรุณากรอกคำค้นหาเพื่อค้นหา Snippet
+                กรุณากรอกคำค้นหาหรือเลือกภาษาด้านบนเพื่อค้นหา Snippet
             <?php endif; ?>
         </div>
 
         <div class="snippet-grid">
-            <?php if($searchQuery !== '' && empty($snippets)): ?>
+            <?php if ($searchQuery === '' && $selectedLanguage === ''): ?>
                 <div class="empty-state">
+                    Please enter a search term or select a language above to start searching.
+                </div>
+            <?php elseif (empty($snippets)): ?>
+                <div class="empty-state">   
                     No search results found.
                 </div>
             <?php else: ?>

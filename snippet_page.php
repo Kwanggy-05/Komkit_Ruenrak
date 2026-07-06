@@ -231,13 +231,23 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
             margin-bottom: 24px; 
             margin-left: 12px; 
         }
-        .btn-view-code{
-            background-color: black;
-            color:white;
-            border:1px solid;
-            border-radius: 20px;
-            width: 90px;
-            height:50px;
+        .btn-view-code {
+            background-color: #fff;
+            color: #000;
+            border: 1px solid #000;
+            border-radius: 6px;
+            padding: 6px 14px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-view-code:hover {
+            background-color: #000;
+            color: #fff;
         }
         
         /* Snippet Cards */
