@@ -47,18 +47,18 @@ if($searchQuery !== ''){
 
         <div class="header-center">
             <div class="search-bar">
-                <form method="GET" action="" class="search-form">
+                <form method="GET" action="search.php" class="search-form">
                     <input type="hidden" name="lang" value="<?php echo htmlspecialchars($selectedLanguage); ?>">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="8"></circle>
                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
                     <input class="search-input" type="text" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>" placeholder="Search Snippet">
-                    <!-- <button type="submit" class="search-submit">Search</button> -->
+                    <button type="submit" class="search-submit">Search</button>
                 </form>
             </div>
             <div class="language-dropdown">
-                <form method="GET" action="" style="display: inline;">
+                <form method="GET" action="search.php" style="display: inline;">
                     <input type="hidden" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>">
                     <select name="lang" id="language-filter" onchange="this.form.submit()">
                         <option value="">All Languages</option>

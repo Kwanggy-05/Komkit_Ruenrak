@@ -37,6 +37,44 @@ class Control{
         }
     }
 
+    function getUserSnippets($user_id, $keyword = ''){
+        try{
+            $sql = "SELECT a.*, b.language_name,
+                GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags
+                FROM snippet a
+                INNER JOIN language b ON a.language_id = b.language_id
+                LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
+                LEFT JOIN tag t ON st.tag_id = t.tag_id
+                WHERE a.user_id = :user_id";
+
+            if($keyword !== ''){
+                $sql .= " AND (
+                    a.title LIKE :keyword
+                    OR a.description LIKE :keyword
+                    OR a.source_code LIKE :keyword
+                    OR t.tag_name LIKE :keyword
+                )";
+            }
+
+            $sql .= " GROUP BY a.snippet_id
+                ORDER BY a.snippet_id DESC";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+
+            if($keyword !== ''){
+                $searchTerm = '%' . $keyword . '%';
+                $stmt->bindParam(':keyword', $searchTerm, PDO::PARAM_STR);
+            }
+
+            $stmt->execute();
+            return $stmt;
+        }catch(PDOException $e){
+            echo $e->getMessage();
+            return false;
+        }
+    }
+
     function searchSnippets($keyword, $language_id = null){
         try{
             $sql = "SELECT a.*, b.language_name,
@@ -65,6 +103,28 @@ class Control{
             if($language_id && $language_id !== ''){
                 $stmt->bindParam(':language_id', $language_id, PDO::PARAM_INT);
             }
+            $stmt->execute();
+            return $stmt;
+        }catch(PDOException $e){
+            echo $e->getMessage();
+            return false;
+        }
+    }
+
+    function getSnippetsByLanguage($language_id){
+        try{
+            $sql = "SELECT a.*, b.language_name,
+                GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags
+                FROM snippet a
+                INNER JOIN language b ON a.language_id = b.language_id
+                LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
+                LEFT JOIN tag t ON st.tag_id = t.tag_id
+                WHERE a.visibility IN ('public','protected')
+                AND a.language_id = :language_id
+                GROUP BY a.snippet_id
+                ORDER BY a.snippet_id DESC";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':language_id', $language_id, PDO::PARAM_INT);
             $stmt->execute();
             return $stmt;
         }catch(PDOException $e){
@@ -218,6 +278,127 @@ class Control{
             return true;
         }catch(PDOException $e){
             $this->db->rollBack();
+            echo $e->getMessage();
+            return false;
+        }
+    }
+
+    // ===== Pagination Methods =====
+
+    function getTotalUserSnippetCount($user_id, $keyword = ''){
+        try{
+            $sql = "SELECT COUNT(DISTINCT a.snippet_id) as total FROM snippet a
+                LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
+                LEFT JOIN tag t ON st.tag_id = t.tag_id
+                WHERE a.user_id = :user_id";
+
+            if($keyword !== ''){
+                $sql .= " AND (
+                    a.title LIKE :keyword
+                    OR a.description LIKE :keyword
+                    OR a.source_code LIKE :keyword
+                    OR t.tag_name LIKE :keyword
+                )";
+            }
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+
+            if($keyword !== ''){
+                $searchTerm = '%' . $keyword . '%';
+                $stmt->bindParam(':keyword', $searchTerm, PDO::PARAM_STR);
+            }
+
+            $stmt->execute();
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            return (int)$row['total'];
+        }catch(PDOException $e){
+            return 0;
+        }
+    }
+
+    function getTotalBookmarkedSnippetCount($user_id){
+        try{
+            $sql = "SELECT COUNT(*) as total FROM bookmarks WHERE user_id = :user_id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+            $stmt->execute();
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            return (int)$row['total'];
+        }catch(PDOException $e){
+            return 0;
+        }
+    }
+
+    function getUserSnippetsPaginated($user_id, $page = 1, $limit = 10, $keyword = ''){
+        try{
+            $page = max(1, (int)$page);
+            $limit = max(1, (int)$limit);
+            $offset = ($page - 1) * $limit;
+
+            $sql = "SELECT a.*, b.language_name,
+                GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags
+                FROM snippet a
+                INNER JOIN language b ON a.language_id = b.language_id
+                LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
+                LEFT JOIN tag t ON st.tag_id = t.tag_id
+                WHERE a.user_id = :user_id";
+
+            if($keyword !== ''){
+                $sql .= " AND (
+                    a.title LIKE :keyword
+                    OR a.description LIKE :keyword
+                    OR a.source_code LIKE :keyword
+                    OR t.tag_name LIKE :keyword
+                )";
+            }
+
+            $sql .= " GROUP BY a.snippet_id
+                ORDER BY a.snippet_id DESC
+                LIMIT :offset, :limit";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+            $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+            $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+
+            if($keyword !== ''){
+                $searchTerm = '%' . $keyword . '%';
+                $stmt->bindParam(':keyword', $searchTerm, PDO::PARAM_STR);
+            }
+
+            $stmt->execute();
+            return $stmt;
+        }catch(PDOException $e){
+            echo $e->getMessage();
+            return false;
+        }
+    }
+
+    function getBookmarkedSnippetsPaginated($user_id, $page = 1, $limit = 10){
+        try{
+            $page = max(1, (int)$page);
+            $limit = max(1, (int)$limit);
+            $offset = ($page - 1) * $limit;
+
+            $sql = "SELECT a.*, b.language_name,
+                GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags
+                FROM bookmarks bk
+                INNER JOIN snippet a ON bk.snippet_id = a.snippet_id
+                INNER JOIN language b ON a.language_id = b.language_id
+                LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
+                LEFT JOIN tag t ON st.tag_id = t.tag_id
+                WHERE bk.user_id = :user_id
+                GROUP BY a.snippet_id
+                ORDER BY bk.bookmarked_at DESC
+                LIMIT :offset, :limit";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(":user_id", $user_id, PDO::PARAM_INT);
+            $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+            $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt;
+        }catch(PDOException $e){
             echo $e->getMessage();
             return false;
         }

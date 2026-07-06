@@ -15,7 +15,12 @@ $current_image_path = '';
 $formTitle = 'Create Snippet';
 $formButton = 'Save';
 
-$userId = $_SESSION['user_id'] ?? ($_SESSION['userid'] ?? 0);
+$userId = getCurrentUserId();
+
+if(!$userId){
+    header('Location:login.php');
+    exit;
+}
 
 if(isset($_GET['delete']) && is_numeric($_GET['delete'])){
     $control->deleteSnippet((int)$_GET['delete'], $userId);
@@ -317,7 +322,7 @@ if(isset($_POST["submit"])){
 </head>
 <body>
     
-    <a href="Home.html" class="back-btn">Back</a>
+    <a href="snippet_page.php" class="back-btn">Back</a>
     
     <h1>สร้าง Snippet Box</h1>
     

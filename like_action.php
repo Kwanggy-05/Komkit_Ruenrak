@@ -10,7 +10,12 @@ if(!isset($_SESSION['user_id'])){
     exit;
 }
 
-$user_id = (int)($_SESSION['user_id'] ?? $_SESSION['userid']);
+$user_id = getCurrentUserId();
+
+if(!$user_id){
+    echo json_encode(['status' => 'error', 'message' => 'กรุณาเข้าสู่ระบบก่อน']);
+    exit;
+}
 
 if($_SERVER['REQUEST_METHOD'] === 'POST'){
     $snippet_id = isset($_POST['snippet_id']) ? (int)$_POST['snippet_id'] : 0;

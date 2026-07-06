@@ -5,14 +5,27 @@ require_once "db/connect.php";
 
 $searchQuery = trim($_GET['q'] ?? '');
 $showBookmarks = isset($_GET['bookmarks']) && $_GET['bookmarks'] === '1';
-$userId = $_SESSION['user_id'] ?? ($_SESSION['userid'] ?? 0);
+$userId = getCurrentUserId();
 
+if(!$userId){
+    header('Location:login.php');
+    exit;
+}
+
+// Pagination settings
+$itemsPerPage = 10;
+$currentPage = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+
+// Get total count
 if($showBookmarks && $userId){
-    $result = $control->getBookmarkedSnippets($userId);
+    $totalSnippets = $control->getTotalBookmarkedSnippetCount($userId);
+    $result = $control->getBookmarkedSnippetsPaginated($userId, $currentPage, $itemsPerPage);
 }elseif($searchQuery !== ''){
-    $result = $control->searchSnippets($searchQuery);
+    $totalSnippets = $control->getTotalUserSnippetCount($userId, $searchQuery);
+    $result = $control->getUserSnippetsPaginated($userId, $currentPage, $itemsPerPage, $searchQuery);
 }else{
-    $result = $control->getSnippet($userId);
+    $totalSnippets = $control->getTotalUserSnippetCount($userId);
+    $result = $control->getUserSnippetsPaginated($userId, $currentPage, $itemsPerPage);
 }
 
 $snippets = [];
@@ -20,7 +33,9 @@ if($result){
     $snippets = $result->fetchAll(PDO::FETCH_ASSOC);
 }
 
-$totalSnippets = count($snippets);
+// Calculate pagination info
+$totalPages = ceil($totalSnippets / $itemsPerPage);
+if($totalPages === 0) $totalPages = 1;
 
 // ดึง list ของ snippet_id ที่ถูก bookmark ไว้
 $bookmarkedIds = [];
@@ -392,6 +407,61 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
             border: 1px dashed #000; 
             border-radius: 16px; 
         }
+
+        /* Pagination styling */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 40px;
+            padding: 20px 0;
+        }
+
+        .pagination a, .pagination span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid #000;
+            text-decoration: none;
+            color: #000;
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .pagination a:hover:not(.active) {
+            background: #f0f0f0;
+        }
+
+        .pagination .active {
+            background: #1a1a1a;
+            color: #fff;
+            border-color: #1a1a1a;
+            cursor: default;
+        }
+
+        .pagination .next-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            width: auto;
+            padding: 0 12px;
+            border-radius: 24px;
+            margin-left: 12px;
+        }
+
+        .pagination .next-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .pagination .next-btn svg {
+            width: 16px;
+            height: 16px;
+        }
     </style>
 </head>
 <body>
@@ -442,9 +512,9 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
             
             <div class="total-snippets">
                 <?php if($showBookmarks): ?>
-                    Bookmarked Snippets: <?php echo $totalSnippets; ?>
+                    Your Bookmarked Snippets: <?php echo $totalSnippets; ?>
                 <?php else: ?>
-                    Total Snippets: <?php echo $totalSnippets; ?><?php if($searchQuery !== ''): ?> (search results for "<?php echo htmlspecialchars($searchQuery); ?>" — only public/protected shown)<?php endif; ?>
+                    Your Snippets: <?php echo $totalSnippets; ?><?php if($searchQuery !== ''): ?> (search results for "<?php echo htmlspecialchars($searchQuery); ?>")<?php endif; ?>
                 <?php endif; ?>
             </div>
             
@@ -507,6 +577,41 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
                     <?php endforeach; ?>
                 <?php endif; ?>
             </div>
+
+            <!-- Pagination -->
+            <?php if($totalPages > 1 && count($snippets) > 0): ?>
+            <div class="pagination">
+                <?php
+                // Show pages 1 to 10
+                $startPage = 1;
+                $endPage = min(10, $totalPages);
+                
+                for($i = $startPage; $i <= $endPage; $i++){
+                    $pageUrl = 'snippet_page.php?page=' . $i;
+                    if($searchQuery !== '') $pageUrl .= '&q=' . urlencode($searchQuery);
+                    if($showBookmarks) $pageUrl .= '&bookmarks=1';
+                    
+                    if($i == $currentPage){
+                        echo '<span class="active">' . $i . '</span>';
+                    } else {
+                        echo '<a href="' . $pageUrl . '">' . $i . '</a>';
+                    }
+                }
+                
+                // Next button if there are more pages beyond 10
+                if($totalPages > 10 && $currentPage < $totalPages){
+                    $nextPageUrl = 'snippet_page.php?page=' . ($currentPage + 1);
+                    if($searchQuery !== '') $nextPageUrl .= '&q=' . urlencode($searchQuery);
+                    if($showBookmarks) $nextPageUrl .= '&bookmarks=1';
+                    echo '<a href="' . $nextPageUrl . '" class="next-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </a>';
+                }
+                ?>
+            </div>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -584,22 +689,10 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
                         this.title = 'Add Bookmark';
                         showToast('✗ Bookmark removed');
                         
-                        // ถ้าอยู่ในหน้า bookmarks filter ให้ลบ card ออก
+                        // ถ้าอยู่ในหน้า bookmarks filter ให้โหลดหน้าใหม่
                         const urlParams = new URLSearchParams(window.location.search);
                         if(urlParams.get('bookmarks') === '1') {
-                            const card = this.closest('.snippet-card');
-                            card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-                            card.style.opacity = '0';
-                            card.style.transform = 'translateX(-20px)';
-                            setTimeout(() => {
-                                card.remove();
-                                // Update count
-                                const remaining = document.querySelectorAll('.snippet-card').length;
-                                document.querySelector('.total-snippets').textContent = 'Bookmarked Snippets: ' + remaining;
-                                if(remaining === 0) {
-                                    document.querySelector('.snippet-grid').innerHTML = '<div class="empty-state">ยังไม่มี Snippet ที่ถูก Bookmark ไว้</div>';
-                                }
-                            }, 300);
+                            setTimeout(() => window.location.reload(), 500);
                         }
                     } else if(data.status === 'error') {
                         showToast('⚠ ' + (data.message || 'เกิดข้อผิดพลาด'));

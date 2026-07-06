@@ -6,7 +6,7 @@ $snippet = null;
 $isBookmarked = false;
 $isLiked = false;
 $likeCount = 0;
-$userId = $_SESSION['user_id'] ?? ($_SESSION['userid'] ?? 0);
+$userId = getCurrentUserId();
 
 if(isset($_GET['view']) && is_numeric($_GET['view'])){
     $id = (int)$_GET['view'];
