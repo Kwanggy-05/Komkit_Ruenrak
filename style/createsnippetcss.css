@@ -1,226 +1,296 @@
+/* Flat Design Corporativo Theme - createsnippetcss.css */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400;1,700&display=swap');
+
+:root {
+    --primary: #007BFF;
+    --primary-hover: #0056b3;
+    --secondary: #343A40;
+    --tertiary: #FFFFFF;
+    --neutral-bg: #F8F9FA;
+    --surface: #FFFFFF;
+    --border-color: #DEE2E6;
+    --input-border: #CED4DA;
+    --text-color: #212529;
+    --text-muted: #6C757D;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
 body {
-            background-color: #f4f5f7;
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 30px;
-            color: #111;
-        }
+    background-color: var(--neutral-bg);
+    font-family: 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    padding: 30px;
+    color: var(--text-color);
+}
 
-        h1 { display: none; }
+h1 { display: none; }
 
-        .back-btn {
-            background-color: #fff;
-            border: 1px solid #888;
-            padding: 8px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-bottom: 20px;
-            display: inline-block;
-            text-decoration: none;
-            color: #111;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
+.back-btn {
+    background-color: var(--surface);
+    border: 1px solid var(--border-color);
+    padding: 8px 20px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    color: var(--secondary);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    transition: all 0.2s ease;
+}
 
-        .form-container {
-            background-color: #f4f5f7;
-            border: 1px solid #b3b3b3;
-            border-radius: 12px;
-            padding: 30px;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            gap: 25px;
-        }
+.back-btn:hover {
+    background-color: var(--neutral-bg);
+    border-color: var(--primary);
+    color: var(--primary);
+}
 
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
+.form-container {
+    background-color: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    max-width: 900px;
+    margin: 0 auto;
+}
 
-        label {
-            font-size: 14px;
-            color: #111;
-        }
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
 
-        input[type="text"], textarea {
-            border: 1px solid #b3b3b3;
-            border-radius: 8px;
-            padding: 10px;
-            font-family: Arial, sans-serif;
-            font-size: 14px;
-            background-color: #fff;
-            outline: none;
-        }
+label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--secondary);
+}
 
-        input[name="title"],
-        input[name="tags"] {
-            width: 350px;
-            height: 35px;
-        }
+input[type="text"], textarea {
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    font-family: 'Lato', sans-serif;
+    font-size: 14px;
+    background-color: var(--surface);
+    color: var(--text-color);
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
 
-        /* --- เพิ่ม CSS สำหรับจัดการแถวบน และ Dropdown ของ Language --- */
-        .top-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
+input[type="text"]:focus, textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
 
-        .language-dropdown {
-            padding: 10px 35px 10px 15px;
-            border: 1px solid #b3b3b3;
-            border-radius: 8px;
-            background-color: #fff;
-            font-size: 14px;
-            font-family: Arial, sans-serif;
-            color: #111;
-            cursor: pointer;
-            outline: none;
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 10px center;
-            background-size: 16px;
-            min-width: 180px;
-            height: 47px; /* ปรับความสูงให้เท่ากับ Input ของ Title */
-            box-sizing: border-box;
-        }
+input[name="title"],
+input[name="tags"] {
+    width: 350px;
+    height: 42px;
+}
 
-        .language-dropdown:focus { border-color: #888; }
-        /* -------------------------------------------------------- */
+/* --- Top Row & Dropdown --- */
+.top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
 
-        textarea[name="description"] {
-            width: 100%;
-            height: 100px;
-            resize: vertical;
-        }
+.language-dropdown {
+    padding: 10px 35px 10px 15px;
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-md);
+    background-color: var(--surface);
+    font-size: 14px;
+    font-family: 'Lato', sans-serif;
+    font-weight: 500;
+    color: var(--text-color);
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23343A40' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    min-width: 180px;
+    height: 42px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
 
-        .editor-container {
-            display: flex;
-            border: 1px solid #b3b3b3;
-            border-radius: 8px;
-            overflow: hidden;
-            background-color: #fff;
-            height: 280px;
-        }
+.language-dropdown:focus { 
+    border-color: var(--primary); 
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
 
-        .line-numbers {
-            width: 40px;
-            background-color: #d1d1d1;
-            color: #333;
-            text-align: center;
-            padding: 10px 0;
-            font-family: monospace;
-            font-size: 14px;
-            line-height: 21px;
-            overflow: hidden;
-            user-select: none;
-            border-right: 1px solid #b3b3b3;
-        }
+textarea[name="description"] {
+    width: 100%;
+    height: 100px;
+    resize: vertical;
+}
 
-        textarea[name="source_code"] {
-            flex-grow: 1;
-            border: none;
-            border-radius: 0;
-            padding: 10px;
-            margin: 0;
-            font-family: monospace;
-            font-size: 14px;
-            line-height: 21px;
-            resize: none;
-            white-space: pre;
-            overflow-wrap: normal;
-            overflow-x: auto;
-        }
+.editor-container {
+    display: flex;
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background-color: var(--surface);
+    height: 280px;
+    transition: border-color 0.2s ease;
+}
 
-        textarea[name="source_code"]:focus { outline: none; }
+.editor-container:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
 
-        .action-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 10px;
-        }
+.line-numbers {
+    width: 44px;
+    background-color: var(--neutral-bg);
+    color: var(--text-muted);
+    text-align: center;
+    padding: 10px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 21px;
+    overflow: hidden;
+    user-select: none;
+    border-right: 1px solid var(--border-color);
+}
 
-        /* จัดกลุ่มปุ่ม Upload และพรีวิวรูปภาพให้อยู่ติดกัน */
-        .left-actions {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
+textarea[name="source_code"] {
+    flex-grow: 1;
+    border: none;
+    border-radius: 0;
+    padding: 10px 14px;
+    margin: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    line-height: 21px;
+    resize: none;
+    white-space: pre;
+    overflow-wrap: normal;
+    overflow-x: auto;
+    color: var(--text-color);
+}
 
-        .upload-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 16px 8px 8px;
-            background-color: #fff;
-            border: 1px solid #b3b3b3;
-            border-radius: 8px;
-            font-size: 13px;
-            color: #111;
-            cursor: pointer;
-            user-select: none;
-        }
+textarea[name="source_code"]:focus { 
+    outline: none; 
+    box-shadow: none;
+}
 
-        .upload-btn:hover { background-color: #f9f9f9; }
+.action-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
 
-        .upload-icon {
-            background-color: #111;
-            color: #fff;
-            width: 22px;
-            height: 22px;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+.left-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
 
-        .upload-icon svg { width: 14px; height: 14px; }
+.upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px 8px 10px;
+    background-color: var(--surface);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--secondary);
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+}
 
-        /* สไตล์สำหรับรูปภาพพรีวิว */
-        #image-preview {
-            display: none; /* ซ่อนไว้ก่อนจนกว่าจะมีการเลือกไฟล์ */
-            max-height: 40px; 
-            border-radius: 6px;
-            border: 1px solid #b3b3b3;
-            object-fit: cover;
-        }
+.upload-btn:hover { 
+    background-color: var(--neutral-bg); 
+    border-color: var(--primary);
+}
 
-        .right-actions {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
+.upload-icon {
+    background-color: var(--primary);
+    color: var(--surface);
+    width: 22px;
+    height: 22px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
-        .visibility-dropdown {
-            padding: 8px 35px 8px 15px;
-            border: 1px solid #b3b3b3;
-            border-radius: 8px;
-            background-color: #fff;
-            font-size: 14px;
-            color: #111;
-            cursor: pointer;
-            outline: none;
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 10px center;
-            background-size: 16px;
-            min-width: 120px;
-        }
+.upload-icon svg { width: 14px; height: 14px; }
 
-        .visibility-dropdown:focus { border-color: #888; }
+#image-preview {
+    display: none;
+    max-height: 40px; 
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    object-fit: cover;
+}
 
-        input[type="submit"] {
-            background-color: #1f1f1f;
-            color: #fff;
-            border: none;
-            padding: 10px 40px;
-            border-radius: 8px;
-            font-size: 15px;
-            cursor: pointer;
-        }
+.right-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
 
-        input[type="submit"]:hover { background-color: #000; }
+.visibility-dropdown {
+    padding: 8px 35px 8px 15px;
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-md);
+    background-color: var(--surface);
+    font-size: 14px;
+    font-family: 'Lato', sans-serif;
+    color: var(--text-color);
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23343A40' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px;
+    min-width: 130px;
+    height: 42px;
+    transition: border-color 0.2s ease;
+}
+
+.visibility-dropdown:focus { 
+    border-color: var(--primary); 
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+input[type="submit"] {
+    background-color: var(--primary);
+    color: var(--surface);
+    border: none;
+    padding: 11px 36px;
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+}
+
+input[type="submit"]:hover { 
+    background-color: var(--primary-hover); 
+    transform: translateY(-1px);
+}

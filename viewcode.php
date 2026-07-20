@@ -52,7 +52,7 @@ if($accessDenied){
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title><?php echo htmlspecialchars($snippet['title'] ?? 'View Snippet'); ?></title>
-    <link rel="stylesheet" href="viewcodecss.css">
+    <link rel="stylesheet" href="style/viewcodecss.css">
 </head>
 <body>
     <a href="<?php echo htmlspecialchars($backUrl); ?>" class="back-btn">Back</a>
