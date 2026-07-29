@@ -5,6 +5,7 @@ require_once "db/connect.php";
 
 $searchQuery = trim($_GET['q'] ?? '');
 $showBookmarks = isset($_GET['bookmarks']) && $_GET['bookmarks'] === '1';
+$onlyOwn = empty($_GET) || (isset($_GET['only_own']) && $_GET['only_own'] === '1');
 $userId = getCurrentUserId();
 
 if(!$userId){
@@ -12,8 +13,22 @@ if(!$userId){
     exit;
 }
 
+if(isset($_GET['delete']) && is_numeric($_GET['delete'])){
+    $control->softDeleteSnippet((int)$_GET['delete'], $userId);
+    header('Location:remove.php');
+    exit;
+}
+
 // Pagination settings
-$itemsPerPage = 10;
+$allowedLimits = [10, 15, 20, 25];
+if(isset($_GET['limit']) && in_array((int)$_GET['limit'], $allowedLimits)){
+    $itemsPerPage = (int)$_GET['limit'];
+    $_SESSION['items_per_page'] = $itemsPerPage;
+}elseif(isset($_SESSION['items_per_page']) && in_array((int)$_SESSION['items_per_page'], $allowedLimits)){
+    $itemsPerPage = (int)$_SESSION['items_per_page'];
+}else{
+    $itemsPerPage = 10;
+}
 $currentPage = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 
 // Get total count
@@ -21,11 +36,11 @@ if($showBookmarks && $userId){
     $totalSnippets = $control->getTotalBookmarkedSnippetCount($userId);
     $result = $control->getBookmarkedSnippetsPaginated($userId, $currentPage, $itemsPerPage);
 }elseif($searchQuery !== ''){
-    $totalSnippets = $control->getTotalUserSnippetCount($userId, $searchQuery);
-    $result = $control->getUserSnippetsPaginated($userId, $currentPage, $itemsPerPage, $searchQuery);
+    $totalSnippets = $control->getTotalUserSnippetCount($userId, $searchQuery, $onlyOwn);
+    $result = $control->getUserSnippetsPaginated($userId, $currentPage, $itemsPerPage, $searchQuery, $onlyOwn);
 }else{
-    $totalSnippets = $control->getTotalUserSnippetCount($userId);
-    $result = $control->getUserSnippetsPaginated($userId, $currentPage, $itemsPerPage);
+    $totalSnippets = $control->getTotalUserSnippetCount($userId, '', $onlyOwn);
+    $result = $control->getUserSnippetsPaginated($userId, $currentPage, $itemsPerPage, '', $onlyOwn);
 }
 
 $snippets = [];
@@ -51,6 +66,22 @@ if($userId){
 }
 $snippetIds = array_column($snippets, 'snippet_id');
 $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
+
+// Build Bookmark toggle URL
+$bookmarkParams = [];
+if(!$showBookmarks){
+    $bookmarkParams['bookmarks'] = '1';
+}
+if($searchQuery !== ''){
+    $bookmarkParams['q'] = $searchQuery;
+}
+if($onlyOwn){
+    $bookmarkParams['only_own'] = '1';
+}
+if($itemsPerPage !== 10 || isset($_GET['limit'])){
+    $bookmarkParams['limit'] = $itemsPerPage;
+}
+$bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_query($bookmarkParams) : '');
 ?>
 
 <!DOCTYPE html>
@@ -93,18 +124,42 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
     <div class="main-wrapper">
         <div class="sidebar">
             <a href="createsnippet.php" class="btn-create">+ Create</a>
+            <a href="remove.php" class="btn-bookmark" style="margin-top:12px; justify-content:center;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                Trash
+            </a>
         </div>
         
         <div class="content">
             <div class="toolbar">
-                <form method="GET" class="search-box" style="width:350px;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                    <input type="text" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>" placeholder="Search your snippets...">
+                <form method="GET" style="display: flex; align-items: center; gap: 15px;">
+                    <div class="search-box" style="width:350px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                        <input type="text" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>" placeholder="Search snippets...">
+                    </div>
+                    
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--secondary); cursor: pointer; user-select: none;">
+                        <input type="checkbox" name="only_own" value="1" <?php echo $onlyOwn ? 'checked' : ''; ?> onchange="this.form.submit()" style="cursor: pointer; width: 18px; height: 18px; accent-color: var(--primary); margin: 0;">
+                        <span>Only My Snippets</span>
+                    </label>
+
+                    <?php if($showBookmarks): ?><input type="hidden" name="bookmarks" value="1"><?php endif; ?>
+                    <?php if($itemsPerPage !== 10 || isset($_GET['limit'])): ?><input type="hidden" name="limit" value="<?php echo $itemsPerPage; ?>"><?php endif; ?>
                 </form>
-                <a href="<?php echo $showBookmarks ? 'snippet_page.php' : 'snippet_page.php?bookmarks=1'; ?>" class="btn-bookmark <?php echo $showBookmarks ? 'active' : ''; ?>">
-                    <svg width="14" height="18" viewBox="0 0 384 512" fill="<?php echo $showBookmarks ? '#fff' : 'currentColor'; ?>"><path d="M0 512V48C0 21.49 21.49 0 48 0h288c26.51 0 48 21.49 48 48v464L192 400 0 512z"/></svg>
-                    Bookmark
-                </a>
+                <div class="toolbar-actions">
+                    <div class="per-page-selector">
+                        <label for="limit-select">Show:</label>
+                        <select id="limit-select" class="select-per-page" onchange="changePerPage(this.value)">
+                            <?php foreach($allowedLimits as $opt): ?>
+                                <option value="<?php echo $opt; ?>" <?php echo $itemsPerPage === $opt ? 'selected' : ''; ?>><?php echo $opt; ?> / page</option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <a href="<?php echo htmlspecialchars($bookmarkUrl); ?>" class="btn-bookmark <?php echo $showBookmarks ? 'active' : ''; ?>">
+                        <svg width="14" height="18" viewBox="0 0 384 512" fill="<?php echo $showBookmarks ? '#fff' : 'currentColor'; ?>"><path d="M0 512V48C0 21.49 21.49 0 48 0h288c26.51 0 48 21.49 48 48v464L192 400 0 512z"/></svg>
+                        Bookmark
+                    </a>
+                </div>
             </div>
             
             <div class="total-snippets">
@@ -161,6 +216,15 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
                                         <?php endforeach; ?>
                                     </div>
                                 <?php endif; ?>
+                                <?php if(!empty($row['created_at'])): ?>
+                                    <div class="snippet-date">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <polyline points="12 6 12 12 16 14"></polyline>
+                                        </svg>
+                                        <span><?php echo date('d/m/Y H:i:s', strtotime($row['created_at'])); ?></span>
+                                    </div>
+                                <?php endif; ?>
                                 <button class="btn-view-code">
                                     <a href="viewcode.php?view=<?php echo urlencode($row['snippet_id']); ?>" >View code</a>
                                 </button>
@@ -213,7 +277,9 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
                 for($i = $startPage; $i <= $endPage; $i++){
                     $pageUrl = 'snippet_page.php?page=' . $i;
                     if($searchQuery !== '') $pageUrl .= '&q=' . urlencode($searchQuery);
+                    if($onlyOwn) $pageUrl .= '&only_own=1';
                     if($showBookmarks) $pageUrl .= '&bookmarks=1';
+                    if($itemsPerPage !== 10 || isset($_GET['limit'])) $pageUrl .= '&limit=' . $itemsPerPage;
                     
                     if($i == $currentPage){
                         echo '<span class="active">' . $i . '</span>';
@@ -226,7 +292,9 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
                 if($totalPages > 10 && $currentPage < $totalPages){
                     $nextPageUrl = 'snippet_page.php?page=' . ($currentPage + 1);
                     if($searchQuery !== '') $nextPageUrl .= '&q=' . urlencode($searchQuery);
+                    if($onlyOwn) $nextPageUrl .= '&only_own=1';
                     if($showBookmarks) $nextPageUrl .= '&bookmarks=1';
+                    if($itemsPerPage !== 10 || isset($_GET['limit'])) $nextPageUrl .= '&limit=' . $itemsPerPage;
                     echo '<a href="' . $nextPageUrl . '" class="next-btn">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="9 18 15 12 9 6"></polyline>
@@ -243,6 +311,13 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
     <div class="toast" id="toast"></div>
 
     <script>
+        function changePerPage(val) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('limit', val);
+            url.searchParams.set('page', '1');
+            window.location.href = url.toString();
+        }
+
         function showToast(message) {
             const toast = document.getElementById('toast');
             toast.textContent = message;

@@ -1,0 +1,106 @@
+<?php
+require_once "layout/session.php";
+require_once "db/connect.php";
+
+$error = "";
+$success = "";
+$username = "";
+$answer = "";
+
+if($_SERVER["REQUEST_METHOD"] == "POST"){
+    $username = trim($_POST["username"] ?? "");
+    $answer = trim($_POST["answer"] ?? "");
+    $new_password = $_POST["new_password"] ?? "";
+    $confirm_new_password = $_POST["confirm_new_password"] ?? "";
+
+    if($username === "" || $answer === "" || $new_password === "" || $confirm_new_password === ""){
+        $error = "กรุณากรอกข้อมูลให้ครบถ้วน";
+    } elseif($new_password !== $confirm_new_password){
+        $error = "รหัสผ่านใหม่กับยืนยันรหัสผ่านไม่ตรงกัน";
+    } else {
+        $result = $user->resetPasswordWithSecurityAnswer($username, $answer, $new_password);
+        if($result["success"]){
+            $success = $result["message"] . " กำลังนำคุณไปยังหน้าเข้าสู่ระบบ...";
+            header("Refresh: 2; url=login.php");
+        } else {
+            $error = $result["message"];
+        }
+    }
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forget Password</title>
+    <link rel="stylesheet" href="style/logincss.css">
+    <style>
+        .success-alert {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            border-radius: var(--radius-md);
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            text-align: center;
+            width: 320px;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="login.php"><button class="back-btn" type="button">Back</button></a>
+
+        <div class="card">
+            <div class="title-wrapper">
+                <img src="logo/Logo_snippetBox.png" alt="Logo" width=32px height=32px>
+                <h1 class="text-center">Reset Password</h1>
+            </div>
+
+            <form method="POST" action="<?php echo htmlentities($_SERVER['PHP_SELF']) ?>">
+                
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" name="username" id="username" value="<?php echo htmlspecialchars($username); ?>" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="question">Security Question</label>
+                    <input type="text" id="question" value="ชื่อตัวละครหรือการ์ตูนตัวโปรดของคุณคืออะไร?" disabled style="background-color: #f1f3f5; cursor: not-allowed; opacity: 0.85;">
+                </div>
+
+                <div class="form-group">
+                    <label for="answer">Security Answer</label>
+                    <input type="text" name="answer" id="answer" value="<?php echo htmlspecialchars($answer); ?>" placeholder="ระบุคำตอบของคุณ" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="new_password">New Password</label>
+                    <input type="password" name="new_password" id="new_password" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm_new_password">Confirm New Password</label>
+                    <input type="password" name="confirm_new_password" id="confirm_new_password" required>
+                </div>
+
+                <?php if($error !== ""): ?>
+                    <div class="error-alert"><?php echo htmlspecialchars($error); ?></div>
+                <?php endif; ?>
+
+                <?php if($success !== ""): ?>
+                    <div class="success-alert"><?php echo htmlspecialchars($success); ?></div>
+                <?php endif; ?>
+
+                <input type="submit" name="submit" value="Reset Password">
+                
+            </form>
+        </div>
+    </div>
+</body>
+</html>

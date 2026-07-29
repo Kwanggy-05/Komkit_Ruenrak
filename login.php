@@ -13,8 +13,7 @@ $hasAnyUser = $user->countUsers();
 if($_SERVER["REQUEST_METHOD"]=="POST"){
     $username = $_POST["username"];
     $password = $_POST["password"];
-    $new_password =md5($password.$username);
-    $result=$user->getUser($username,$new_password);
+    $result=$user->getUser($username,$password);
 
     if($result){
         $_SESSION["username"] = $username;
@@ -68,7 +67,7 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
                 <div class="form-group">
                     <label for="password">Password</label>
                     <input type="password" name="password">
-                    <div class="forgot-password">Forget password?</div>
+                    <a href="forget_password.php" class="forgot-password" style="text-decoration: none; display: block;">Forget password?</a>
                 </div>
                 <?php
             if($hasAnyUser === 0){

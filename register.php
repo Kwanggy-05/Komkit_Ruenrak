@@ -6,6 +6,7 @@ $error = "";
 $firstname = "";
 $lastname = "";
 $username = "";
+$answer = "";
 
 if($_SERVER["REQUEST_METHOD"]=="POST"){
     $firstname = trim($_POST["firstname"] ?? "");
@@ -13,13 +14,15 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
     $username = trim($_POST["username"] ?? "");
     $password = $_POST["password"] ?? "";
     $confirmPassword = $_POST["confirm_password"] ?? "";
+    $question = "ชื่อตัวละครหรือการ์ตูนตัวโปรดของคุณคืออะไร?";
+    $answer = trim($_POST["answer"] ?? "");
 
-    if($firstname === "" || $lastname === "" || $username === "" || $password === ""){
+    if($firstname === "" || $lastname === "" || $username === "" || $password === "" || $answer === ""){
         $error = "กรุณากรอกข้อมูลให้ครบถ้วน";
     } elseif($password !== $confirmPassword) {
         $error = "รหัสผ่านกับยืนยันรหัสผ่านไม่ตรงกัน";
     } else {
-        $result = $user->insertUser($firstname, $lastname, $username, $password);
+        $result = $user->insertUser($firstname, $lastname, $username, $password, $question, $answer);
         if($result){
             header("Location:login.php");
             exit;
@@ -84,6 +87,16 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
                 <div class="form-group-center">
                     <label for="confirm_password">Confirm Password</label>
                     <input type="password" name="confirm_password">
+                </div>
+
+                <div class="form-group-center">
+                    <label for="question">Security Question</label>
+                    <input type="text" id="question" value="ชื่อตัวละครหรือการ์ตูนตัวโปรดของคุณคืออะไร?" disabled style="background-color: #f1f3f5; cursor: not-allowed; opacity: 0.85;">
+                </div>
+
+                <div class="form-group-center">
+                    <label for="answer">Security Answer</label>
+                    <input type="text" name="answer" id="answer" placeholder="คำตอบของคุณ" value="<?php echo htmlspecialchars($answer); ?>" required>
                 </div>
 
                 <div class="submit-group">

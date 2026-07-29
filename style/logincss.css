@@ -186,3 +186,31 @@ input[type="submit"]:hover {
     max-width: 100%;
     box-sizing: border-box;
 }
+
+/* --- Responsive Design --- */
+@media (max-width: 600px) {
+    body {
+        padding: 20px 16px;
+    }
+
+    .container {
+        width: 100%;
+    }
+
+    .card {
+        padding: 28px 20px;
+    }
+
+    h1.text-center {
+        font-size: 24px;
+    }
+
+    .form-group,
+    .error-alert {
+        width: 100%;
+    }
+
+    input[type="submit"] {
+        width: 100%;
+    }
+}

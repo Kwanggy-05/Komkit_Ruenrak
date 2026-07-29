@@ -23,8 +23,8 @@ if(!$userId){
 }
 
 if(isset($_GET['delete']) && is_numeric($_GET['delete'])){
-    $control->deleteSnippet((int)$_GET['delete'], $userId);
-    header('Location:snippet_page.php');
+    $control->softDeleteSnippet((int)$_GET['delete'], $userId);
+    header('Location:remove.php');
     exit;
 }
 
@@ -147,11 +147,11 @@ if(isset($_POST["submit"])){
                             <polyline points="5 12 12 5 19 12"></polyline>
                         </svg>
                     </div>
-                    Upload Image
+                    <span id="upload-btn-text"><?php echo !empty($current_image_path) ? 'Update Image' : 'Upload Image'; ?></span>
                     <input type="file" name="image_path" id="image_input" accept="image/*" style="display: none;">
                 </label>
                 
-                <img id="image-preview" src="" alt="Image Preview">
+                <img id="image-preview" src="<?php echo htmlspecialchars($current_image_path); ?>" alt="Image Preview" style="<?php echo !empty($current_image_path) ? 'display: block;' : ''; ?>">
             </div>
 
             <div class="right-actions">
@@ -205,6 +205,8 @@ if(isset($_POST["submit"])){
         // ----------------------------------------------------
         const imageInput = document.getElementById('image_input');
         const imagePreview = document.getElementById('image-preview');
+        const uploadBtnText = document.getElementById('upload-btn-text');
+        const currentImagePath = <?php echo json_encode($current_image_path); ?>;
 
         imageInput.addEventListener('change', function(event) {
             const file = event.target.files[0]; // ดึงไฟล์แรกที่ผู้ใช้เลือก
@@ -213,10 +215,18 @@ if(isset($_POST["submit"])){
                 // สร้าง URL ชั่วคราวจากไฟล์ที่อยู่ในเครื่อง แล้วยัดใส่ src ของ img
                 imagePreview.src = URL.createObjectURL(file);
                 imagePreview.style.display = 'block'; // เปลี่ยนจากซ่อนเป็นแสดงรูปภาพ
+                uploadBtnText.textContent = 'Update Image';
             } else {
                 // ถ้าผู้ใช้กดยกเลิกการเลือกไฟล์
-                imagePreview.src = '';
-                imagePreview.style.display = 'none'; // ซ่อนรูปภาพกลับไปเหมือนเดิม
+                if (currentImagePath) {
+                    imagePreview.src = currentImagePath;
+                    imagePreview.style.display = 'block';
+                    uploadBtnText.textContent = 'Update Image';
+                } else {
+                    imagePreview.src = '';
+                    imagePreview.style.display = 'none'; // ซ่อนรูปภาพกลับไปเหมือนเดิม
+                    uploadBtnText.textContent = 'Upload Image';
+                }
             }
         });
     </script>

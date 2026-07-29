@@ -25,6 +25,7 @@ class Control{
                 LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
                 LEFT JOIN tag t ON st.tag_id = t.tag_id
                 WHERE (a.visibility IN ('public','protected') OR a.user_id = :user_id)
+                AND (a.deleted = 0 OR a.deleted IS NULL)
                 GROUP BY a.snippet_id
                 ORDER BY a.snippet_id DESC";
             $stmt = $this->db->prepare($sql);
@@ -45,7 +46,7 @@ class Control{
                 INNER JOIN language b ON a.language_id = b.language_id
                 LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
                 LEFT JOIN tag t ON st.tag_id = t.tag_id
-                WHERE a.user_id = :user_id";
+                WHERE a.user_id = :user_id AND (a.deleted = 0 OR a.deleted IS NULL)";
 
             if($keyword !== ''){
                 $sql .= " AND (
@@ -84,6 +85,7 @@ class Control{
                 LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
                 LEFT JOIN tag t ON st.tag_id = t.tag_id
                 WHERE a.visibility IN ('public','protected')
+                AND (a.deleted = 0 OR a.deleted IS NULL)
                 AND (
                     a.title LIKE :keyword
                     OR a.description LIKE :keyword
@@ -120,6 +122,7 @@ class Control{
                 LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
                 LEFT JOIN tag t ON st.tag_id = t.tag_id
                 WHERE a.visibility IN ('public','protected')
+                AND (a.deleted = 0 OR a.deleted IS NULL)
                 AND a.language_id = :language_id
                 GROUP BY a.snippet_id
                 ORDER BY a.snippet_id DESC";
@@ -190,6 +193,7 @@ class Control{
                 LEFT JOIN tag t ON st.tag_id = t.tag_id
                 WHERE s.snippet_id = :snippet_id
                 AND (s.visibility IN ('public','protected') OR s.user_id = :user_id)
+                AND (s.deleted = 0 OR s.deleted IS NULL)
                 GROUP BY s.snippet_id";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
@@ -256,41 +260,90 @@ class Control{
         try{
             $this->db->beginTransaction();
 
-            // Delete snippet row only if it belongs to the user
+            // Verify that snippet exists and belongs to user
+            $checkSql = "SELECT snippet_id FROM snippet WHERE snippet_id = :snippet_id AND user_id = :user_id";
+            $checkStmt = $this->db->prepare($checkSql);
+            $checkStmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $checkStmt->bindParam(":user_id", $user_id, PDO::PARAM_INT);
+            $checkStmt->execute();
+
+            if($checkStmt->rowCount() === 0){
+                $this->db->rollBack();
+                return false;
+            }
+
+            // Remove child records from dependent tables first
+            $sqlTag = "DELETE FROM snippet_tag WHERE snippet_id = :snippet_id";
+            $stmtTag = $this->db->prepare($sqlTag);
+            $stmtTag->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmtTag->execute();
+
+            $sqlBk = "DELETE FROM bookmarks WHERE snippet_id = :snippet_id";
+            $stmtBk = $this->db->prepare($sqlBk);
+            $stmtBk->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmtBk->execute();
+
+            $sqlLike = "DELETE FROM snippet_like WHERE snippet_id = :snippet_id";
+            $stmtLike = $this->db->prepare($sqlLike);
+            $stmtLike->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmtLike->execute();
+
+            // Finally delete snippet row permanently from database
             $sql = "DELETE FROM snippet WHERE snippet_id = :snippet_id AND user_id = :user_id";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
             $stmt->bindParam(":user_id", $user_id, PDO::PARAM_INT);
             $stmt->execute();
 
-            if($stmt->rowCount() === 0){
-                $this->db->rollBack();
-                return false;
-            }
-
-            // Remove any tags attached to the snippet
-            $sql = "DELETE FROM snippet_tag WHERE snippet_id = :snippet_id";
-            $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
-            $stmt->execute();
-
             $this->db->commit();
             return true;
         }catch(PDOException $e){
-            $this->db->rollBack();
+            if($this->db->inTransaction()){
+                $this->db->rollBack();
+            }
+            return false;
+        }
+    }
+
+    function softDeleteSnippet($snippet_id, $user_id){
+        try{
+            $sql = "UPDATE snippet SET deleted = 1 WHERE snippet_id = :snippet_id AND user_id = :user_id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmt->bindParam(":user_id", $user_id, PDO::PARAM_INT);
+            return $stmt->execute();
+        }catch(PDOException $e){
             echo $e->getMessage();
+            return false;
+        }
+    }
+
+    function restoreSnippet($snippet_id, $user_id){
+        try{
+            $sql = "UPDATE snippet SET deleted = 0 WHERE snippet_id = :snippet_id AND user_id = :user_id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmt->bindParam(":user_id", $user_id, PDO::PARAM_INT);
+            return $stmt->execute();
+        }catch(PDOException $e){
             return false;
         }
     }
 
     // ===== Pagination Methods =====
 
-    function getTotalUserSnippetCount($user_id, $keyword = ''){
+    function getTotalUserSnippetCount($user_id, $keyword = '', $only_own = false){
         try{
             $sql = "SELECT COUNT(DISTINCT a.snippet_id) as total FROM snippet a
                 LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
                 LEFT JOIN tag t ON st.tag_id = t.tag_id
-                WHERE a.user_id = :user_id";
+                WHERE (a.deleted = 0 OR a.deleted IS NULL)";
+
+            if ($only_own) {
+                $sql .= " AND a.user_id = :user_id";
+            } else {
+                $sql .= " AND a.visibility IN ('public', 'protected')";
+            }
 
             if($keyword !== ''){
                 $sql .= " AND (
@@ -302,7 +355,9 @@ class Control{
             }
 
             $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+            if ($only_own) {
+                $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+            }
 
             if($keyword !== ''){
                 $searchTerm = '%' . $keyword . '%';
@@ -319,7 +374,9 @@ class Control{
 
     function getTotalBookmarkedSnippetCount($user_id){
         try{
-            $sql = "SELECT COUNT(*) as total FROM bookmarks WHERE user_id = :user_id";
+            $sql = "SELECT COUNT(*) as total FROM bookmarks bk
+                INNER JOIN snippet a ON bk.snippet_id = a.snippet_id
+                WHERE bk.user_id = :user_id AND (a.deleted = 0 OR a.deleted IS NULL)";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
             $stmt->execute();
@@ -330,7 +387,7 @@ class Control{
         }
     }
 
-    function getUserSnippetsPaginated($user_id, $page = 1, $limit = 10, $keyword = ''){
+    function getUserSnippetsPaginated($user_id, $page = 1, $limit = 10, $keyword = '', $only_own = false){
         try{
             $page = max(1, (int)$page);
             $limit = max(1, (int)$limit);
@@ -342,7 +399,13 @@ class Control{
                 INNER JOIN language b ON a.language_id = b.language_id
                 LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
                 LEFT JOIN tag t ON st.tag_id = t.tag_id
-                WHERE a.user_id = :user_id";
+                WHERE (a.deleted = 0 OR a.deleted IS NULL)";
+
+            if ($only_own) {
+                $sql .= " AND a.user_id = :user_id";
+            } else {
+                $sql .= " AND a.visibility IN ('public', 'protected')";
+            }
 
             if($keyword !== ''){
                 $sql .= " AND (
@@ -358,7 +421,9 @@ class Control{
                 LIMIT :offset, :limit";
 
             $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+            if ($only_own) {
+                $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+            }
             $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
             $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
 
@@ -388,7 +453,7 @@ class Control{
                 INNER JOIN language b ON a.language_id = b.language_id
                 LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
                 LEFT JOIN tag t ON st.tag_id = t.tag_id
-                WHERE bk.user_id = :user_id
+                WHERE bk.user_id = :user_id AND (a.deleted = 0 OR a.deleted IS NULL)
                 GROUP BY a.snippet_id
                 ORDER BY bk.bookmarked_at DESC
                 LIMIT :offset, :limit";
@@ -396,6 +461,83 @@ class Control{
             $stmt->bindParam(":user_id", $user_id, PDO::PARAM_INT);
             $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
             $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt;
+        }catch(PDOException $e){
+            echo $e->getMessage();
+            return false;
+        }
+    }
+
+    function getTotalDeletedUserSnippetCount($user_id, $keyword = ''){
+        try{
+            $sql = "SELECT COUNT(DISTINCT a.snippet_id) as total FROM snippet a
+                LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
+                LEFT JOIN tag t ON st.tag_id = t.tag_id
+                WHERE a.user_id = :user_id AND a.deleted = 1";
+
+            if($keyword !== ''){
+                $sql .= " AND (
+                    a.title LIKE :keyword
+                    OR a.description LIKE :keyword
+                    OR a.source_code LIKE :keyword
+                    OR t.tag_name LIKE :keyword
+                )";
+            }
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+
+            if($keyword !== ''){
+                $searchTerm = '%' . $keyword . '%';
+                $stmt->bindParam(':keyword', $searchTerm, PDO::PARAM_STR);
+            }
+
+            $stmt->execute();
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            return (int)$row['total'];
+        }catch(PDOException $e){
+            return 0;
+        }
+    }
+
+    function getDeletedUserSnippetsPaginated($user_id, $page = 1, $limit = 10, $keyword = ''){
+        try{
+            $page = max(1, (int)$page);
+            $limit = max(1, (int)$limit);
+            $offset = ($page - 1) * $limit;
+
+            $sql = "SELECT a.*, b.language_name,
+                GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags
+                FROM snippet a
+                INNER JOIN language b ON a.language_id = b.language_id
+                LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
+                LEFT JOIN tag t ON st.tag_id = t.tag_id
+                WHERE a.user_id = :user_id AND a.deleted = 1";
+
+            if($keyword !== ''){
+                $sql .= " AND (
+                    a.title LIKE :keyword
+                    OR a.description LIKE :keyword
+                    OR a.source_code LIKE :keyword
+                    OR t.tag_name LIKE :keyword
+                )";
+            }
+
+            $sql .= " GROUP BY a.snippet_id
+                ORDER BY a.snippet_id DESC
+                LIMIT :offset, :limit";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+            $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+            $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+
+            if($keyword !== ''){
+                $searchTerm = '%' . $keyword . '%';
+                $stmt->bindParam(':keyword', $searchTerm, PDO::PARAM_STR);
+            }
+
             $stmt->execute();
             return $stmt;
         }catch(PDOException $e){

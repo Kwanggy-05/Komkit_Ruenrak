@@ -162,7 +162,7 @@ textarea[name="description"] {
     color: var(--text-muted);
     text-align: center;
     padding: 10px 0;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Lato', sans-serif;
     font-size: 13px;
     line-height: 21px;
     overflow: hidden;
@@ -176,7 +176,7 @@ textarea[name="source_code"] {
     border-radius: 0;
     padding: 10px 14px;
     margin: 0;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Lato', sans-serif;
     font-size: 14px;
     line-height: 21px;
     resize: none;
@@ -293,4 +293,64 @@ input[type="submit"] {
 input[type="submit"]:hover { 
     background-color: var(--primary-hover); 
     transform: translateY(-1px);
+}
+
+/* --- Responsive Design --- */
+@media (max-width: 768px) {
+    body {
+        padding: 16px 12px;
+    }
+
+    .form-container {
+        padding: 20px 16px;
+        gap: 18px;
+    }
+
+    .top-row {
+        flex-direction: column;
+        gap: 16px;
+        align-items: stretch;
+    }
+
+    .top-row .form-group {
+        width: 100%;
+    }
+
+    input[name="title"],
+    input[name="tags"] {
+        width: 100%;
+    }
+
+    .language-dropdown {
+        width: 100%;
+    }
+
+    .action-row {
+        flex-direction: column;
+        gap: 16px;
+        align-items: stretch;
+    }
+
+    .left-actions,
+    .right-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .right-actions input[type="submit"] {
+        flex: 1;
+    }
+}
+
+@media (max-width: 480px) {
+    .left-actions,
+    .right-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .visibility-dropdown {
+        width: 100%;
+    }
 }
