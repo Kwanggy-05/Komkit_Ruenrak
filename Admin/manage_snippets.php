@@ -80,6 +80,9 @@ if ($snippetResult) {
             </nav>
         </aside>
 
+        <!-- Sidebar Overlay for Mobile -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
         <!-- Main Content Area -->
         <main class="main-content">
             <!-- Top Navigation Bar -->
@@ -283,13 +286,28 @@ if ($snippetResult) {
             }
         });
 
-        // Mobile Sidebar Toggle
+        // Sidebar Toggle functionality
         const menuToggle = document.getElementById('menuToggle');
         const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
         
         if (menuToggle && sidebar) {
             menuToggle.addEventListener('click', () => {
-                sidebar.classList.toggle('active');
+                if (window.innerWidth > 768) {
+                    sidebar.classList.toggle('collapsed');
+                } else {
+                    sidebar.classList.toggle('active');
+                    if (sidebarOverlay) {
+                        sidebarOverlay.classList.toggle('active');
+                    }
+                }
+            });
+        }
+
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', () => {
+                sidebar.classList.remove('active');
+                sidebarOverlay.classList.remove('active');
             });
         }
     </script>
