@@ -754,6 +754,132 @@ class Control{
             return [];
         }
     }
+
+    function addLanguage($language_name){
+        try{
+            $sql = "INSERT INTO language(language_name) VALUES (:language_name)";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(":language_name", $language_name, PDO::PARAM_STR);
+            return $stmt->execute();
+        }catch(PDOException $e){
+            return false;
+        }
+    }
+
+    function updateLanguage($language_id, $language_name){
+        try{
+            $sql = "UPDATE language SET language_name = :language_name WHERE language_id = :language_id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(":language_name", $language_name, PDO::PARAM_STR);
+            $stmt->bindParam(":language_id", $language_id, PDO::PARAM_INT);
+            return $stmt->execute();
+        }catch(PDOException $e){
+            return false;
+        }
+    }
+
+    function deleteLanguage($language_id){
+        try{
+            $sql = "DELETE FROM language WHERE language_id = :language_id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(":language_id", $language_id, PDO::PARAM_INT);
+            return $stmt->execute();
+        }catch(PDOException $e){
+            return false;
+        }
+    }
+
+    function isLanguageInUse($language_id){
+        try{
+            $sql = "SELECT COUNT(*) as count FROM snippet WHERE language_id = :language_id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(":language_id", $language_id, PDO::PARAM_INT);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return ((int)$result['count']) > 0;
+        }catch(PDOException $e){
+            return false;
+        }
+    }
+
+    function getAllSnippetsAdmin($keyword = ''){
+        try{
+            $sql = "SELECT s.*, l.language_name, u.username, u.firstname, u.lastname
+                    FROM snippet s
+                    INNER JOIN language l ON s.language_id = l.language_id
+                    INNER JOIN user u ON s.user_id = u.user_id";
+            
+            if($keyword !== ''){
+                $sql .= " WHERE s.title LIKE :keyword OR u.username LIKE :keyword OR u.firstname LIKE :keyword OR u.lastname LIKE :keyword";
+            }
+            
+            $sql .= " ORDER BY s.created_at DESC";
+            
+            $stmt = $this->db->prepare($sql);
+            if($keyword !== ''){
+                $search = "%$keyword%";
+                $stmt->bindParam(":keyword", $search, PDO::PARAM_STR);
+            }
+            $stmt->execute();
+            return $stmt;
+        }catch(PDOException $e){
+            return false;
+        }
+    }
+
+    function restoreSnippetAdmin($snippet_id){
+        try{
+            $sql = "UPDATE snippet SET deleted = 0 WHERE snippet_id = :snippet_id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            return $stmt->execute();
+        }catch(PDOException $e){
+            return false;
+        }
+    }
+
+    function softDeleteSnippetAdmin($snippet_id){
+        try{
+            $sql = "UPDATE snippet SET deleted = 1 WHERE snippet_id = :snippet_id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            return $stmt->execute();
+        }catch(PDOException $e){
+            return false;
+        }
+    }
+
+    function deleteSnippetAdmin($snippet_id){
+        try{
+            $this->db->beginTransaction();
+            
+            $sqlTag = "DELETE FROM snippet_tag WHERE snippet_id = :snippet_id";
+            $stmtTag = $this->db->prepare($sqlTag);
+            $stmtTag->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmtTag->execute();
+            
+            $sqlBk = "DELETE FROM bookmarks WHERE snippet_id = :snippet_id";
+            $stmtBk = $this->db->prepare($sqlBk);
+            $stmtBk->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmtBk->execute();
+            
+            $sqlLike = "DELETE FROM snippet_like WHERE snippet_id = :snippet_id";
+            $stmtLike = $this->db->prepare($sqlLike);
+            $stmtLike->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmtLike->execute();
+            
+            $sql = "DELETE FROM snippet WHERE snippet_id = :snippet_id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            $this->db->commit();
+            return true;
+        }catch(PDOException $e){
+            $this->db->rollBack();
+            return false;
+        }
+    }
 }
 
 

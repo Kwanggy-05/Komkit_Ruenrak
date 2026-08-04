@@ -13,6 +13,19 @@ if(!$userId){
     exit;
 }
 
+$isAdmin = false;
+try {
+    $roleStmt = $pdo->prepare("SELECT role FROM user WHERE user_id = :user_id");
+    $roleStmt->bindParam(":user_id", $userId, PDO::PARAM_INT);
+    $roleStmt->execute();
+    $roleRow = $roleStmt->fetch(PDO::FETCH_ASSOC);
+    if ($roleRow && $roleRow['role'] === 'admin') {
+        $isAdmin = true;
+    }
+} catch (PDOException) {
+    // Fail silently
+}
+
 if(isset($_GET['delete']) && is_numeric($_GET['delete'])){
     $control->softDeleteSnippet((int)$_GET['delete'], $userId);
     header('Location:remove.php');
@@ -117,6 +130,9 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                 </div>
                 <span><?php echo htmlspecialchars($_SESSION['username'] ?? 'Komkit'); ?></span>
             </div>
+            <?php if ($isAdmin): ?>
+                <a href="Admin/manage_languages.php" class="btn-outline" style="background-color: var(--primary, #007BFF); color: white; border-color: var(--primary, #007BFF);">Admin Panel</a>
+            <?php endif; ?>
             <a href="login.php" class="btn-outline" onclick="return confirm('ต้องการออกจากระบบหรือไม่?');">Log out</a>
         </div>
     </header>
