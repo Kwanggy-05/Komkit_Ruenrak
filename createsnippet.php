@@ -91,7 +91,7 @@ if(isset($_POST["submit"])){
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Snippet</title>
-    <link rel="stylesheet" href="style/createsnippetcss.css">
+    <link rel="stylesheet" href="style/createsnippetcss.css?v=<?php echo time(); ?>">
 </head>
 <body>
     
@@ -171,14 +171,39 @@ if(isset($_POST["submit"])){
         const textarea = document.getElementById('source_code');
         const lineNumbers = document.getElementById('line-numbers');
 
+        // ฟังก์ชันปรับความสูงของช่องใส่โค้ดโดยอัตโนมัติ
+        function autoResizeTextarea() {
+            // ป้องกันการค้างของตำแหน่ง Scroll
+            textarea.scrollTop = 0;
+            lineNumbers.scrollTop = 0;
+
+            textarea.style.height = 'auto';
+            const scrollHeight = textarea.scrollHeight;
+            textarea.style.height = scrollHeight + 'px';
+
+            // กำหนดความสูงให้กล่องครอบตัวนอก (Editor Container) ให้ยาวตามโค้ด
+            // โดยมีความสูงขั้นต่ำ 280px เพื่อป้องกันปัญหา CSS Cache
+            const finalHeight = Math.max(280, scrollHeight);
+            const editorContainer = document.querySelector('.editor-container');
+            if (editorContainer) {
+                editorContainer.style.height = finalHeight + 'px';
+            }
+        }
+
         // ฟังก์ชันอัปเดตเลขบรรทัด
         function updateLineNumbers() {
             const lines = textarea.value.split('\n').length;
             lineNumbers.innerHTML = Array(lines).fill(0).map((_, i) => i + 1).join('<br>');
         }
 
+        // ฟังก์ชันอัปเดตทั้งเลขบรรทัดและความสูงของช่องใส่โค้ด
+        function updateEditor() {
+            updateLineNumbers();
+            autoResizeTextarea();
+        }
+
         // ตรวจจับการพิมพ์หรือการวางโค้ด
-        textarea.addEventListener('input', updateLineNumbers);
+        textarea.addEventListener('input', updateEditor);
 
         // ซิงค์การเลื่อน Scroll Bar ระหว่างโค้ดกับเลขบรรทัด
         textarea.addEventListener('scroll', () => {
@@ -193,12 +218,12 @@ if(isset($_POST["submit"])){
                 var end = this.selectionEnd;
                 this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
                 this.selectionStart = this.selectionEnd = start + 4;
-                updateLineNumbers();
+                updateEditor();
             }
         });
 
-        // กำหนดค่าเริ่มต้นเลขบรรทัด
-        updateLineNumbers();
+        // กำหนดค่าเริ่มต้นสำหรับเลขบรรทัดและความสูง
+        updateEditor();
 
         // ----------------------------------------------------
         // สคริปต์สำหรับแสดงภาพตัวอย่าง (Image Preview)

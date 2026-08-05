@@ -146,8 +146,8 @@ textarea[name="description"] {
     border: 1px solid var(--input-border);
     border-radius: var(--radius-md);
     overflow: hidden;
-    background-color: var(--surface);
-    height: 280px;
+    min-height: 280px;
+    height: auto;
     transition: border-color 0.2s ease;
 }
 
@@ -183,6 +183,7 @@ textarea[name="source_code"] {
     white-space: pre;
     overflow-wrap: normal;
     overflow-x: auto;
+    overflow-y: hidden;
     color: var(--text-color);
 }
 
