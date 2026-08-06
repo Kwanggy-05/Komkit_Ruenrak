@@ -9,25 +9,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['action'])) {
         $snippetId = (int)($_POST['snippet_id'] ?? 0);
         if ($snippetId <= 0) {
-            $errorMsg = "ข้อมูลไม่ถูกต้อง";
+            $errorMsg = "nvalid data.";
         } else {
             if ($_POST['action'] === 'soft_delete') {
                 if ($control->softDeleteSnippetAdmin($snippetId)) {
-                    $successMsg = "ย้าย Snippet ไปยังถังขยะเรียบร้อยแล้ว";
+                    $successMsg = "Snippet moved to trash.";
                 } else {
-                    $errorMsg = "ไม่สามารถย้าย Snippet ไปยังถังขยะได้";
+                    $errorMsg = "Failed to move snippet to trash.";
                 }
             } elseif ($_POST['action'] === 'restore') {
                 if ($control->restoreSnippetAdmin($snippetId)) {
-                    $successMsg = "คืนค่า Snippet เรียบร้อยแล้ว";
+                    $successMsg = "Snippet restored successfully.";
                 } else {
-                    $errorMsg = "ไม่สามารถคืนค่า Snippet ได้";
+                    $errorMsg = "Snippet permanently deleted.";
                 }
             } elseif ($_POST['action'] === 'hard_delete') {
                 if ($control->deleteSnippetAdmin($snippetId)) {
-                    $successMsg = "ลบ Snippet ถาวรเรียบร้อยแล้ว";
+                    $successMsg = "Snippet permanently deleted.";
                 } else {
-                    $errorMsg = "ไม่สามารถลบ Snippet ถาวรได้";
+                    $errorMsg = "Unable to permanently delete the snippet.";
                 }
             }
         }
@@ -173,7 +173,7 @@ if ($snippetResult) {
                             <?php if (empty($snippets)): ?>
                                 <tr>
                                     <td colspan="7" style="text-align: center; padding: 32px; color: var(--text-muted);">
-                                        ไม่พบข้อมูล Snippet
+                                        No snippet data found.
                                     </td>
                                 </tr>
                             <?php else: ?>
@@ -221,7 +221,7 @@ if ($snippetResult) {
                                                         <button type="submit" class="btn-action btn-restore">Restore</button>
                                                     </form>
                                                     <!-- Permanent Hard Delete Action -->
-                                                    <form method="POST" style="display:inline;" onsubmit="return confirm('คำเตือน: คุณต้องการลบ Snippet นี้ถาวรใช่หรือไม่? การกระทำนี้ไม่สามารถเรียกคืนได้');">
+                                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Warning: Are you sure you want to permanently delete this snippet? This action cannot be undone.');">
                                                         <input type="hidden" name="action" value="hard_delete">
                                                         <input type="hidden" name="snippet_id" value="<?php echo $snip['snippet_id']; ?>">
                                                         <button type="submit" class="btn-action btn-delete">Force Delete</button>

@@ -73,7 +73,7 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
             if($hasAnyUser === 0){
                 echo '<div class="error-alert">โปรดสมัครสมาชิก</div>';
             } elseif($_SERVER["REQUEST_METHOD"]=="POST" && !$result){
-                echo '<div class="error-alert">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</div>';
+                echo '<div class="error-alert">Incorrect username or password</div>';
             }
             ?>
 

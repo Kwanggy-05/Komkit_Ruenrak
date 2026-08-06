@@ -10,39 +10,39 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if ($_POST['action'] === 'add') {
             $langName = trim($_POST['language_name'] ?? '');
             if ($langName === '') {
-                $errorMsg = "กรุณากรอกชื่อภาษา";
+                $errorMsg = "Please enter language name.";
             } else {
                 if ($control->addLanguage($langName)) {
-                    $successMsg = "เพิ่มภาษา \"$langName\" สำเร็จแล้ว";
+                    $successMsg = "Add language \"$langName\" Done.";
                 } else {
-                    $errorMsg = "ไม่สามารถเพิ่มภาษาได้ (อาจมีภาษานี้อยู่แล้ว)";
+                    $errorMsg = "Failed to add language (it may already exist).";
                 }
             }
         } elseif ($_POST['action'] === 'edit') {
             $langId = (int)($_POST['language_id'] ?? 0);
             $langName = trim($_POST['language_name'] ?? '');
             if ($langId <= 0 || $langName === '') {
-                $errorMsg = "ข้อมูลไม่ถูกต้อง";
+                $errorMsg = "Invalid data.";
             } else {
                 if ($control->updateLanguage($langId, $langName)) {
-                    $successMsg = "แก้ไขภาษาสำเร็จแล้ว";
+                    $successMsg = "Language updated successfully.";
                 } else {
-                    $errorMsg = "ไม่สามารถแก้ไขภาษาได้";
+                    $errorMsg = "Failed to update language.";
                 }
             }
         } elseif ($_POST['action'] === 'delete') {
             $langId = (int)($_POST['language_id'] ?? 0);
             if ($langId <= 0) {
-                $errorMsg = "ข้อมูลไม่ถูกต้อง";
+                $errorMsg = "Invalid data.";
             } else {
                 // Check if language is in use
                 if ($control->isLanguageInUse($langId)) {
-                    $errorMsg = "ไม่สามารถลบภาษานี้ได้ เนื่องจากมี Snippet ใช้งานภาษานี้อยู่";
+                    $errorMsg = "Cannot delete this language because it is currently used by existing snippets.";
                 } else {
                     if ($control->deleteLanguage($langId)) {
-                        $successMsg = "ลบภาษาเรียบร้อยแล้ว";
+                        $successMsg = "Language deleted successfully.";
                     } else {
-                        $errorMsg = "ไม่สามารถลบภาษาได้";
+                        $errorMsg = "Failed to delete language.";
                     }
                 }
             }
@@ -202,7 +202,7 @@ if ($languageResult) {
                             <?php if (empty($languages)): ?>
                                 <tr>
                                     <td colspan="3" style="text-align: center; padding: 32px; color: var(--text-muted);">
-                                        ไม่พบข้อมูลภาษาที่ค้นหา
+                                        No language data found.
                                     </td>
                                 </tr>
                             <?php else: ?>
@@ -216,7 +216,7 @@ if ($languageResult) {
                                                         onclick="openEditModal(<?php echo $lang['language_id']; ?>, '<?php echo htmlspecialchars($lang['language_name'], ENT_QUOTES); ?>')">
                                                     Edit
                                                 </button>
-                                                <form method="POST" style="display:inline;" onsubmit="return confirm('ยืนยันที่จะลบภาษานี้หรือไม่?');">
+                                                <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this language?');">
                                                     <input type="hidden" name="action" value="delete">
                                                     <input type="hidden" name="language_id" value="<?php echo $lang['language_id']; ?>">
                                                     <button type="submit" class="btn-action btn-delete">Delete</button>

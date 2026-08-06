@@ -27,10 +27,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             header("Location: manage_languages.php");
             exit;
         } else {
-            $errorAlert = "บัญชีนี้ไม่มีสิทธิ์ผู้ดูแลระบบ (Admin Only)";
+            $errorAlert = "This account does not have administrator privileges. (Admin Only)";
         }
     } else {
-        $errorAlert = "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
+        $errorAlert = "Incorrect username or password";
     }
 }
 ?>
@@ -71,9 +71,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <h1 class="text-center" style="margin-bottom: 0;">
                     Admin Login
                 </h1>
-                <div class="text-center">
+                <!-- <div class="text-center">
                     <span class="admin-tag">Administrator Only</span>
-                </div>
+                </div> -->
             </div>
             
             <form method="POST" action="login.php">

@@ -75,7 +75,7 @@ if($totalPages === 0) $totalPages = 1;
                 </div>
                 <span><?php echo htmlspecialchars($_SESSION['username'] ?? 'User'); ?></span>
             </div>
-            <a href="login.php" class="btn-outline" onclick="return confirm('ต้องการออกจากระบบหรือไม่?');">Log out</a>
+            <a href="login.php" class="btn-outline" onclick="return confirm('Do you want to log out?');">Log out</a>
         </div>
     </header>
 
@@ -110,7 +110,7 @@ if($totalPages === 0) $totalPages = 1;
             <div class="snippet-grid">
                 <?php if($totalSnippets === 0): ?>
                     <div class="empty-state">
-                        ไม่มี Snippet ที่ถูกลบอยู่ในถังขยะ
+                        No deleted snippets in trash.
                     </div>
                 <?php else: ?>
                     <?php foreach($snippets as $row): ?>

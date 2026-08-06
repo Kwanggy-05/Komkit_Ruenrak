@@ -2,6 +2,7 @@
 require_once "db/connect.php";
 require_once "layout/session.php";
 $result = $control->getLanguage();
+$all_tags = $control->getAllTags();
 
 $snippet_id = null;
 $title = '';
@@ -134,7 +135,8 @@ if(isset($_POST["submit"])){
 
         <div class="form-group">
             <label for="tags">Tags</label>
-            <input type="text" name="tags" id="tags" placeholder="e.g. JavaScript, ajax, DOM" value="<?php echo htmlspecialchars($tags); ?>">
+            <input type="text" name="tags" id="tags" placeholder="e.g. JavaScript, ajax, DOM" autocomplete="off" value="<?php echo htmlspecialchars($tags); ?>">
+            <div class="tags-selector" id="tags-selector"></div>
         </div>
 
         <div class="action-row">
@@ -254,6 +256,129 @@ if(isset($_POST["submit"])){
                 }
             }
         });
+
+        // ----------------------------------------------------
+        // สคริปต์สำหรับแนะนำ Tags จากฐานข้อมูล
+        // ----------------------------------------------------
+        const tagsInput = document.getElementById('tags');
+        const tagsSelector = document.getElementById('tags-selector');
+        const allTags = <?php echo json_encode($all_tags); ?> || [];
+
+        // ฟังก์ชันสร้างและเรนเดอร์ Tag Badges
+        function renderTagBadges() {
+            tagsSelector.innerHTML = '';
+            allTags.forEach(tag => {
+                const badge = document.createElement('span');
+                badge.className = 'tag-badge';
+                badge.textContent = tag.tag_name;
+                badge.dataset.tagName = tag.tag_name;
+                
+                badge.addEventListener('mousedown', (e) => {
+                    // ใช้ mousedown เพื่อชิงโฟกัสไม่ให้เกิด blur ก่อนคลิกทำงาน
+                    e.preventDefault();
+                    toggleTagSelection(tag.tag_name);
+                });
+                
+                tagsSelector.appendChild(badge);
+            });
+            updateBadgeSelectionState();
+        }
+
+        // ดึง Tags ปัจจุบันจากช่อง Input ออกมาเป็น Array
+        function getSelectedTagsFromInput() {
+            return tagsInput.value
+                .split(',')
+                .map(t => t.trim())
+                .filter(t => t.length > 0);
+        }
+
+        // เลือกหรือสลับการเลือก Tag
+        function toggleTagSelection(tagName) {
+            let currentTags = getSelectedTagsFromInput();
+            const index = currentTags.findIndex(t => t.toLowerCase() === tagName.toLowerCase());
+            
+            if (index > -1) {
+                // ถ้ามีอยู่อยู่แล้ว ให้ลบออก
+                currentTags.splice(index, 1);
+                tagsInput.value = currentTags.join(', ');
+                if (tagsInput.value.length > 0 && !tagsInput.value.endsWith(', ')) {
+                    tagsInput.value += ', ';
+                }
+            } else {
+                // ถ้ายังไม่มี ให้ใส่เพิ่ม
+                // เช็คคำค้นหาก่อนคอมม่าสุดท้าย ถ้าผู้ใช้กำลังพิมพ์อยู่ให้แทนที่คำนั้นเลย
+                const parts = tagsInput.value.split(',');
+                const lastPart = parts[parts.length - 1].trim();
+                if (lastPart.length > 0 && tagName.toLowerCase().startsWith(lastPart.toLowerCase())) {
+                    parts[parts.length - 1] = ' ' + tagName;
+                    tagsInput.value = parts.join(',').trim();
+                } else {
+                    currentTags.push(tagName);
+                    tagsInput.value = currentTags.join(', ');
+                }
+                
+                // ใส่คอมม่าและเว้นวรรคเตรียมไว้สำหรับแท็กถัดไป
+                if (!tagsInput.value.endsWith(', ') && tagsInput.value.length > 0) {
+                    tagsInput.value += ', ';
+                }
+            }
+            
+            updateBadgeSelectionState();
+            filterTagBadges();
+            tagsInput.focus();
+        }
+
+        // อัปเดตสถานะ Active/Selected ของ Badges
+        function updateBadgeSelectionState() {
+            const currentTags = getSelectedTagsFromInput().map(t => t.toLowerCase());
+            const badges = tagsSelector.querySelectorAll('.tag-badge');
+            badges.forEach(badge => {
+                const name = badge.dataset.tagName.toLowerCase();
+                if (currentTags.includes(name)) {
+                    badge.classList.add('selected');
+                } else {
+                    badge.classList.remove('selected');
+                }
+            });
+        }
+
+        // กรองการแสดงผลของ Tag ตามคำที่พิมพ์
+        function filterTagBadges() {
+            const parts = tagsInput.value.split(',');
+            const currentQuery = parts[parts.length - 1].trim().toLowerCase();
+            const badges = tagsSelector.querySelectorAll('.tag-badge');
+            
+            badges.forEach(badge => {
+                const name = badge.dataset.tagName.toLowerCase();
+                if (currentQuery.length === 0 || name.includes(currentQuery)) {
+                    badge.style.display = 'inline-flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            });
+        }
+
+        // จัดการ Event Listeners
+        tagsInput.addEventListener('focus', () => {
+            tagsSelector.classList.add('active');
+            updateBadgeSelectionState();
+            filterTagBadges();
+        });
+
+        tagsInput.addEventListener('input', () => {
+            updateBadgeSelectionState();
+            filterTagBadges();
+        });
+
+        // ซ่อนแท็กเมื่อคลิกข้างนอก
+        document.addEventListener('click', (e) => {
+            if (!tagsInput.contains(e.target) && !tagsSelector.contains(e.target)) {
+                tagsSelector.classList.remove('active');
+            }
+        });
+
+        // เริ่มต้นการสร้าง Badges
+        renderTagBadges();
     </script>
 </body>
 </html>

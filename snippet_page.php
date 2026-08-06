@@ -133,7 +133,7 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
             <?php if ($isAdmin): ?>
                 <a href="Admin/manage_languages.php" class="btn-outline" style="background-color: var(--primary, #007BFF); color: white; border-color: var(--primary, #007BFF);">Admin Panel</a>
             <?php endif; ?>
-            <a href="login.php" class="btn-outline" onclick="return confirm('ต้องการออกจากระบบหรือไม่?');">Log out</a>
+            <a href="login.php" class="btn-outline" onclick="return confirm('Do you want to log out?');">Log out</a>
         </div>
     </header>
 
@@ -190,9 +190,9 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                 <?php if($totalSnippets === 0): ?>
                     <div class="empty-state">
                         <?php if($showBookmarks): ?>
-                            ยังไม่มี Snippet ที่ถูก Bookmark ไว้
+                            No bookmarked snippets yet.
                         <?php else: ?>
-                            ยังไม่มี Snippet ในระบบ
+                            No snippets in the system yet.
                         <?php endif; ?>
                     </div>
                 <?php else: ?>
@@ -272,7 +272,7 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                                 <a href="createsnippet.php?edit=<?php echo urlencode($row['snippet_id']); ?>" class="icon-action" title="Edit">
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                 </a>
-                                <a href="createsnippet.php?delete=<?php echo urlencode($row['snippet_id']); ?>" class="icon-action" title="Delete" onclick="return confirm('คุณแน่ใจว่าต้องการลบรายการนี้หรือไม่?');">
+                                <a href="createsnippet.php?delete=<?php echo urlencode($row['snippet_id']); ?>" class="icon-action" title="Delete" onclick="return confirm('Are you sure you want to delete this item?');">
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                 </a>
                                 <?php endif; ?>
@@ -373,7 +373,7 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                         showToast('⚠ ' + (data.message || 'เกิดข้อผิดพลาด'));
                     }
                 } catch(err) {
-                    showToast('⚠ เกิดข้อผิดพลาดในการเชื่อมต่อ');
+                    showToast('⚠ Something went wrong. Please try again later.');
                 }
             });
         });
@@ -410,10 +410,10 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                             setTimeout(() => window.location.reload(), 500);
                         }
                     } else if(data.status === 'error') {
-                        showToast('⚠ ' + (data.message || 'เกิดข้อผิดพลาด'));
+                        showToast('⚠ ' + (data.message || 'Something went wrong'));
                     }
                 } catch(err) {
-                    showToast('⚠ เกิดข้อผิดพลาดในการเชื่อมต่อ');
+                    showToast('⚠ Something went wrong. Please try again later.');
                 }
             });
         });

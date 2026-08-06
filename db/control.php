@@ -593,6 +593,18 @@ class Control{
     
     }
 
+    function getAllTags(){
+        try{
+            $sql = "SELECT * FROM tag ORDER BY tag_name ASC";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }catch(PDOException $e){
+            echo $e->getMessage();
+            return [];
+        }
+    }
+
     // ===== Like Methods =====
 
     function toggleLike($user_id, $snippet_id){
