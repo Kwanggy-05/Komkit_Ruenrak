@@ -153,7 +153,7 @@ if ($languageResult) {
                             <span class="user-role">Admin</span>
                         </div>
                     </div>
-                    <a href="../login.php" class="btn-logout" onclick="return confirm('ต้องการออกจากระบบหรือไม่?');">
+                    <a href="../login.php" class="btn-logout" onclick="return confirm('Are you sure you want to log out?');">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                             <polyline points="16 17 21 12 16 7"></polyline>
@@ -262,7 +262,7 @@ if ($languageResult) {
                 <div class="modal-body">
                     <div class="form-group">
                         <label class="form-label" for="add_language_name">Language Name</label>
-                        <input type="text" id="add_language_name" name="language_name" class="form-control" placeholder="เช่น Python, Ruby" required autocomplete="off">
+                        <input type="text" id="add_language_name" name="language_name" class="form-control" placeholder="e.g. Python, Ruby" required autocomplete="off">
                     </div>
                 </div>
                 <footer class="modal-footer">

@@ -60,7 +60,7 @@ if($accessDenied){
     <a href="<?php echo htmlspecialchars($backUrl); ?>" class="back-btn">Back</a>
 
     <?php if(!$snippet): ?>
-        <div class="empty" style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 16px;">ไม่พบ snippet นี้</div>
+        <div class="empty" style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 16px;">Snippet not found</div>
     <?php else: ?>
         <div class="form-container">
             <!-- Top Actions Row -->
@@ -161,48 +161,46 @@ if($accessDenied){
     <div class="modal-overlay" id="reportModal">
         <div class="modal-card">
             <header class="modal-header">
-                <span class="modal-title">รายงานโค้ดไม่เหมาะสม / Report Snippet</span>
+                <span class="modal-title">Report Snippet</span>
                 <button class="modal-close" id="closeReportModalBtn">&times;</button>
             </header>
             <form id="reportForm">
                 <div class="modal-body">
                     <p style="margin-bottom: 16px; color: var(--text-muted); font-size: 0.9rem; line-height: 1.5;">
-                        กรุณาเลือกเหตุผลที่ต้องการรายงานโค้ดนี้ เพื่อให้ผู้ดูแลระบบตรวจสอบความเหมาะสม
+                        Please select a reason for reporting this snippet for admin review.
                     </p>
                     
                     <?php if($snippet): ?>
                         <input type="hidden" name="snippet_id" value="<?php echo (int)$snippet['snippet_id']; ?>">
                     <?php endif; ?>
                     
-                    <div class="report-options" style="display: flex; flex-direction: column; gap: 10px;">
                         <label class="report-option-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem;">
                             <input type="radio" name="reason" value="spam" required>
-                            <span>Spam / ขยะ / หลอกลวง</span>
+                            <span>Spam / Misleading</span>
                         </label>
                         <label class="report-option-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem;">
                             <input type="radio" name="reason" value="inappropriate">
-                            <span>Inappropriate Content / เนื้อหาลามกอนาจาร / รุนแรง / คุกคาม</span>
+                            <span>Inappropriate Content / Violent / Harassment</span>
                         </label>
                         <label class="report-option-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem;">
                             <input type="radio" name="reason" value="malicious_code">
-                            <span>Malicious Code / โค้ดอันตราย / มัลแวร์</span>
+                            <span>Malicious Code / Malware</span>
                         </label>
                         <label class="report-option-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem;">
                             <input type="radio" name="reason" value="other">
-                            <span>Other / อื่นๆ</span>
+                            <span>Other</span>
                         </label>
-                    </div>
 
                     <div class="report-desc-group" id="reportDescGroup" style="margin-top: 16px;">
                         <label for="reportDetails" style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; color: var(--secondary);">
-                            รายละเอียดเพิ่มเติม / Details <span id="reportReqAsterisk" style="color: #dc3545; display: none;">*</span>
+                            Details <span id="reportReqAsterisk" style="color: #dc3545; display: none;">*</span>
                         </label>
-                        <textarea id="reportDetails" name="details" placeholder="รายละเอียดเพิ่มเติม (ไม่บังคับ)..." rows="3" style="width:100%; padding: 10px; border: 1px solid var(--input-border); border-radius: var(--radius-sm); font-size: 0.9rem; resize: vertical; outline: none; box-sizing: border-box;"></textarea>
+                        <textarea id="reportDetails" name="details" placeholder="Additional details (optional)..." rows="3" style="width:100%; padding: 10px; border: 1px solid var(--input-border); border-radius: var(--radius-sm); font-size: 0.9rem; resize: vertical; outline: none; box-sizing: border-box;"></textarea>
                     </div>
                 </div>
                 <footer class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 15px; border-top: 1px solid var(--border-color); margin-top: 15px;">
-                    <button type="button" class="btn" id="cancelReportBtn" style="border: 1px solid var(--border-color); background: transparent; padding: 8px 16px;">ยกเลิก / Cancel</button>
-                    <button type="submit" class="btn copy" style="background-color: #dc3545; border-color: #dc3545; color: #fff; padding: 8px 16px; font-weight: 600;">ส่งรายงาน / Submit</button>
+                    <button type="button" class="btn" id="cancelReportBtn" style="border: 1px solid var(--border-color); background: transparent; padding: 8px 16px;">Cancel</button>
+                    <button type="submit" class="btn copy" style="background-color: #dc3545; border-color: #dc3545; color: #fff; padding: 8px 16px; font-weight: 600;">Submit</button>
                 </footer>
             </form>
         </div>
@@ -310,11 +308,10 @@ if($accessDenied){
                     svg.setAttribute('stroke', '#111');
                     countEl.textContent = data.count;
                     showToast('👎 Like removed');
-                } else if(data.status === 'error') {
-                    showToast('⚠ ' + (data.message || 'เกิดข้อผิดพลาด'));
+                    showToast('⚠ ' + (data.message || 'An error occurred'));
                 }
             } catch(err) {
-                showToast('⚠ เกิดข้อผิดพลาดในการเชื่อมต่อ');
+                showToast('⚠ Connection error');
             }
         });
 
@@ -347,11 +344,10 @@ if($accessDenied){
                     svg.setAttribute('stroke', '#111');
                     if (span) span.textContent = 'Bookmark';
                     showToast('✗ Bookmark removed');
-                } else if(data.status === 'error') {
-                    showToast('⚠ ' + (data.message || 'เกิดข้อผิดพลาด'));
+                    showToast('⚠ ' + (data.message || 'An error occurred'));
                 }
             } catch(err) {
-                showToast('⚠ เกิดข้อผิดพลาดในการเชื่อมต่อ');
+                showToast('⚠ Connection error');
             }
         });
 
@@ -369,7 +365,7 @@ if($accessDenied){
 
         reportBtn?.addEventListener('click', function() {
             if (currentUserId === 0) {
-                showToast('⚠ กรุณาเข้าสู่ระบบก่อนทำการรายงาน');
+                showToast('⚠ Please log in first to report.');
                 setTimeout(() => {
                     window.location.href = 'login.php';
                 }, 1500);
@@ -384,7 +380,7 @@ if($accessDenied){
             reportModal.classList.remove('open');
             reportForm.reset();
             reportDetails.removeAttribute('required');
-            reportDetails.placeholder = "รายละเอียดเพิ่มเติม (ไม่บังคับ)...";
+            reportDetails.placeholder = "Additional details (optional)...";
             if (reportReqAsterisk) reportReqAsterisk.style.display = 'none';
         }
 
@@ -403,12 +399,12 @@ if($accessDenied){
             radio.addEventListener('change', function() {
                 if (this.value === 'other') {
                     reportDetails.setAttribute('required', 'required');
-                    reportDetails.placeholder = "กรุณาระบุรายละเอียดเพิ่มเติมสำหรับตรวจสอบ (จำเป็น)...";
+                    reportDetails.placeholder = "Please specify details for review (required)...";
                     if (reportReqAsterisk) reportReqAsterisk.style.display = 'inline';
                     reportDetails.focus();
                 } else {
                     reportDetails.removeAttribute('required');
-                    reportDetails.placeholder = "รายละเอียดเพิ่มเติม (ไม่บังคับ)...";
+                    reportDetails.placeholder = "Additional details (optional)...";
                     if (reportReqAsterisk) reportReqAsterisk.style.display = 'none';
                 }
             });
@@ -437,7 +433,7 @@ if($accessDenied){
                     showToast('⚠ ' + data.message);
                 }
             } catch (err) {
-                showToast('⚠ เกิดข้อผิดพลาดในการส่งข้อมูล');
+                showToast('⚠ An error occurred while sending data');
             }
         });
 

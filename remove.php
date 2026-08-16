@@ -168,10 +168,10 @@ if($totalPages === 0) $totalPages = 1;
                             
                             <div class="card-right">
                                 <?php if((int)($row['user_id'] ?? 0) === (int)$userId): ?>
-                                <a href="remove.php?restore=<?php echo urlencode($row['snippet_id']); ?>" class="icon-action" title="Restore Snippet" onclick="return confirm('คุณต้องการนำรายการนี้กลับมาหรือไม่?');">
+                                <a href="remove.php?restore=<?php echo urlencode($row['snippet_id']); ?>" class="icon-action" title="Restore Snippet" onclick="return confirm('Are you sure you want to restore this snippet?');">
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#28a745" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
                                 </a>
-                                <a href="remove.php?delete=<?php echo urlencode($row['snippet_id']); ?>" class="icon-action" title="Delete Permanently" onclick="return confirm('คุณแน่ใจว่าต้องการลบรายการนี้อย่างถาวรหรือไม่?');">
+                                <a href="remove.php?delete=<?php echo urlencode($row['snippet_id']); ?>" class="icon-action" title="Delete Permanently" onclick="return confirm('Are you sure you want to delete this snippet permanently?');">
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                 </a>
                                 <?php endif; ?>

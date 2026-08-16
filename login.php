@@ -15,7 +15,7 @@ if(getCurrentUserId()){
 $errorAlert = "";
 $hasAnyUser = $user->countUsers();
 if($hasAnyUser === 0){
-    $errorAlert = "โปรดสมัครสมาชิก";
+    $errorAlert = "Please register an account";
 }
 
 if($_SERVER["REQUEST_METHOD"]=="POST"){

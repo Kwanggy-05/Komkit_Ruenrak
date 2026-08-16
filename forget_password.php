@@ -14,13 +14,13 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     $confirm_new_password = $_POST["confirm_new_password"] ?? "";
 
     if($username === "" || $answer === "" || $new_password === "" || $confirm_new_password === ""){
-        $error = "กรุณากรอกข้อมูลให้ครบถ้วน";
+        $error = "Please fill in all fields";
     } elseif($new_password !== $confirm_new_password){
-        $error = "รหัสผ่านใหม่กับยืนยันรหัสผ่านไม่ตรงกัน";
+        $error = "New password and confirm password do not match";
     } else {
         $result = $user->resetPasswordWithSecurityAnswer($username, $answer, $new_password);
         if($result["success"]){
-            $success = $result["message"] . " กำลังนำคุณไปยังหน้าเข้าสู่ระบบ...";
+            $success = $result["message"] . " Redirecting to login page...";
             header("Refresh: 2; url=login.php");
         } else {
             $error = $result["message"];
@@ -71,12 +71,12 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 
                 <div class="form-group">
                     <label for="question">Security Question</label>
-                    <input type="text" id="question" value="ชื่อตัวละครหรือการ์ตูนตัวโปรดของคุณคืออะไร?" disabled style="background-color: #f1f3f5; cursor: not-allowed; opacity: 0.85;">
+                    <input type="text" id="question" value="What is the name of your favorite character or cartoon?" disabled style="background-color: #f1f3f5; cursor: not-allowed; opacity: 0.85;">
                 </div>
 
                 <div class="form-group">
                     <label for="answer">Security Answer</label>
-                    <input type="text" name="answer" id="answer" value="<?php echo htmlspecialchars($answer); ?>" placeholder="ระบุคำตอบของคุณ" required>
+                    <input type="text" name="answer" id="answer" value="<?php echo htmlspecialchars($answer); ?>" placeholder="Enter your answer" required>
                 </div>
 
                 <div class="form-group">

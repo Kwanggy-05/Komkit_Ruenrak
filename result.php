@@ -104,7 +104,7 @@ Search results for "<strong><?php echo htmlspecialchars($searchQuery); ?></stron
             <?php elseif ($selectedLanguage !== ''): ?>
 Search results for <strong><?php echo htmlspecialchars($selectedLanguageName); ?></strong>
             <?php else: ?>
-                กรุณากรอกคำค้นหาหรือเลือกภาษาด้านบนเพื่อค้นหา Snippet
+                Please enter a keyword or select a language above to search snippets.
             <?php endif; ?>
         </div>
 
@@ -209,10 +209,10 @@ Search results for <strong><?php echo htmlspecialchars($selectedLanguageName); ?
                         this.title = 'Like';
                         countEl.textContent = data.count;
                     } else if(data.status === 'error') {
-                        showToast('⚠ ' + (data.message || 'เกิดข้อผิดพลาด'));
+                        showToast('⚠ ' + (data.message || 'An error occurred'));
                     }
                 } catch(err) {
-                    showToast('⚠ เกิดข้อผิดพลาดในการเชื่อมต่อ');
+                    showToast('⚠ Connection error');
                 }
             });
         });

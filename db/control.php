@@ -865,6 +865,25 @@ class Control{
         }
     }
 
+    function getSnippetByIdAdmin($snippet_id){
+        try{
+            $sql = "SELECT s.*, l.language_name,
+                GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags
+                FROM snippet s
+                INNER JOIN language l ON s.language_id = l.language_id
+                LEFT JOIN snippet_tag st ON s.snippet_id = st.snippet_id
+                LEFT JOIN tag t ON st.tag_id = t.tag_id
+                WHERE s.snippet_id = :snippet_id
+                GROUP BY s.snippet_id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        }catch(PDOException $e){
+            return false;
+        }
+    }
+
     function restoreSnippetAdmin($snippet_id){
         try{
             $sql = "UPDATE snippet SET deleted = 0 WHERE snippet_id = :snippet_id";
@@ -970,6 +989,30 @@ class Control{
             }
             $stmt->execute();
             return $stmt;
+        }catch(PDOException $e){
+            return false;
+        }
+    }
+
+    function getReportByIdAdmin($report_id){
+        try{
+            $sql = "SELECT r.*, s.title as snippet_title, s.deleted as snippet_deleted, s.source_code, s.description as snippet_desc, s.visibility, s.image_path, l.language_name,
+                           GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags,
+                           u.username as reporter_username, u.firstname as reporter_firstname, u.lastname as reporter_lastname,
+                           owner.username as owner_username, owner.firstname as owner_firstname, owner.lastname as owner_lastname
+                    FROM reports r
+                    INNER JOIN snippet s ON r.snippet_id = s.snippet_id
+                    INNER JOIN language l ON s.language_id = l.language_id
+                    LEFT JOIN snippet_tag st ON s.snippet_id = st.snippet_id
+                    LEFT JOIN tag t ON st.tag_id = t.tag_id
+                    INNER JOIN user u ON r.user_id = u.user_id
+                    INNER JOIN user owner ON s.user_id = owner.user_id
+                    WHERE r.report_id = :report_id
+                    GROUP BY r.report_id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(":report_id", $report_id, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
         }catch(PDOException $e){
             return false;
         }

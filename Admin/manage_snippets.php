@@ -128,7 +128,7 @@ if ($snippetResult) {
                             <span class="user-role">Admin</span>
                         </div>
                     </div>
-                    <a href="../login.php" class="btn-logout" onclick="return confirm('ต้องการออกจากระบบหรือไม่?');">
+                    <a href="../login.php" class="btn-logout" onclick="return confirm('Are you sure you want to log out?');">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                             <polyline points="16 17 21 12 16 7"></polyline>
@@ -166,7 +166,7 @@ if ($snippetResult) {
                                     <circle cx="11" cy="11" r="8"></circle>
                                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                 </svg>
-                                <input type="text" name="q" class="search-input" placeholder="ค้นหาตามชื่อ, เจ้าของ..." value="<?php echo htmlspecialchars($searchQuery); ?>">
+                                <input type="text" name="q" class="search-input" placeholder="Search title, owner..." value="<?php echo htmlspecialchars($searchQuery); ?>">
                             </div>
                         </form>
                     </div>
@@ -225,10 +225,9 @@ if ($snippetResult) {
                                         <td style="text-align: center;">
                                             <div class="action-buttons" style="justify-content: center;">
                                                 <!-- View Code Trigger -->
-                                                <button class="btn-action btn-view" 
-                                                        onclick="viewCode('<?php echo htmlspecialchars($snip['title'], ENT_QUOTES); ?>', <?php echo htmlspecialchars(json_encode($snip['source_code'])); ?>)">
+                                                <a href="viewcode.php?view=<?php echo $snip['snippet_id']; ?>" class="btn-action btn-view" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
                                                     View Code
-                                                </button>
+                                                </a>
                                                 
                                                 <?php if ((int)($snip['deleted'] ?? 0) === 1): ?>
                                                     <!-- Restore Action -->
@@ -245,7 +244,7 @@ if ($snippetResult) {
                                                     </form>
                                                 <?php else: ?>
                                                     <!-- Soft Delete Action -->
-                                                    <form method="POST" style="display:inline;" onsubmit="return confirm('คุณต้องการย้าย Snippet นี้ไปที่ถังขยะหรือไม่?');">
+                                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to move this snippet to trash?');">
                                                         <input type="hidden" name="action" value="soft_delete">
                                                         <input type="hidden" name="snippet_id" value="<?php echo $snip['snippet_id']; ?>">
                                                         <button type="submit" class="btn-action btn-delete">Delete</button>
@@ -263,46 +262,7 @@ if ($snippetResult) {
         </main>
     </div>
 
-    <!-- View Code Modal -->
-    <div class="modal-overlay" id="viewCodeModal">
-        <div class="modal-card" style="max-width: 800px;">
-            <header class="modal-header">
-                <span class="modal-title" id="codeModalTitle">Snippet Source Code</span>
-                <button class="modal-close" onclick="closeModal('viewCodeModal')">&times;</button>
-            </header>
-            <div class="modal-body">
-                <div class="code-viewer-container">
-                    <pre class="code-viewer" id="codeViewerBlock"></pre>
-                </div>
-            </div>
-            <footer class="modal-footer">
-                <button type="button" class="btn-primary" onclick="closeModal('viewCodeModal')">Close</button>
-            </footer>
-        </div>
-    </div>
-
     <script>
-        const viewCodeModal = document.getElementById('viewCodeModal');
-        const codeModalTitle = document.getElementById('codeModalTitle');
-        const codeViewerBlock = document.getElementById('codeViewerBlock');
-
-        function viewCode(title, code) {
-            codeModalTitle.textContent = 'View Code: ' + title;
-            codeViewerBlock.textContent = code;
-            viewCodeModal.classList.add('open');
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('open');
-        }
-
-        // Close modal on clicking outside
-        window.addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal-overlay')) {
-                e.target.classList.remove('open');
-            }
-        });
-
         // Sidebar Toggle functionality
         const menuToggle = document.getElementById('menuToggle');
         const sidebar = document.getElementById('sidebar');

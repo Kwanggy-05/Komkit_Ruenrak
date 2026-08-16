@@ -12,25 +12,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         if ($_POST['action'] === 'reject') {
             if ($reportId <= 0) {
-                $errorMsg = "ข้อมูลไม่ถูกต้อง / Invalid report ID.";
+                $errorMsg = "Invalid report ID.";
             } else {
                 if ($control->rejectReportAdmin($reportId)) {
-                    $successMsg = "ปฏิเสธรายงานแล้ว / Report rejected.";
+                    $successMsg = "Report rejected.";
                 } else {
-                    $errorMsg = "ปฏิเสธรายงานไม่สำเร็จ / Failed to reject report.";
+                    $errorMsg = "Failed to reject report.";
                 }
             }
         } elseif ($_POST['action'] === 'delete_snippet') {
             if ($snippetId <= 0) {
-                $errorMsg = "ข้อมูลไม่ถูกต้อง / Invalid snippet ID.";
+                $errorMsg = "Invalid snippet ID.";
             } else {
                 // Soft delete snippet
                 if ($control->softDeleteSnippetAdmin($snippetId)) {
                     // Resolve all reports for this snippet
                     $control->resolveReportsForSnippet($snippetId);
-                    $successMsg = "ลบโค้ดและจัดการรายงานเรียบร้อย / Snippet deleted and reports resolved.";
+                    $successMsg = "Snippet deleted and reports resolved.";
                 } else {
-                    $errorMsg = "ลบโค้ดไม่สำเร็จ / Failed to delete snippet.";
+                    $errorMsg = "Failed to delete snippet.";
                 }
             }
         }
@@ -135,7 +135,7 @@ if ($reportsResult) {
                             <span class="user-role">Admin</span>
                         </div>
                     </div>
-                    <a href="../login.php" class="btn-logout" onclick="return confirm('ต้องการออกจากระบบหรือไม่?');">
+                    <a href="../login.php" class="btn-logout" onclick="return confirm('Are you sure you want to log out?');">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                             <polyline points="16 17 21 12 16 7"></polyline>
@@ -236,21 +236,13 @@ if ($reportsResult) {
                                         <td style="text-align: center;">
                                             <div class="action-buttons" style="justify-content: center;">
                                                 <!-- View Details Trigger -->
-                                                <button class="btn-action btn-view" 
-                                                        onclick="viewReportDetails(<?php echo htmlspecialchars(json_encode([
-                                                            'report_id' => $rep['report_id'],
-                                                            'snippet_title' => $rep['snippet_title'],
-                                                            'reason' => $rep['reason'],
-                                                            'details' => $rep['details'],
-                                                            'snippet_code' => $rep['source_code'] ?? 'N/A',
-                                                            'owner' => $rep['owner_firstname'] . ' ' . $rep['owner_lastname'] . ' (@' . $rep['owner_username'] . ')'
-                                                        ])); ?>)">
+                                                <a href="viewreport.php?id=<?php echo $rep['report_id']; ?>" class="btn-action btn-view" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
                                                     Details
-                                                </button>
+                                                </a>
                                                 
                                                 <?php if ($rep['status'] === 'pending'): ?>
                                                     <!-- Reject Report Action -->
-                                                    <form method="POST" style="display:inline;" onsubmit="return confirm('คุณต้องการปฏิเสธคำร้องเรียนนี้ใช่หรือไม่?');">
+                                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to dismiss this report?');">
                                                         <input type="hidden" name="action" value="reject">
                                                         <input type="hidden" name="report_id" value="<?php echo $rep['report_id']; ?>">
                                                         <button type="submit" class="btn-action btn-restore" style="background-color: #6C757D; color: white;">Dismiss</button>
@@ -258,7 +250,7 @@ if ($reportsResult) {
                                                     
                                                     <?php if ((int)$rep['snippet_deleted'] !== 1): ?>
                                                         <!-- Delete Snippet Action -->
-                                                        <form method="POST" style="display:inline;" onsubmit="return confirm('คุณต้องการอนุมัติคำร้องและลบ Snippet นี้ใช่หรือไม่? (การดำเนินการนี้จะลบ Snippet ออกจากระบบ)');">
+                                                        <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this snippet? (This will remove the snippet from the system)');">
                                                             <input type="hidden" name="action" value="delete_snippet">
                                                             <input type="hidden" name="snippet_id" value="<?php echo $rep['snippet_id']; ?>">
                                                             <button type="submit" class="btn-action btn-delete">Delete Code</button>
@@ -277,61 +269,7 @@ if ($reportsResult) {
         </main>
     </div>
 
-    <!-- View Report Details Modal -->
-    <div class="modal-overlay" id="reportDetailModal">
-        <div class="modal-card" style="max-width: 800px; display: flex; flex-direction: column; max-height: 90vh;">
-            <header class="modal-header">
-                <span class="modal-title" id="modalReportTitle">Report Details</span>
-                <button class="modal-close" onclick="closeModal('reportDetailModal')">&times;</button>
-            </header>
-            <div class="modal-body" style="overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; gap: 15px;">
-                <div style="font-size: 0.95rem; line-height: 1.5;">
-                    <strong>Snippet Title:</strong> <span id="detailSnippetTitle"></span><br>
-                    <strong>Owner:</strong> <span id="detailSnippetOwner"></span>
-                </div>
-                <div style="font-size: 0.95rem;">
-                    <strong>Reported Reason:</strong> <span id="detailReportReason" style="color: var(--danger); font-weight: bold; text-transform: capitalize;"></span>
-                </div>
-                <div>
-                    <strong>Report Description:</strong>
-                    <div id="detailReportDesc" style="padding: 12px; background-color: var(--neutral); border-radius: var(--rounded-sm); border: 1px solid var(--border-color); white-space: pre-wrap; font-size: 0.9rem; margin-top: 5px; line-height: 1.4; color: #333;"></div>
-                </div>
-                <div style="flex-grow: 1; display: flex; flex-direction: column; min-height: 200px;">
-                    <strong>Source Code Preview:</strong>
-                    <div style="margin-top: 5px; flex-grow: 1; position: relative;">
-                        <pre id="detailSnippetCode" style="margin: 0; padding: 12px; background-color: #1e1e1e; color: #d4d4d4; border-radius: var(--rounded-sm); font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; overflow: auto; max-height: 250px; border: 1px solid #333; line-height: 1.5;"></pre>
-                    </div>
-                </div>
-            </div>
-            <footer class="modal-footer" style="padding-top: 15px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
-                <button type="button" class="btn-primary" style="background-color: var(--primary); border: none; color: white; padding: 8px 18px; border-radius: var(--rounded-sm); font-weight: 600; cursor: pointer;" onclick="closeModal('reportDetailModal')">Close</button>
-            </footer>
-        </div>
-    </div>
-
     <script>
-        function viewReportDetails(data) {
-            document.getElementById('modalReportTitle').textContent = 'Report Details #' + data.report_id;
-            document.getElementById('detailSnippetTitle').textContent = data.snippet_title;
-            document.getElementById('detailSnippetOwner').textContent = data.owner;
-            document.getElementById('detailReportReason').textContent = data.reason;
-            document.getElementById('detailReportDesc').textContent = data.details || 'ไม่มีคำอธิบายเพิ่มเติม / No description';
-            document.getElementById('detailSnippetCode').textContent = data.snippet_code;
-            
-            document.getElementById('reportDetailModal').classList.add('open');
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('open');
-        }
-
-        // Close modal on clicking outside
-        window.addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal-overlay')) {
-                e.target.classList.remove('open');
-            }
-        });
-
         // Sidebar Toggle functionality
         const menuToggle = document.getElementById('menuToggle');
         const sidebar = document.getElementById('sidebar');

@@ -392,8 +392,7 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                         this.title = 'Like';
                         countEl.textContent = data.count;
                         // showToast('👎 Like removed');
-                    } else if(data.status === 'error') {
-                        showToast('⚠ ' + (data.message || 'เกิดข้อผิดพลาด'));
+                        showToast('⚠ ' + (data.message || 'An error occurred'));
                     }
                 } catch(err) {
                     showToast('⚠ Something went wrong. Please try again later.');

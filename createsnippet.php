@@ -78,7 +78,7 @@ if(isset($_POST["submit"])){
 
     $tags_arr = array_filter(array_map('trim', explode(',', $tags)));
     if(count($tags_arr) > 5){
-        $error = "คุณสามารถใส่แท็กได้ไม่เกิน 5 แท็ก";
+        $error = "You can only add up to 5 tags";
     } else {
         if($snippet_id){
             $status = $control->updateSnippet($snippet_id,$title,$source_code,$description,$visibility,$image_path,$language_id,$tags, $userId);
@@ -104,7 +104,7 @@ if(isset($_POST["submit"])){
     
     <a href="snippet_page.php" class="back-btn">Back</a>
     
-    <h1>สร้าง Snippet Box</h1>
+    <h1>Create Snippet Box</h1>
     
     <form method="POST" action="createsnippet.php" class="form-container" enctype="multipart/form-data">
         <input type="hidden" name="snippet_id" value="<?php echo htmlspecialchars($snippet_id); ?>">
@@ -319,7 +319,7 @@ if(isset($_POST["submit"])){
             } else {
                 // ถ้ายังไม่มี ให้ใส่เพิ่ม
                 if (currentTags.length >= 5) {
-                    alert('คุณสามารถใส่แท็กได้ไม่เกิน 5 แท็ก');
+                    alert('You can only add up to 5 tags');
                     return;
                 }
                 // เช็คคำค้นหาก่อนคอมม่าสุดท้าย ถ้าผู้ใช้กำลังพิมพ์อยู่ให้แทนที่คำนั้นเลย
@@ -391,7 +391,7 @@ if(isset($_POST["submit"])){
             const currentTags = getSelectedTagsFromInput();
             if (currentTags.length > 5) {
                 e.preventDefault();
-                alert('คุณสามารถใส่แท็กได้ไม่เกิน 5 แท็ก');
+                alert('You can only add up to 5 tags');
                 tagsInput.focus();
             }
         });

@@ -81,12 +81,6 @@ class User{
                 }
                 
                 if($isPasswordCorrect){
-                    // Update user status to online
-                    $update_status_sql = "UPDATE user SET status = 'online' WHERE user_id = :user_id";
-                    $update_status_stmt = $this->db->prepare($update_status_sql);
-                    $update_status_stmt->bindParam(":user_id", $result["user_id"], PDO::PARAM_INT);
-                    $update_status_stmt->execute();
-
                     if($isLegacyMd5){
                         $new_hash = password_hash($password, PASSWORD_DEFAULT);
                         $update_sql = "UPDATE user SET password = :password WHERE user_id = :user_id";
@@ -114,15 +108,15 @@ class User{
             $user = $stmt->fetch();
             
             if (!$user) {
-                return ["success" => false, "message" => "ไม่พบชื่อผู้ใช้นี้"];
+                return ["success" => false, "message" => "Username not found"];
             }
             
             if (empty($user['answer'])) {
-                return ["success" => false, "message" => "บัญชีนี้ไม่ได้ตั้งค่าคำถามความปลอดภัยไว้"];
+                return ["success" => false, "message" => "This account does not have a security question set"];
             }
             
             if (trim(mb_strtolower($user['answer'])) !== trim(mb_strtolower($answer))) {
-                return ["success" => false, "message" => "คำตอบสำหรับคำถามความปลอดภัยไม่ถูกต้อง"];
+                return ["success" => false, "message" => "Incorrect security question answer"];
             }
             
             $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
@@ -132,27 +126,22 @@ class User{
             $update_stmt->bindParam(":user_id", $user['user_id']);
             $update_stmt->execute();
             
-            return ["success" => true, "message" => "เปลี่ยนรหัสผ่านสำเร็จแล้ว"];
+            return ["success" => true, "message" => "Password changed successfully."];
         } catch (PDOException $e) {
             return ["success" => false, "message" => $e->getMessage()];
         }
     }
 
-    function getUsersPaginated($page = 1, $limit = 10, $search = '', $status = '', $role = ''){
+    function getUsersPaginated($page = 1, $limit = 10, $search = '', $role = ''){
         try {
             $page = max(1, (int)$page);
             $limit = max(1, (int)$limit);
             $offset = ($page - 1) * $limit;
 
-            $sql = "SELECT *, IF(last_active >= NOW() - INTERVAL 5 MINUTE, 'online', 'offline') as status FROM user WHERE 1=1";
+            $sql = "SELECT * FROM user WHERE 1=1";
             
             if ($search !== '') {
                 $sql .= " AND (firstname LIKE :search OR lastname LIKE :search OR username LIKE :search)";
-            }
-            if ($status === 'online') {
-                $sql .= " AND last_active >= NOW() - INTERVAL 5 MINUTE";
-            } elseif ($status === 'offline') {
-                $sql .= " AND (last_active IS NULL OR last_active < NOW() - INTERVAL 5 MINUTE)";
             }
             if ($role !== '') {
                 $sql .= " AND role = :role";
@@ -180,17 +169,12 @@ class User{
         }
     }
 
-    function getTotalUsersCount($search = '', $status = '', $role = ''){
+    function getTotalUsersCount($search = '', $role = ''){
         try {
             $sql = "SELECT COUNT(*) as total FROM user WHERE 1=1";
             
             if ($search !== '') {
                 $sql .= " AND (firstname LIKE :search OR lastname LIKE :search OR username LIKE :search)";
-            }
-            if ($status === 'online') {
-                $sql .= " AND last_active >= NOW() - INTERVAL 5 MINUTE";
-            } elseif ($status === 'offline') {
-                $sql .= " AND (last_active IS NULL OR last_active < NOW() - INTERVAL 5 MINUTE)";
             }
             if ($role !== '') {
                 $sql .= " AND role = :role";
@@ -211,22 +195,6 @@ class User{
             return (int)$row['total'];
         } catch (PDOException $e) {
             return 0;
-        }
-    }
-
-    function updateUserStatus($userId, $status){
-        try {
-            $allowedStatuses = ['online', 'offline'];
-            if (!in_array($status, $allowedStatuses)) {
-                return false;
-            }
-            $sql = "UPDATE user SET status = :status WHERE user_id = :user_id";
-            $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':status', $status, PDO::PARAM_STR);
-            $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
-            return $stmt->execute();
-        } catch (PDOException $e) {
-            return false;
         }
     }
 
@@ -253,20 +221,14 @@ class User{
             $stmt = $this->db->query("SELECT COUNT(*) as total_today FROM user WHERE DATE(created_at) = CURDATE()");
             $today = (int)$stmt->fetch(PDO::FETCH_ASSOC)['total_today'];
 
-            // Online Users (within last 5 minutes)
-            $stmt = $this->db->query("SELECT COUNT(*) as online_users FROM user WHERE last_active >= NOW() - INTERVAL 5 MINUTE");
-            $online = (int)$stmt->fetch(PDO::FETCH_ASSOC)['online_users'];
-
             return [
                 'total' => $total,
-                'today' => $today,
-                'online' => $online
+                'today' => $today
             ];
         } catch (PDOException $e) {
             return [
                 'total' => 0,
-                'today' => 0,
-                'online' => 0
+                'today' => 0
             ];
         }
     }

@@ -4,7 +4,6 @@ require_once __DIR__ . '/check_admin.php';
 // Get filter inputs
 $searchQuery = trim($_GET['q'] ?? '');
 $selectedRole = trim($_GET['role'] ?? '');
-$selectedStatus = trim($_GET['status'] ?? '');
 
 // Pagination settings
 $allowedLimits = [10, 15, 20, 25];
@@ -16,8 +15,8 @@ if (isset($_GET['limit']) && in_array((int)$_GET['limit'], $allowedLimits)) {
 $currentPage = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 
 // Get users data
-$totalUsers = $user->getTotalUsersCount($searchQuery, $selectedStatus, $selectedRole);
-$users = $user->getUsersPaginated($currentPage, $itemsPerPage, $searchQuery, $selectedStatus, $selectedRole);
+$totalUsers = $user->getTotalUsersCount($searchQuery, $selectedRole);
+$users = $user->getUsersPaginated($currentPage, $itemsPerPage, $searchQuery, $selectedRole);
 
 $totalPages = ceil($totalUsers / $itemsPerPage);
 if ($totalPages === 0) $totalPages = 1;
@@ -184,7 +183,7 @@ $stats = $user->getUserStats();
                             <span class="user-role">Admin</span>
                         </div>
                     </div>
-                    <a href="../login.php" class="btn-logout" onclick="return confirm('ต้องการออกจากระบบหรือไม่?');">
+                    <a href="../login.php" class="btn-logout" onclick="return confirm('Are you sure you want to log out?');">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                             <polyline points="16 17 21 12 16 7"></polyline>
@@ -227,18 +226,6 @@ $stats = $user->getUserStats();
                             <span class="stat-label">New Users Today</span>
                         </div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-icon success">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="9" cy="7" r="4"></circle>
-                            </svg>
-                        </div>
-                        <div class="stat-info">
-                            <span class="stat-value"><?php echo $stats['online']; ?></span>
-                            <span class="stat-label">Online Users</span>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Content Header Controls -->
@@ -263,11 +250,7 @@ $stats = $user->getUserStats();
                             <option value="admin" <?php echo $selectedRole === 'admin' ? 'selected' : ''; ?>>Admin</option>
                         </select>
                         
-                        <select name="status" class="select-per-page" onchange="this.form.submit()" style="height: 38px; border-radius: var(--rounded-md); font-weight: 600; padding: 0 12px;">
-                            <option value="">All Statuses</option>
-                            <option value="online" <?php echo $selectedStatus === 'online' ? 'selected' : ''; ?>>Online</option>
-                            <option value="offline" <?php echo $selectedStatus === 'offline' ? 'selected' : ''; ?>>Offline</option>
-                        </select>
+
                         
                         <?php if ($itemsPerPage !== 10): ?>
                             <input type="hidden" name="limit" value="<?php echo $itemsPerPage; ?>">
@@ -286,21 +269,19 @@ $stats = $user->getUserStats();
                                 <th>Name</th>
                                 <th>Username</th>
                                 <th>Role</th>
-                                <th>Status</th>
                                 <th>Registered At</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($users)): ?>
                                 <tr>
-                                    <td colspan="6" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                                    <td colspan="5" style="text-align: center; padding: 32px; color: var(--text-muted);">
                                         No users found.
                                     </td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($users as $row): ?>
                                     <?php 
-                                        $statusClass = $row['status'] === 'online' ? 'badge-active' : 'badge-deleted';
                                         $roleClass = $row['role'] === 'admin' ? 'badge-admin' : 'badge-user';
                                     ?>
                                     <tr>
@@ -308,7 +289,6 @@ $stats = $user->getUserStats();
                                         <td style="font-weight: 600;"><?php echo htmlspecialchars($row['firstname'] . ' ' . $row['lastname']); ?></td>
                                         <td><?php echo htmlspecialchars($row['username']); ?></td>
                                         <td><span class="badge <?php echo $roleClass; ?>"><?php echo htmlspecialchars($row['role']); ?></span></td>
-                                        <td><span class="badge <?php echo $statusClass; ?>"><?php echo htmlspecialchars($row['status']); ?></span></td>
                                         <td style="font-size: 0.9rem; color: var(--text-muted);">
                                             <?php echo !empty($row['created_at']) ? date('d/m/Y H:i:s', strtotime($row['created_at'])) : '-'; ?>
                                         </td>
@@ -327,7 +307,6 @@ $stats = $user->getUserStats();
                                 $pageUrl = 'manage_users.php?page=' . $i;
                                 if ($searchQuery !== '') $pageUrl .= '&q=' . urlencode($searchQuery);
                                 if ($selectedRole !== '') $pageUrl .= '&role=' . urlencode($selectedRole);
-                                if ($selectedStatus !== '') $pageUrl .= '&status=' . urlencode($selectedStatus);
                                 if ($itemsPerPage !== 10) $pageUrl .= '&limit=' . $itemsPerPage;
                             ?>
                             <?php if ($i == $currentPage): ?>

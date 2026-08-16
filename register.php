@@ -14,20 +14,20 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
     $username = trim($_POST["username"] ?? "");
     $password = $_POST["password"] ?? "";
     $confirmPassword = $_POST["confirm_password"] ?? "";
-    $question = "ชื่อตัวละครหรือการ์ตูนตัวโปรดของคุณคืออะไร?";
+    $question = "What is the name of your favorite character or cartoon?";
     $answer = trim($_POST["answer"] ?? "");
 
     if($firstname === "" || $lastname === "" || $username === "" || $password === "" || $answer === ""){
-        $error = "กรุณากรอกข้อมูลให้ครบถ้วน";
+        $error = "Please fill in all fields";
     } elseif($password !== $confirmPassword) {
-        $error = "รหัสผ่านกับยืนยันรหัสผ่านไม่ตรงกัน";
+        $error = "Password and confirm password do not match";
     } else {
         $result = $user->insertUser($firstname, $lastname, $username, $password, $question, $answer);
         if($result){
             header("Location:login.php");
             exit;
         } else {
-            $error = "ชื่อผู้ใช้นี้ถูกใช้งานแล้ว";
+            $error = "Username is already taken";
         }
     }
 }
@@ -91,12 +91,12 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
 
                 <div class="form-group-center">
                     <label for="question">Security Question</label>
-                    <input type="text" id="question" value="ชื่อตัวละครหรือการ์ตูนตัวโปรดของคุณคืออะไร?" disabled style="background-color: #f1f3f5; cursor: not-allowed; opacity: 0.85;">
+                    <input type="text" id="question" value="What is the name of your favorite character or cartoon?" disabled style="background-color: #f1f3f5; cursor: not-allowed; opacity: 0.85;">
                 </div>
 
                 <div class="form-group-center">
                     <label for="answer">Security Answer <span style="color: red; margin-left: 5px;">*</span></label>
-                    <input type="text" name="answer" id="answer" placeholder="คำตอบของคุณ" value="<?php echo htmlspecialchars($answer); ?>" required>
+                    <input type="text" name="answer" id="answer" placeholder="Your answer" value="<?php echo htmlspecialchars($answer); ?>" required>
                 </div>
 
                 <div class="submit-group">
