@@ -15,6 +15,7 @@ $image_path = '';
 $current_image_path = '';
 $formTitle = 'Create Snippet';
 $formButton = 'Save';
+$error = '';
 
 $userId = getCurrentUserId();
 
@@ -75,14 +76,19 @@ if(isset($_POST["submit"])){
         }
     }
 
-    if($snippet_id){
-        $status = $control->updateSnippet($snippet_id,$title,$source_code,$description,$visibility,$image_path,$language_id,$tags, $userId);
+    $tags_arr = array_filter(array_map('trim', explode(',', $tags)));
+    if(count($tags_arr) > 5){
+        $error = "คุณสามารถใส่แท็กได้ไม่เกิน 5 แท็ก";
     } else {
-        $status = $control->insert($title,$source_code,$description,$visibility,$image_path,$language_id,$tags, $userId);
-    }
+        if($snippet_id){
+            $status = $control->updateSnippet($snippet_id,$title,$source_code,$description,$visibility,$image_path,$language_id,$tags, $userId);
+        } else {
+            $status = $control->insert($title,$source_code,$description,$visibility,$image_path,$language_id,$tags, $userId);
+        }
 
-    header("Location:snippet_page.php");
-    exit;
+        header("Location:snippet_page.php");
+        exit;
+    }
 }
 ?>
 
@@ -103,6 +109,12 @@ if(isset($_POST["submit"])){
     <form method="POST" action="createsnippet.php" class="form-container" enctype="multipart/form-data">
         <input type="hidden" name="snippet_id" value="<?php echo htmlspecialchars($snippet_id); ?>">
         <input type="hidden" name="current_image_path" value="<?php echo htmlspecialchars($current_image_path); ?>">
+        
+        <?php if(!empty($error)): ?>
+            <div style="background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; padding: 12px 16px; border-radius: 8px; font-size: 14px; text-align: center; width: 100%;">
+                <?php echo htmlspecialchars($error); ?>
+            </div>
+        <?php endif; ?>
         
         <div class="top-row">
             <div class="form-group">
@@ -306,6 +318,10 @@ if(isset($_POST["submit"])){
                 }
             } else {
                 // ถ้ายังไม่มี ให้ใส่เพิ่ม
+                if (currentTags.length >= 5) {
+                    alert('คุณสามารถใส่แท็กได้ไม่เกิน 5 แท็ก');
+                    return;
+                }
                 // เช็คคำค้นหาก่อนคอมม่าสุดท้าย ถ้าผู้ใช้กำลังพิมพ์อยู่ให้แทนที่คำนั้นเลย
                 const parts = tagsInput.value.split(',');
                 const lastPart = parts[parts.length - 1].trim();
@@ -368,6 +384,16 @@ if(isset($_POST["submit"])){
         tagsInput.addEventListener('input', () => {
             updateBadgeSelectionState();
             filterTagBadges();
+        });
+
+        // ตรวจสอบตอนส่งฟอร์มเพื่อป้องกันการใส่เกิน 5 แท็ก
+        document.querySelector('.form-container').addEventListener('submit', function(e) {
+            const currentTags = getSelectedTagsFromInput();
+            if (currentTags.length > 5) {
+                e.preventDefault();
+                alert('คุณสามารถใส่แท็กได้ไม่เกิน 5 แท็ก');
+                tagsInput.focus();
+            }
         });
 
         // ซ่อนแท็กเมื่อคลิกข้างนอก

@@ -9,9 +9,7 @@ if(getCurrentUserId()){
     $update_status_stmt->bindParam(":user_id", $currUserId, PDO::PARAM_INT);
     $update_status_stmt->execute();
 
-    $_SESSION = array();
-    session_destroy();
-    session_start();
+    startAppSession();
 }
 
 $errorAlert = "";
@@ -47,7 +45,7 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
 </head>
 <body>
     <div class="container">
-        <a href="Home.php"><button class="back-btn" type="button">Back</button></a>
+        <a href="Home.php"><button class="back-btn" type="button">Back to Home</button></a>
         
 
         <div class="card">

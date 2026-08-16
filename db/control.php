@@ -79,11 +79,13 @@ class Control{
     function searchSnippets($keyword, $language_id = null){
         try{
             $sql = "SELECT a.*, b.language_name,
-                GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags
+                GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags,
+                COUNT(DISTINCT sl.user_id) AS like_count
                 FROM snippet a
                 INNER JOIN language b ON a.language_id = b.language_id
                 LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
                 LEFT JOIN tag t ON st.tag_id = t.tag_id
+                LEFT JOIN snippet_like sl ON a.snippet_id = sl.snippet_id
                 WHERE a.visibility IN ('public','protected')
                 AND (a.deleted = 0 OR a.deleted IS NULL)
                 AND (
@@ -98,7 +100,7 @@ class Control{
             }
             
             $sql .= " GROUP BY a.snippet_id
-                ORDER BY a.snippet_id DESC";
+                ORDER BY like_count DESC, a.snippet_id DESC";
             $stmt = $this->db->prepare($sql);
             $searchTerm = '%' . $keyword . '%';
             $stmt->bindParam(':keyword', $searchTerm, PDO::PARAM_STR);
@@ -402,11 +404,13 @@ class Control{
             $offset = ($page - 1) * $limit;
 
             $sql = "SELECT a.*, b.language_name,
-                GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags
+                GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags,
+                COUNT(DISTINCT sl.user_id) AS like_count
                 FROM snippet a
                 INNER JOIN language b ON a.language_id = b.language_id
                 LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
                 LEFT JOIN tag t ON st.tag_id = t.tag_id
+                LEFT JOIN snippet_like sl ON a.snippet_id = sl.snippet_id
                 WHERE (a.deleted = 0 OR a.deleted IS NULL)";
 
             if ($only_own) {
@@ -428,9 +432,15 @@ class Control{
                 $sql .= " AND a.language_id = :language_id";
             }
 
-            $sql .= " GROUP BY a.snippet_id
-                ORDER BY a.snippet_id DESC
-                LIMIT :offset, :limit";
+            $sql .= " GROUP BY a.snippet_id";
+            
+            if (!$only_own) {
+                $sql .= " ORDER BY like_count DESC, a.snippet_id DESC";
+            } else {
+                $sql .= " ORDER BY a.snippet_id DESC";
+            }
+            
+            $sql .= " LIMIT :offset, :limit";
 
             $stmt = $this->db->prepare($sql);
             if ($only_own) {

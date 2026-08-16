@@ -43,7 +43,7 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
 </head>
 <body>
     <div class="container">
-        <a href="Home.php"><button class="back-btn" type="button">Back</button></a>
+        <a href="Home.php"><button class="back-btn" type="button">Back to Home</button></a>
         
 
         <div class="card">
@@ -58,14 +58,14 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
                 <?php endif; ?>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="firstname">First name</label>
+                        <label for="firstname">First name <span style="color: red; margin-left: 5px;">*</span></label>
                         <input type="text" name="firstname"
                         value="<?php echo htmlspecialchars($firstname); ?>"
                         >
                     </div>
 
                     <div class="form-group">
-                        <label for="lastname">Last name</label>
+                        <label for="lastname">Last name <span style="color: red; margin-left: 5px;">*</span></label>
                         <input type="text" name="lastname"
                         value="<?php echo htmlspecialchars($lastname); ?>"
                         >
@@ -73,19 +73,19 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
                 </div>
 
                 <div class="form-group-center">
-                    <label for="username">Username</label>
+                    <label for="username">Username <span style="color: red; margin-left: 5px;">*</span></label>
                     <input type="text" name="username"
                     value="<?php if($_SERVER["REQUEST_METHOD"]=="POST") echo $_POST["username"]; ?>"
                     >
                 </div>
                 
                 <div class="form-group-center">
-                    <label for="password">Password</label>
+                    <label for="password">Password <span style="color: red; margin-left: 5px;">*</span></label>
                     <input type="password" name="password">
                 </div>
 
                 <div class="form-group-center">
-                    <label for="confirm_password">Confirm Password</label>
+                    <label for="confirm_password">Confirm Password <span style="color: red; margin-left: 5px;">*</span></label>
                     <input type="password" name="confirm_password">
                 </div>
 
@@ -95,7 +95,7 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
                 </div>
 
                 <div class="form-group-center">
-                    <label for="answer">Security Answer</label>
+                    <label for="answer">Security Answer <span style="color: red; margin-left: 5px;">*</span></label>
                     <input type="text" name="answer" id="answer" placeholder="คำตอบของคุณ" value="<?php echo htmlspecialchars($answer); ?>" required>
                 </div>
 

@@ -10,9 +10,7 @@ if (getCurrentUserId()) {
     $update_status_stmt->bindParam(":user_id", $currUserId, PDO::PARAM_INT);
     $update_status_stmt->execute();
 
-    $_SESSION = array();
-    session_destroy();
-    session_start();
+    startAppSession();
 }
 
 $errorAlert = "";

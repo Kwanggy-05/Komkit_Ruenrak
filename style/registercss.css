@@ -141,6 +141,11 @@ label {
     color: var(--secondary);
 }
 
+.required-asterisk {
+    color: red;
+    margin-left: 2px;
+}
+
 input[type="text"],
 input[type="password"] {
     border: 1px solid var(--input-border);
