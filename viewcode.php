@@ -5,6 +5,7 @@ require_once "db/connect.php";
 $snippet = null;
 $isBookmarked = false;
 $isLiked = false;
+$isReported = false;
 $likeCount = 0;
 $userId = getCurrentUserId();
 $accessDenied = false;
@@ -29,6 +30,7 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
     if($snippet && $userId){
         $isBookmarked = $control->isBookmarked($userId, $id);
         $isLiked = $control->isLiked($userId, $id);
+        $isReported = $control->hasUserReported($userId, $id);
     }
     if($snippet){
         $likeCount = $control->getLikeCount($id);
@@ -98,6 +100,13 @@ if($accessDenied){
                     </svg>
                     <?php echo $isBookmarked ? 'Bookmarked' : 'Bookmark'; ?>
                 </button>
+                <button class="btn report-btn <?php echo $isReported ? 'reported' : ''; ?>" id="reportBtn" data-snippet-id="<?php echo (int)$snippet['snippet_id']; ?>" <?php echo $isReported ? 'disabled' : ''; ?>>
+                    <svg width="14" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle;">
+                        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+                        <line x1="4" y1="22" x2="4" y2="15"></line>
+                    </svg>
+                    <span><?php echo $isReported ? 'Reported' : 'Report'; ?></span>
+                </button>
                 <button class="btn copy" id="copyBtn">Copy</button>
             </div>
         </div>
@@ -129,6 +138,57 @@ if($accessDenied){
             </div>
         </div>
     <?php endif; ?>
+
+    <!-- Report Modal -->
+    <div class="modal-overlay" id="reportModal">
+        <div class="modal-card">
+            <header class="modal-header">
+                <span class="modal-title">รายงานโค้ดไม่เหมาะสม / Report Snippet</span>
+                <button class="modal-close" id="closeReportModalBtn">&times;</button>
+            </header>
+            <form id="reportForm">
+                <div class="modal-body">
+                    <p style="margin-bottom: 16px; color: var(--text-muted); font-size: 0.9rem; line-height: 1.5;">
+                        กรุณาเลือกเหตุผลที่ต้องการรายงานโค้ดนี้ เพื่อให้ผู้ดูแลระบบตรวจสอบความเหมาะสม
+                    </p>
+                    
+                    <?php if($snippet): ?>
+                        <input type="hidden" name="snippet_id" value="<?php echo (int)$snippet['snippet_id']; ?>">
+                    <?php endif; ?>
+                    
+                    <div class="report-options" style="display: flex; flex-direction: column; gap: 10px;">
+                        <label class="report-option-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem;">
+                            <input type="radio" name="reason" value="spam" required>
+                            <span>Spam / ขยะ / หลอกลวง</span>
+                        </label>
+                        <label class="report-option-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem;">
+                            <input type="radio" name="reason" value="inappropriate">
+                            <span>Inappropriate Content / เนื้อหาลามกอนาจาร / รุนแรง / คุกคาม</span>
+                        </label>
+                        <label class="report-option-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem;">
+                            <input type="radio" name="reason" value="malicious_code">
+                            <span>Malicious Code / โค้ดอันตราย / มัลแวร์</span>
+                        </label>
+                        <label class="report-option-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem;">
+                            <input type="radio" name="reason" value="other">
+                            <span>Other / อื่นๆ</span>
+                        </label>
+                    </div>
+
+                    <div class="report-desc-group" id="reportDescGroup" style="margin-top: 16px;">
+                        <label for="reportDetails" style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; color: var(--secondary);">
+                            รายละเอียดเพิ่มเติม / Details <span id="reportReqAsterisk" style="color: #dc3545; display: none;">*</span>
+                        </label>
+                        <textarea id="reportDetails" name="details" placeholder="รายละเอียดเพิ่มเติม (ไม่บังคับ)..." rows="3" style="width:100%; padding: 10px; border: 1px solid var(--input-border); border-radius: var(--radius-sm); font-size: 0.9rem; resize: vertical; outline: none; box-sizing: border-box;"></textarea>
+                    </div>
+                </div>
+                <footer class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 15px; border-top: 1px solid var(--border-color); margin-top: 15px;">
+                    <button type="button" class="btn" id="cancelReportBtn" style="border: 1px solid var(--border-color); background: transparent; padding: 8px 16px;">ยกเลิก / Cancel</button>
+                    <button type="submit" class="btn copy" style="background-color: #dc3545; border-color: #dc3545; color: #fff; padding: 8px 16px; font-weight: 600;">ส่งรายงาน / Submit</button>
+                </footer>
+            </form>
+        </div>
+    </div>
 
     <!-- Toast notification -->
     <div class="toast" id="toast"></div>
@@ -235,6 +295,92 @@ if($accessDenied){
                 }
             } catch(err) {
                 showToast('⚠ เกิดข้อผิดพลาดในการเชื่อมต่อ');
+            }
+        });
+
+        // Report Modal functionality
+        const reportBtn = document.getElementById('reportBtn');
+        const reportModal = document.getElementById('reportModal');
+        const closeReportModalBtn = document.getElementById('closeReportModalBtn');
+        const cancelReportBtn = document.getElementById('cancelReportBtn');
+        const reportForm = document.getElementById('reportForm');
+        const reportDetails = document.getElementById('reportDetails');
+        const reportDescGroup = document.getElementById('reportDescGroup');
+        const reasonRadios = document.querySelectorAll('input[name="reason"]');
+
+        const currentUserId = <?php echo $userId ? (int)$userId : 0; ?>;
+
+        reportBtn?.addEventListener('click', function() {
+            if (currentUserId === 0) {
+                showToast('⚠ กรุณาเข้าสู่ระบบก่อนทำการรายงาน');
+                setTimeout(() => {
+                    window.location.href = 'login.php';
+                }, 1500);
+                return;
+            }
+            reportModal.classList.add('open');
+        });
+
+        const reportReqAsterisk = document.getElementById('reportReqAsterisk');
+
+        function closeReportModal() {
+            reportModal.classList.remove('open');
+            reportForm.reset();
+            reportDetails.removeAttribute('required');
+            reportDetails.placeholder = "รายละเอียดเพิ่มเติม (ไม่บังคับ)...";
+            if (reportReqAsterisk) reportReqAsterisk.style.display = 'none';
+        }
+
+        closeReportModalBtn?.addEventListener('click', closeReportModal);
+        cancelReportBtn?.addEventListener('click', closeReportModal);
+
+        // Close when clicking outside the card
+        window.addEventListener('click', function(e) {
+            if (e.target === reportModal) {
+                closeReportModal();
+            }
+        });
+
+        // Toggle required state when selecting 'other'
+        reasonRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.value === 'other') {
+                    reportDetails.setAttribute('required', 'required');
+                    reportDetails.placeholder = "กรุณาระบุรายละเอียดเพิ่มเติมสำหรับตรวจสอบ (จำเป็น)...";
+                    if (reportReqAsterisk) reportReqAsterisk.style.display = 'inline';
+                    reportDetails.focus();
+                } else {
+                    reportDetails.removeAttribute('required');
+                    reportDetails.placeholder = "รายละเอียดเพิ่มเติม (ไม่บังคับ)...";
+                    if (reportReqAsterisk) reportReqAsterisk.style.display = 'none';
+                }
+            });
+        });
+
+        // Handle Report Submission
+        reportForm?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            try {
+                const response = await fetch('report_action.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    showToast('✓ ' + data.message);
+                    closeReportModal();
+                    // Disable button
+                    reportBtn.classList.add('reported');
+                    reportBtn.setAttribute('disabled', 'disabled');
+                    reportBtn.querySelector('span').textContent = 'Reported';
+                } else {
+                    showToast('⚠ ' + data.message);
+                }
+            } catch (err) {
+                showToast('⚠ เกิดข้อผิดพลาดในการส่งข้อมูล');
             }
         });
     </script>

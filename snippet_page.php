@@ -4,6 +4,7 @@ require_once "db/connect.php";
 // require_once "layout/check_user.php";
 
 $searchQuery = trim($_GET['q'] ?? '');
+$selectedLanguage = $_GET['lang'] ?? '';
 $showBookmarks = isset($_GET['bookmarks']) && $_GET['bookmarks'] === '1';
 $onlyOwn = empty($_GET) || (isset($_GET['only_own']) && $_GET['only_own'] === '1');
 $userId = getCurrentUserId();
@@ -11,6 +12,13 @@ $userId = getCurrentUserId();
 if(!$userId){
     header('Location:login.php');
     exit;
+}
+
+// Get all languages
+$languageResult = $control->getLanguage();
+$languages = [];
+if($languageResult){
+    $languages = $languageResult->fetchAll(PDO::FETCH_ASSOC);
 }
 
 $isAdmin = false;
@@ -48,12 +56,12 @@ $currentPage = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 if($showBookmarks && $userId){
     $totalSnippets = $control->getTotalBookmarkedSnippetCount($userId);
     $result = $control->getBookmarkedSnippetsPaginated($userId, $currentPage, $itemsPerPage);
-}elseif($searchQuery !== ''){
-    $totalSnippets = $control->getTotalUserSnippetCount($userId, $searchQuery, $onlyOwn);
-    $result = $control->getUserSnippetsPaginated($userId, $currentPage, $itemsPerPage, $searchQuery, $onlyOwn);
+}elseif($searchQuery !== '' || $selectedLanguage !== ''){
+    $totalSnippets = $control->getTotalUserSnippetCount($userId, $searchQuery, $onlyOwn, $selectedLanguage);
+    $result = $control->getUserSnippetsPaginated($userId, $currentPage, $itemsPerPage, $searchQuery, $onlyOwn, $selectedLanguage);
 }else{
-    $totalSnippets = $control->getTotalUserSnippetCount($userId, '', $onlyOwn);
-    $result = $control->getUserSnippetsPaginated($userId, $currentPage, $itemsPerPage, '', $onlyOwn);
+    $totalSnippets = $control->getTotalUserSnippetCount($userId, '', $onlyOwn, $selectedLanguage);
+    $result = $control->getUserSnippetsPaginated($userId, $currentPage, $itemsPerPage, '', $onlyOwn, $selectedLanguage);
 }
 
 $snippets = [];
@@ -87,6 +95,9 @@ if(!$showBookmarks){
 }
 if($searchQuery !== ''){
     $bookmarkParams['q'] = $searchQuery;
+}
+if($selectedLanguage !== ''){
+    $bookmarkParams['lang'] = $selectedLanguage;
 }
 if($onlyOwn){
     $bookmarkParams['only_own'] = '1';
@@ -153,6 +164,16 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                         <input type="text" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>" placeholder="Search snippets...">
                     </div>
+                    
+                    <select name="lang" class="select-per-page" onchange="this.form.submit()">
+                        <option value="">All Languages</option>
+                        <?php foreach($languages as $lang): ?>
+                            <option value="<?php echo htmlspecialchars($lang['language_id']); ?>" 
+                                <?php echo ($selectedLanguage == $lang['language_id']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($lang['language_name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
                     
                     <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--secondary); cursor: pointer; user-select: none;">
                         <input type="checkbox" name="only_own" value="1" <?php echo $onlyOwn ? 'checked' : ''; ?> onchange="this.form.submit()" style="cursor: pointer; width: 18px; height: 18px; accent-color: var(--primary); margin: 0;">
@@ -293,6 +314,7 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                 for($i = $startPage; $i <= $endPage; $i++){
                     $pageUrl = 'snippet_page.php?page=' . $i;
                     if($searchQuery !== '') $pageUrl .= '&q=' . urlencode($searchQuery);
+                    if($selectedLanguage !== '') $pageUrl .= '&lang=' . urlencode($selectedLanguage);
                     if($onlyOwn) $pageUrl .= '&only_own=1';
                     if($showBookmarks) $pageUrl .= '&bookmarks=1';
                     if($itemsPerPage !== 10 || isset($_GET['limit'])) $pageUrl .= '&limit=' . $itemsPerPage;
@@ -308,6 +330,7 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                 if($totalPages > 10 && $currentPage < $totalPages){
                     $nextPageUrl = 'snippet_page.php?page=' . ($currentPage + 1);
                     if($searchQuery !== '') $nextPageUrl .= '&q=' . urlencode($searchQuery);
+                    if($selectedLanguage !== '') $nextPageUrl .= '&lang=' . urlencode($selectedLanguage);
                     if($onlyOwn) $nextPageUrl .= '&only_own=1';
                     if($showBookmarks) $nextPageUrl .= '&bookmarks=1';
                     if($itemsPerPage !== 10 || isset($_GET['limit'])) $nextPageUrl .= '&limit=' . $itemsPerPage;

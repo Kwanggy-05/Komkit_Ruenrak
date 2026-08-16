@@ -3,12 +3,22 @@ require_once "layout/session.php";
 require_once "db/connect.php";
 
 if(getCurrentUserId()){
+    $currUserId = getCurrentUserId();
+    $update_status_sql = "UPDATE user SET status = 'offline' WHERE user_id = :user_id";
+    $update_status_stmt = $pdo->prepare($update_status_sql);
+    $update_status_stmt->bindParam(":user_id", $currUserId, PDO::PARAM_INT);
+    $update_status_stmt->execute();
+
     $_SESSION = array();
     session_destroy();
     session_start();
 }
 
+$errorAlert = "";
 $hasAnyUser = $user->countUsers();
+if($hasAnyUser === 0){
+    $errorAlert = "โปรดสมัครสมาชิก";
+}
 
 if($_SERVER["REQUEST_METHOD"]=="POST"){
     $username = $_POST["username"];
@@ -21,6 +31,8 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
         $_SESSION["userid"] = $result["user_id"];
         header("Location:snippet_page.php");
         exit;
+    } else {
+        $errorAlert = "Incorrect username or password";
     }
 }
 ?>
@@ -60,7 +72,7 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
                 <div class="form-group">
                     <label for="username">Username</label>
                     <input type="text" name="username"
-                    value="<?php if($_SERVER["REQUEST_METHOD"]=="POST") echo $_POST["username"]; ?>"
+                    value="<?php if($_SERVER["REQUEST_METHOD"]=="POST") echo htmlspecialchars($username); ?>"
                     >
                 </div>
                 
@@ -69,13 +81,9 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
                     <input type="password" name="password">
                     <a href="forget_password.php" class="forgot-password" style="text-decoration: none; display: block;">Forget password?</a>
                 </div>
-                <?php
-            if($hasAnyUser === 0){
-                echo '<div class="error-alert">โปรดสมัครสมาชิก</div>';
-            } elseif($_SERVER["REQUEST_METHOD"]=="POST" && !$result){
-                echo '<div class="error-alert">Incorrect username or password</div>';
-            }
-            ?>
+                <?php if ($errorAlert !== ""): ?>
+                    <div class="error-alert"><?php echo htmlspecialchars($errorAlert); ?></div>
+                <?php endif; ?>
 
                 <input type="submit" name="submit" value="Sign in">
                 

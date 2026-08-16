@@ -18,6 +18,11 @@
     --radius-lg: 12px;
 }
 
+* {
+    box-sizing: border-box;
+    font-family: 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
 body {
     font-family: 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
     background-color: var(--neutral-bg);
@@ -353,4 +358,99 @@ body {
         width: 100%;
         flex: 100%;
     }
+}
+
+/* Report Button & Modal styling */
+.btn.report-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-color: var(--border-color);
+    color: #dc3545;
+}
+
+.btn.report-btn:hover {
+    border-color: #dc3545;
+    background-color: #fdf2f2;
+    color: #a71d2a;
+}
+
+.btn.report-btn.reported {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+/* Modal Overlay styling */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+.modal-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Modal Card styling */
+.modal-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    width: 90%;
+    max-width: 500px;
+    padding: 24px;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Modal Header styling */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--secondary);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-muted);
+}
+
+.modal-close:hover {
+    color: var(--text-color);
 }

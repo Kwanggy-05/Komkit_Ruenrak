@@ -4,6 +4,12 @@ require_once "layout/session.php";
 require_once "db/connect.php";
 
 if (getCurrentUserId()) {
+    $currUserId = getCurrentUserId();
+    $update_status_sql = "UPDATE user SET status = 'offline' WHERE user_id = :user_id";
+    $update_status_stmt = $pdo->prepare($update_status_sql);
+    $update_status_stmt->bindParam(":user_id", $currUserId, PDO::PARAM_INT);
+    $update_status_stmt->execute();
+
     $_SESSION = array();
     session_destroy();
     session_start();

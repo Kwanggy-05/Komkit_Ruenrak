@@ -20,6 +20,11 @@
     --radius-lg: 12px;
 }
 
+* {
+    box-sizing: border-box;
+    font-family: 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
 body {
     background-color: var(--neutral-bg);
     margin: 0;

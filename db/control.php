@@ -332,7 +332,7 @@ class Control{
 
     // ===== Pagination Methods =====
 
-    function getTotalUserSnippetCount($user_id, $keyword = '', $only_own = false){
+    function getTotalUserSnippetCount($user_id, $keyword = '', $only_own = false, $language_id = ''){
         try{
             $sql = "SELECT COUNT(DISTINCT a.snippet_id) as total FROM snippet a
                 LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
@@ -354,6 +354,10 @@ class Control{
                 )";
             }
 
+            if($language_id !== ''){
+                $sql .= " AND a.language_id = :language_id";
+            }
+
             $stmt = $this->db->prepare($sql);
             if ($only_own) {
                 $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
@@ -362,6 +366,10 @@ class Control{
             if($keyword !== ''){
                 $searchTerm = '%' . $keyword . '%';
                 $stmt->bindParam(':keyword', $searchTerm, PDO::PARAM_STR);
+            }
+
+            if($language_id !== ''){
+                $stmt->bindParam(':language_id', $language_id, PDO::PARAM_INT);
             }
 
             $stmt->execute();
@@ -387,7 +395,7 @@ class Control{
         }
     }
 
-    function getUserSnippetsPaginated($user_id, $page = 1, $limit = 10, $keyword = '', $only_own = false){
+    function getUserSnippetsPaginated($user_id, $page = 1, $limit = 10, $keyword = '', $only_own = false, $language_id = ''){
         try{
             $page = max(1, (int)$page);
             $limit = max(1, (int)$limit);
@@ -416,6 +424,10 @@ class Control{
                 )";
             }
 
+            if($language_id !== ''){
+                $sql .= " AND a.language_id = :language_id";
+            }
+
             $sql .= " GROUP BY a.snippet_id
                 ORDER BY a.snippet_id DESC
                 LIMIT :offset, :limit";
@@ -430,6 +442,10 @@ class Control{
             if($keyword !== ''){
                 $searchTerm = '%' . $keyword . '%';
                 $stmt->bindParam(':keyword', $searchTerm, PDO::PARAM_STR);
+            }
+
+            if($language_id !== ''){
+                $stmt->bindParam(':language_id', $language_id, PDO::PARAM_INT);
             }
 
             $stmt->execute();
@@ -889,6 +905,84 @@ class Control{
             return true;
         }catch(PDOException $e){
             $this->db->rollBack();
+            return false;
+        }
+    }
+
+    function createReport($snippet_id, $user_id, $reason, $details){
+        try{
+            $sql = "INSERT INTO reports (snippet_id, user_id, reason, details, status) 
+                    VALUES (:snippet_id, :user_id, :reason, :details, 'pending')";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmt->bindParam(":user_id", $user_id, PDO::PARAM_INT);
+            $stmt->bindParam(":reason", $reason, PDO::PARAM_STR);
+            $stmt->bindParam(":details", $details, PDO::PARAM_STR);
+            return $stmt->execute();
+        }catch(PDOException $e){
+            return false;
+        }
+    }
+
+    function hasUserReported($user_id, $snippet_id){
+        try{
+            $sql = "SELECT COUNT(*) as count FROM reports WHERE user_id = :user_id AND snippet_id = :snippet_id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(":user_id", $user_id, PDO::PARAM_INT);
+            $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return ((int)$result['count']) > 0;
+        }catch(PDOException $e){
+            return false;
+        }
+    }
+
+    function getAllReportsAdmin($statusFilter = null){
+        try{
+            $sql = "SELECT r.*, s.title as snippet_title, s.deleted as snippet_deleted, s.source_code,
+                           u.username as reporter_username, u.firstname as reporter_firstname, u.lastname as reporter_lastname,
+                           owner.username as owner_username, owner.firstname as owner_firstname, owner.lastname as owner_lastname
+                    FROM reports r
+                    INNER JOIN snippet s ON r.snippet_id = s.snippet_id
+                    INNER JOIN user u ON r.user_id = u.user_id
+                    INNER JOIN user owner ON s.user_id = owner.user_id";
+            
+            if($statusFilter !== null){
+                $sql .= " WHERE r.status = :status";
+            }
+            
+            $sql .= " ORDER BY r.created_at DESC";
+            
+            $stmt = $this->db->prepare($sql);
+            if($statusFilter !== null){
+                $stmt->bindParam(":status", $statusFilter, PDO::PARAM_STR);
+            }
+            $stmt->execute();
+            return $stmt;
+        }catch(PDOException $e){
+            return false;
+        }
+    }
+
+    function rejectReportAdmin($report_id){
+        try{
+            $sql = "UPDATE reports SET status = 'rejected' WHERE report_id = :report_id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(":report_id", $report_id, PDO::PARAM_INT);
+            return $stmt->execute();
+        }catch(PDOException $e){
+            return false;
+        }
+    }
+
+    function resolveReportsForSnippet($snippet_id){
+        try{
+            $sql = "UPDATE reports SET status = 'removed' WHERE snippet_id = :snippet_id AND status = 'pending'";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            return $stmt->execute();
+        }catch(PDOException $e){
             return false;
         }
     }
