@@ -158,7 +158,7 @@ if($totalPages === 0) $totalPages = 1;
                                     </div>
                                 <?php endif; ?>
                                 <button class="btn-view-code">
-                                    <a href="viewcode.php?view=<?php echo urlencode($row['snippet_id']); ?>" >View code</a>
+                                    <a href="viewcode.php?view=<?php echo urlencode($row['snippet_id']); ?>&from_trash=1" >View code</a>
                                 </button>
                             </div>
                             

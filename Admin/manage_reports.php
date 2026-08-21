@@ -55,7 +55,7 @@ if ($reportsResult) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Reports - Admin Panel</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=<?php echo time(); ?>">
 </head>
 <body>
     <div class="admin-container">
@@ -182,7 +182,7 @@ if ($reportsResult) {
                         <thead>
                             <tr>
                                 <th style="width: 60px;">ID</th>
-                                <th>Snippet Title</th>
+                                <th>Snippet & ID</th>
                                 <th>Reason</th>
                                 <th>Reporter</th>
                                 <th>Created At</th>
@@ -202,7 +202,7 @@ if ($reportsResult) {
                                     <tr>
                                         <td class="col-id"><?php echo htmlspecialchars($rep['report_id']); ?></td>
                                         <td style="font-weight: 600;">
-                                            <?php echo htmlspecialchars($rep['snippet_title']); ?>
+                                            <?php echo htmlspecialchars($rep['snippet_title']); ?> (ID: <?php echo htmlspecialchars($rep['snippet_id']); ?>)
                                             <?php if ((int)$rep['snippet_deleted'] === 1): ?>
                                                 <span class="badge badge-deleted" style="margin-left: 5px;">Deleted</span>
                                             <?php endif; ?>
@@ -236,7 +236,7 @@ if ($reportsResult) {
                                         <td style="text-align: center;">
                                             <div class="action-buttons" style="justify-content: center;">
                                                 <!-- View Details Trigger -->
-                                                <a href="viewreport.php?id=<?php echo $rep['report_id']; ?>" class="btn-action btn-view" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
+                                                <a href="viewreport.php?id=<?php echo $rep['report_id']; ?>" class="btn-action btn-view">
                                                     Details
                                                 </a>
                                                 
@@ -245,7 +245,7 @@ if ($reportsResult) {
                                                     <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to dismiss this report?');">
                                                         <input type="hidden" name="action" value="reject">
                                                         <input type="hidden" name="report_id" value="<?php echo $rep['report_id']; ?>">
-                                                        <button type="submit" class="btn-action btn-restore" style="background-color: #6C757D; color: white;">Dismiss</button>
+                                                        <button type="submit" class="btn-action btn-restore" style="background-color: #15803D; color: white;">Dismiss</button>
                                                     </form>
                                                     
                                                     <?php if ((int)$rep['snippet_deleted'] !== 1): ?>
@@ -253,7 +253,7 @@ if ($reportsResult) {
                                                         <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this snippet? (This will remove the snippet from the system)');">
                                                             <input type="hidden" name="action" value="delete_snippet">
                                                             <input type="hidden" name="snippet_id" value="<?php echo $rep['snippet_id']; ?>">
-                                                            <button type="submit" class="btn-action btn-delete">Delete Code</button>
+                                                            <button type="submit" class="btn-action btn-delete">Delete</button>
                                                         </form>
                                                     <?php endif; ?>
                                                 <?php endif; ?>

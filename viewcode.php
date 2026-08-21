@@ -19,11 +19,13 @@ if(isset($_GET['from_search']) && $_GET['from_search'] === '1'){
     if(!empty($backParams)){
         $backUrl .= '?' . http_build_query($backParams);
     }
+}elseif(isset($_GET['from_trash']) && $_GET['from_trash'] === '1'){
+    $backUrl = 'remove.php';
 }
 
 if(isset($_GET['view']) && is_numeric($_GET['view'])){
     $id = (int)$_GET['view'];
-    $snippet = $control->getSnippetById($id, $userId);
+    $snippet = $control->getSnippetById($id, $userId, true);
     if($snippet && strtolower((string)($snippet['visibility'] ?? '')) === 'protected' && !$userId){
         $accessDenied = true;
     }
@@ -66,35 +68,47 @@ if($accessDenied){
             <!-- Top Actions Row -->
             <div class="top-actions-row">
                 <div class="right-actions">
-                    <!-- Report Button -->
-                    <button class="btn report-btn <?php echo $isReported ? 'reported' : ''; ?>" id="reportBtn" data-snippet-id="<?php echo (int)$snippet['snippet_id']; ?>" <?php echo $isReported ? 'disabled' : ''; ?>>
-                        <svg width="14" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle;">
-                            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
-                            <line x1="4" y1="22" x2="4" y2="15"></line>
-                        </svg>
-                        <span><?php echo $isReported ? 'Reported' : 'Report'; ?></span>
-                    </button>
+                    <?php if((int)($snippet['deleted'] ?? 0) !== 1): ?>
+                        <!-- Report Button -->
+                        <button class="btn report-btn <?php echo $isReported ? 'reported' : ''; ?>" id="reportBtn" data-snippet-id="<?php echo (int)$snippet['snippet_id']; ?>" <?php echo $isReported ? 'disabled' : ''; ?>>
+                            <svg width="14" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle;">
+                                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+                                <line x1="4" y1="22" x2="4" y2="15"></line>
+                            </svg>
+                            <span><?php echo $isReported ? 'Reported' : 'Report'; ?></span>
+                        </button>
 
-                    <!-- Bookmark Button -->
-                    <button class="btn bookmark-btn <?php echo $isBookmarked ? 'bookmarked' : ''; ?>" id="bookmarkBtn" data-snippet-id="<?php echo (int)$snippet['snippet_id']; ?>">
-                        <svg width="14" height="18" viewBox="0 0 384 512" fill="<?php echo $isBookmarked ? '#fff' : 'none'; ?>" stroke="<?php echo $isBookmarked ? '#fff' : '#111'; ?>" stroke-width="30" style="margin-right: 4px; vertical-align: middle;">
-                            <path d="M0 512V48C0 21.49 21.49 0 48 0h288c26.51 0 48 21.49 48 48v464L192 400 0 512z"/>
-                        </svg>
-                        <span><?php echo $isBookmarked ? 'Bookmarked' : 'Bookmark'; ?></span>
-                    </button>
+                        <!-- Bookmark Button -->
+                        <button class="btn bookmark-btn <?php echo $isBookmarked ? 'bookmarked' : ''; ?>" id="bookmarkBtn" data-snippet-id="<?php echo (int)$snippet['snippet_id']; ?>">
+                            <svg width="14" height="18" viewBox="0 0 384 512" fill="<?php echo $isBookmarked ? '#fff' : 'none'; ?>" stroke="<?php echo $isBookmarked ? '#fff' : '#111'; ?>" stroke-width="30" style="margin-right: 4px; vertical-align: middle;">
+                                <path d="M0 512V48C0 21.49 21.49 0 48 0h288c26.51 0 48 21.49 48 48v464L192 400 0 512z"/>
+                            </svg>
+                            <span><?php echo $isBookmarked ? 'Bookmarked' : 'Bookmark'; ?></span>
+                        </button>
 
-                    <!-- Like Button -->
-                    <button class="btn like-btn <?php echo $isLiked ? 'liked' : ''; ?>" id="likeBtn" data-snippet-id="<?php echo (int)$snippet['snippet_id']; ?>">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="<?php echo $isLiked ? '#fff' : 'none'; ?>" stroke="<?php echo $isLiked ? '#fff' : '#111'; ?>" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle;">
-                            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
-                        </svg>
-                        <span class="like-btn-count"><?php echo $likeCount; ?></span>
-                    </button>
+                        <!-- Like Button -->
+                        <button class="btn like-btn <?php echo $isLiked ? 'liked' : ''; ?>" id="likeBtn" data-snippet-id="<?php echo (int)$snippet['snippet_id']; ?>">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="<?php echo $isLiked ? '#fff' : 'none'; ?>" stroke="<?php echo $isLiked ? '#fff' : '#111'; ?>" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle;">
+                                <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+                            </svg>
+                            <span class="like-btn-count"><?php echo $likeCount; ?></span>
+                        </button>
+                    <?php endif; ?>
 
                     <!-- Copy Button -->
                     <button class="btn copy" id="copyBtn">Copy</button>
                 </div>
             </div>
+
+            <?php if((int)($snippet['deleted'] ?? 0) === 1): ?>
+                <div class="trash-notice">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    <span>This snippet is in the Trash. You can restore it or delete it permanently from the <a href="remove.php" style="color: inherit; text-decoration: underline; font-weight: 700;">Trash page</a>.</span>
+                </div>
+            <?php endif; ?>
 
             <!-- Top Row: Title & Language -->
             <div class="top-row">
@@ -123,7 +137,7 @@ if($accessDenied){
             <!-- Description (Readonly) -->
             <div class="form-group">
                 <label for="description">Description</label>
-                <textarea name="description" id="description" readonly><?php echo htmlspecialchars($snippet['description']); ?></textarea>
+                <div class="description-view" id="description"><?php echo htmlspecialchars($snippet['description']); ?></div>
             </div>
 
             <!-- Tags & Visibility Row -->

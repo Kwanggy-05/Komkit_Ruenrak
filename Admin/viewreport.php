@@ -114,7 +114,7 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
                         <form method="POST" style="margin: 0;">
                             <input type="hidden" name="action" value="reject">
                             <input type="hidden" name="report_id" value="<?php echo $report['report_id']; ?>">
-                            <button type="submit" class="btn" style="border-color: var(--border-color); color: var(--secondary); background: transparent;" onclick="return confirm('Dismiss this report?');">Dismiss Report</button>
+                            <button type="submit" class="btn" style="border-color: var(--border-color); color: white; background: #15803D;" onclick="return confirm('Dismiss this report?');">Dismiss Report</button>
                         </form>
                         <!-- Delete Snippet Form -->
                         <form method="POST" style="margin: 0;">
@@ -167,7 +167,7 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
                 <!-- Description (Readonly) -->
                 <div class="form-group">
                     <label for="description">Description</label>
-                    <textarea name="description" id="description" readonly><?php echo htmlspecialchars($report['snippet_desc']); ?></textarea>
+                    <div class="description-view" id="description"><?php echo htmlspecialchars($report['snippet_desc']); ?></div>
                 </div>
 
                 <!-- Tags & Visibility Row -->

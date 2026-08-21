@@ -168,12 +168,15 @@ if(isset($_POST["submit"])){
                 <img id="image-preview" src="<?php echo htmlspecialchars($current_image_path); ?>" alt="Image Preview" style="<?php echo !empty($current_image_path) ? 'display: block;' : ''; ?>">
             </div>
 
-            <div class="right-actions">
-                <select name="visibility" class="visibility-dropdown">
-                    <option value="public" <?php echo ($visibility === 'public') ? 'selected' : ''; ?>>Public</option>
-                    <option value="protected" <?php echo ($visibility === 'protected') ? 'selected' : ''; ?>>Protected</option>
-                    <option value="private" <?php echo ($visibility === 'private') ? 'selected' : ''; ?>>Private</option>
-                </select>
+            <div class="right-actions" style="align-items: flex-end;">
+                <div class="form-group">
+                    <label for="visibility">Visibility</label>
+                    <select name="visibility" id="visibility" class="visibility-dropdown">
+                        <option value="public" <?php echo ($visibility === 'public') ? 'selected' : ''; ?>>Public</option>
+                        <option value="protected" <?php echo ($visibility === 'protected') ? 'selected' : ''; ?>>Protected</option>
+                        <option value="private" <?php echo ($visibility === 'private') ? 'selected' : ''; ?>>Private</option>
+                    </select>
+                </div>
                 
                 <input type="submit" name="submit" value="<?php echo htmlspecialchars($formButton); ?>" >
             </div>

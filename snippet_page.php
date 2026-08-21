@@ -41,7 +41,7 @@ if(isset($_GET['delete']) && is_numeric($_GET['delete'])){
 }
 
 // Pagination settings
-$allowedLimits = [10, 15, 20, 25];
+$allowedLimits = [10, 25, 50];
 if(isset($_GET['limit']) && in_array((int)$_GET['limit'], $allowedLimits)){
     $itemsPerPage = (int)$_GET['limit'];
     $_SESSION['items_per_page'] = $itemsPerPage;

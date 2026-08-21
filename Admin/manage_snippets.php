@@ -48,7 +48,7 @@ if ($snippetResult) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Snippets - Admin Panel</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=<?php echo time(); ?>">
 </head>
 <body>
     <div class="admin-container">
@@ -225,7 +225,7 @@ if ($snippetResult) {
                                         <td style="text-align: center;">
                                             <div class="action-buttons" style="justify-content: center;">
                                                 <!-- View Code Trigger -->
-                                                <a href="viewcode.php?view=<?php echo $snip['snippet_id']; ?>" class="btn-action btn-view" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
+                                                <a href="viewcode.php?view=<?php echo $snip['snippet_id']; ?>" class="btn-action btn-view">
                                                     View Code
                                                 </a>
                                                 

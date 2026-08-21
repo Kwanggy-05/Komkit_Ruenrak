@@ -185,8 +185,12 @@ class Control{
         }
     }
 
-    function getSnippetById($snippet_id, $current_user_id = 0){
+    function getSnippetById($snippet_id, $current_user_id = 0, $include_deleted = false){
         try{
+            $deleted_condition = $include_deleted 
+                ? "(s.deleted = 0 OR s.deleted IS NULL OR (s.deleted = 1 AND s.user_id = :user_id))"
+                : "(s.deleted = 0 OR s.deleted IS NULL)";
+            
             $sql = "SELECT s.*, l.language_name,
                 GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags
                 FROM snippet s
@@ -195,7 +199,7 @@ class Control{
                 LEFT JOIN tag t ON st.tag_id = t.tag_id
                 WHERE s.snippet_id = :snippet_id
                 AND (s.visibility IN ('public','protected') OR s.user_id = :user_id)
-                AND (s.deleted = 0 OR s.deleted IS NULL)
+                AND $deleted_condition
                 GROUP BY s.snippet_id";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);

@@ -311,7 +311,7 @@ a {
     flex-direction: column; 
     gap: 8px; 
     align-items: flex-start; 
-    flex: 1 1 auto;
+    flex: 1;
     min-width: 0;
 }
 
@@ -361,10 +361,11 @@ a {
 }
 
 .card-middle { 
-    flex-grow: 1; 
+    width: 180px; 
+    flex-shrink: 0;
     display: flex; 
     justify-content: center; 
-    flex-shrink: 0;
+    align-items: center;
 }
 
 .language-tag { 
@@ -391,7 +392,9 @@ a {
 .card-right { 
     display: flex; 
     align-items: center; 
+    justify-content: flex-end;
     gap: 20px; 
+    width: 160px;
     flex-shrink: 0;
 }
 

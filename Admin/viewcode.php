@@ -61,7 +61,7 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
             <!-- Description (Readonly) -->
             <div class="form-group">
                 <label for="description">Description</label>
-                <textarea name="description" id="description" readonly><?php echo htmlspecialchars($snippet['description']); ?></textarea>
+                <div class="description-view" id="description"><?php echo htmlspecialchars($snippet['description']); ?></div>
             </div>
 
             <!-- Tags & Visibility Row -->

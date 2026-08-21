@@ -1,4 +1,12 @@
 <?php
+// Block requests with PATH_INFO (e.g. /page.php/Admin) for security
+if (!empty($_SERVER['PATH_INFO']) || !empty($_SERVER['ORIG_PATH_INFO'])) {
+    header("HTTP/1.1 404 Not Found");
+    echo "<h1>404 Not Found</h1>";
+    echo "The requested URL was not found on this server.";
+    exit;
+}
+
 function startAppSession() {
     if (session_status() === PHP_SESSION_ACTIVE) {
         $_SESSION = array();

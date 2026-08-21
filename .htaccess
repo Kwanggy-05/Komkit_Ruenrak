@@ -1,0 +1,5 @@
+# Disable AcceptPathInfo to prevent URL path traversal/PATH_INFO execution of PHP files
+AcceptPathInfo Off
+
+# Disable directory listing (directory indexes)
+Options -Indexes

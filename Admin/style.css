@@ -490,6 +490,7 @@ body {
 .btn-action {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     padding: 6px 12px;
     border-radius: var(--rounded-sm);
@@ -499,6 +500,10 @@ body {
     border: none;
     transition: all 0.15s ease;
     text-decoration: none;
+    min-width: 90px;
+    height: 34px;
+    box-sizing: border-box;
+    line-height: 1.6;
 }
 
 .btn-edit {
