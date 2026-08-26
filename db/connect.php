@@ -8,8 +8,8 @@ if (!empty($_SERVER['PATH_INFO']) || !empty($_SERVER['ORIG_PATH_INFO'])) {
 }
 
 $host="localhost";
-$username="root";
-$password="";
+$username="snippetbox";
+$password="code7836";
 $db="snippetboxdb";
 $dsn="mysql:host=$host;dbname=$db;charset=utf8";
 try{
