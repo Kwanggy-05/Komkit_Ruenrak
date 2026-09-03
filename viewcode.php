@@ -10,9 +10,9 @@ $likeCount = 0;
 $userId = getCurrentUserId();
 $accessDenied = false;
 
-$backUrl = 'snippet_page.php';
+$backUrl = $userId ? 'snippet_page.php' : 'Home.php';
 if(isset($_GET['from_search']) && $_GET['from_search'] === '1'){
-    $backUrl = 'search.php';
+    $backUrl = 'result.php';
     $backParams = [];
     if(isset($_GET['q'])) $backParams['q'] = $_GET['q'];
     if(isset($_GET['lang'])) $backParams['lang'] = $_GET['lang'];
@@ -21,6 +21,8 @@ if(isset($_GET['from_search']) && $_GET['from_search'] === '1'){
     }
 }elseif(isset($_GET['from_trash']) && $_GET['from_trash'] === '1'){
     $backUrl = 'remove.php';
+}elseif(isset($_GET['from_explore']) && $_GET['from_explore'] === '1'){
+    $backUrl = 'explore.php';
 }
 
 if(isset($_GET['view']) && is_numeric($_GET['view'])){
@@ -59,7 +61,7 @@ if($accessDenied){
     <link rel="stylesheet" href="style/viewcodecss.css?v=<?php echo time(); ?>">
 </head>
 <body>
-    <a href="<?php echo htmlspecialchars($backUrl); ?>" class="back-btn">Back</a>
+    <a href="<?php echo htmlspecialchars($backUrl); ?>" onclick="if(window.history.length > 1){ window.history.back(); return false; }" class="back-btn">Back</a>
 
     <?php if(!$snippet): ?>
         <div class="empty" style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 16px;">Snippet not found</div>

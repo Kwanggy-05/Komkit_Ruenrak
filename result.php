@@ -149,7 +149,16 @@ Search results for <strong><?php echo htmlspecialchars($selectedLanguageName); ?
                                 }
                             ?>
                             <div class="card-title"><?php echo htmlspecialchars($title); ?></div>
-                            <a href="viewcode.php?view=<?php echo urlencode($row['snippet_id']); ?>" class="btn-view-code">View code</a>
+                            <?php
+                                $viewUrl = 'viewcode.php?view=' . urlencode($row['snippet_id']) . '&from_search=1';
+                                if ($searchQuery !== '') {
+                                    $viewUrl .= '&q=' . urlencode($searchQuery);
+                                }
+                                if ($selectedLanguage !== '') {
+                                    $viewUrl .= '&lang=' . urlencode($selectedLanguage);
+                                }
+                            ?>
+                            <a href="<?php echo htmlspecialchars($viewUrl); ?>" class="btn-view-code">View code</a>
                         </div>
                         
                         <div class="card-middle" style="gap: 12px;">

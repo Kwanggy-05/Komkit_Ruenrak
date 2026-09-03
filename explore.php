@@ -232,7 +232,7 @@ $bookmarkUrl = 'explore.php' . (!empty($bookmarkParams) ? '?' . http_build_query
                                     </div>
                                 <?php endif; ?>
                                 <button class="btn-view-code">
-                                    <a href="viewcode.php?view=<?php echo urlencode($row['snippet_id']); ?>" >View code</a>
+                                    <a href="viewcode.php?view=<?php echo urlencode($row['snippet_id']); ?>&from_explore=1" >View code</a>
                                 </button>
                             </div>
                             
