@@ -10,6 +10,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['action'])) {
         $reportId = (int)($_POST['report_id'] ?? 0);
         $snippetId = (int)($_POST['snippet_id'] ?? 0);
+        $adminUsername = $_SESSION['username'] ?? 'Admin';
         
         if ($_POST['action'] === 'reject') {
             if ($reportId <= 0) {
@@ -21,17 +22,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $errorMsg = "Failed to dismiss report.";
                 }
             }
-        } elseif ($_POST['action'] === 'delete_snippet') {
+        } elseif ($_POST['action'] === 'suspend_snippet') {
             if ($snippetId <= 0) {
                 $errorMsg = "Invalid snippet ID.";
             } else {
-                // Soft delete snippet
-                if ($control->softDeleteSnippetAdmin($snippetId)) {
-                    // Resolve all reports for this snippet
-                    $control->resolveReportsForSnippet($snippetId);
-                    $successMsg = "Snippet deleted and reports resolved.";
+                $reason = trim($_POST['reason'] ?? 'Reported violation');
+                if ($reason === '') {
+                    $reason = 'Reported violation';
+                }
+                if ($control->suspendSnippetAdmin($snippetId, $adminUsername, $reason)) {
+                    $successMsg = "Snippet suspended successfully and related reports resolved.";
                 } else {
-                    $errorMsg = "Failed to delete snippet.";
+                    $errorMsg = "Failed to suspend snippet.";
+                }
+            }
+        } elseif ($_POST['action'] === 'unsuspend_snippet') {
+            if ($snippetId <= 0) {
+                $errorMsg = "Invalid snippet ID.";
+            } else {
+                if ($control->unsuspendSnippetAdmin($snippetId, $adminUsername)) {
+                    $successMsg = "Snippet unsuspended successfully.";
+                } else {
+                    $errorMsg = "Failed to unsuspend snippet.";
                 }
             }
         }
@@ -40,11 +52,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 $backUrl = 'manage_reports.php';
 
+$suspensionHistory = [];
 if(isset($_GET['id']) && is_numeric($_GET['id'])){
     $id = (int)$_GET['id'];
     $report = $control->getReportByIdAdmin($id);
+    if ($report && !empty($report['snippet_id'])) {
+        $suspensionHistory = $control->getSnippetSuspensionHistory((int)$report['snippet_id']);
+    }
 }
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -108,26 +123,94 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
                     </div>
                 </div>
                 
-                <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 12px; align-items: center;">
-                    <?php if ($report['status'] === 'pending' && (int)($report['snippet_deleted'] ?? 0) === 0): ?>
-                        <!-- Reject / Dismiss Report Form -->
-                        <form method="POST" style="margin: 0;">
-                            <input type="hidden" name="action" value="reject">
-                            <input type="hidden" name="report_id" value="<?php echo $report['report_id']; ?>">
-                            <button type="submit" class="btn" style="border-color: var(--border-color); color: white; background: #15803D;" onclick="return confirm('Dismiss this report?');">Dismiss Report</button>
-                        </form>
-                        <!-- Delete Snippet Form -->
-                        <form method="POST" style="margin: 0;">
-                            <input type="hidden" name="action" value="delete_snippet">
-                            <input type="hidden" name="snippet_id" value="<?php echo $report['snippet_id']; ?>">
-                            <button type="submit" class="btn copy" style="background-color: #dc3545; border-color: #dc3545;" onclick="return confirm('Warning: This will soft delete the snippet and resolve all associated reports. Proceed?');">Delete Snippet</button>
-                        </form>
-                    <?php else: ?>
-                        <span style="font-weight: bold; text-transform: uppercase; font-size: 0.9rem; font-family: 'Lato', sans-serif; color: <?php echo ((int)($report['snippet_deleted'] ?? 0) === 1 || $report['status'] === 'removed') ? '#dc3545' : '#28a745'; ?>;">
-                            Status: <?php echo ((int)($report['snippet_deleted'] ?? 0) === 1) ? 'DELETED' : htmlspecialchars(strtoupper($report['status'])); ?>
-                        </span>
-                    <?php endif; ?>
+                <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <div>
+                        <span style="font-weight: 600; font-family: 'Lato', sans-serif; font-size: 0.95rem;">Snippet Status: </span>
+                        <?php if ((int)($report['snippet_suspended'] ?? 0) === 1): ?>
+                            <span style="font-weight: bold; color: #dc2626; padding: 3px 8px; background: #fee2e2; border-radius: 4px; font-size: 0.85rem;">SUSPENDED (ถูกระงับ)</span>
+                        <?php elseif ((int)($report['snippet_deleted'] ?? 0) === 1): ?>
+                            <span style="font-weight: bold; color: #6b7280; padding: 3px 8px; background: #f3f4f6; border-radius: 4px; font-size: 0.85rem;">DELETED (ผู้ใช้ลบ)</span>
+                        <?php else: ?>
+                            <span style="font-weight: bold; color: #15803d; padding: 3px 8px; background: #dcfce7; border-radius: 4px; font-size: 0.85rem;">ACTIVE (ปกติ)</span>
+                        <?php endif; ?>
+                    </div>
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <?php if ($report['status'] === 'pending'): ?>
+                            <!-- Reject / Dismiss Report Form -->
+                            <form method="POST" style="margin: 0;">
+                                <input type="hidden" name="action" value="reject">
+                                <input type="hidden" name="report_id" value="<?php echo $report['report_id']; ?>">
+                                <button type="submit" class="btn" style="border-color: var(--border-color); color: white; background: #15803D;" onclick="return confirm('Dismiss this report?');">Dismiss Report</button>
+                            </form>
+                        <?php endif; ?>
+
+                        <?php if ((int)($report['snippet_suspended'] ?? 0) === 1): ?>
+                            <!-- Unsuspend Snippet Form -->
+                            <form method="POST" style="margin: 0;">
+                                <input type="hidden" name="action" value="unsuspend_snippet">
+                                <input type="hidden" name="snippet_id" value="<?php echo $report['snippet_id']; ?>">
+                                <button type="submit" class="btn" style="background-color: #2563eb; color: white;" onclick="return confirm('Are you sure you want to unsuspend this snippet?');">Unsuspend Snippet</button>
+                            </form>
+                        <?php else: ?>
+                            <!-- Suspend Snippet Form -->
+                            <form method="POST" style="margin: 0;" onsubmit="return promptSuspend(this, '<?php echo htmlspecialchars(addslashes($report['reason'])); ?>');">
+                                <input type="hidden" name="action" value="suspend_snippet">
+                                <input type="hidden" name="snippet_id" value="<?php echo $report['snippet_id']; ?>">
+                                <input type="hidden" name="reason" value="">
+                                <button type="submit" class="btn copy" style="background-color: #d97706; border-color: #d97706; color: white;">Suspend Snippet</button>
+                            </form>
+                        <?php endif; ?>
+                    </div>
                 </div>
+            </div>
+
+            <!-- Suspension History Card -->
+            <div class="report-info-card" style="background-color: #fff; border: 1px solid var(--border-color); border-left: 4px solid #2563eb; border-radius: var(--radius-md); padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; flex-direction: column; width: 100%; box-sizing: border-box; font-family: 'Lato', sans-serif;">
+                <h3 style="margin-top: 0; margin-bottom: 12px; color: #2563eb; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    Snippet Suspension History (ประวัติการระงับ)
+                </h3>
+                <?php if (empty($suspensionHistory)): ?>
+                    <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem; font-style: italic;">No suspension history recorded for this snippet.</p>
+                <?php else: ?>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid var(--border-color); text-align: left; color: var(--text-muted);">
+                                    <th style="padding: 8px 12px;">#</th>
+                                    <th style="padding: 8px 12px;">Suspended By</th>
+                                    <th style="padding: 8px 12px;">Reason</th>
+                                    <th style="padding: 8px 12px;">Suspended At</th>
+                                    <th style="padding: 8px 12px;">Unsuspended By</th>
+                                    <th style="padding: 8px 12px;">Unsuspended At</th>
+                                    <th style="padding: 8px 12px;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($suspensionHistory as $idx => $sh): ?>
+                                    <tr style="border-bottom: 1px solid var(--border-color);">
+                                        <td style="padding: 10px 12px;"><?php echo htmlspecialchars($sh['suspension_id']); ?></td>
+                                        <td style="padding: 10px 12px; font-weight: 600;"><?php echo htmlspecialchars($sh['admin_suspended']); ?></td>
+                                        <td style="padding: 10px 12px;"><?php echo htmlspecialchars($sh['reason']); ?></td>
+                                        <td style="padding: 10px 12px; color: var(--text-muted);"><?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($sh['suspended_at']))); ?></td>
+                                        <td style="padding: 10px 12px;"><?php echo htmlspecialchars($sh['admin_unsuspended'] ?: '-'); ?></td>
+                                        <td style="padding: 10px 12px; color: var(--text-muted);"><?php echo $sh['unsuspended_at'] ? htmlspecialchars(date('d/m/Y H:i', strtotime($sh['unsuspended_at']))) : '-'; ?></td>
+                                        <td style="padding: 10px 12px;">
+                                            <?php if (empty($sh['unsuspended_at'])): ?>
+                                                <span style="color: #dc2626; font-weight: 600;">Active Suspension</span>
+                                            <?php else: ?>
+                                                <span style="color: #15803d; font-weight: 600;">Restored</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <!-- Code Details Card (Viewcode Layout) -->
@@ -303,6 +386,15 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
                 closeImageModal();
             }
         });
+
+        function promptSuspend(form, defaultReason) {
+            const reason = prompt('Please enter the reason for suspending this snippet:', defaultReason || 'Policy violation');
+            if (reason === null) {
+                return false;
+            }
+            form.querySelector('input[name="reason"]').value = reason.trim() || defaultReason || 'Policy violation';
+            return true;
+        }
     </script>
 </body>
 </html>

@@ -79,12 +79,26 @@ try {
         echo "Column 'unbanned_by' renamed to 'admin_unbanned' VARCHAR(100).\n";
     }
 
-    // Ensure admin_unbanned column exists
-    $hasAdminUnbanned = $pdo->query("SHOW COLUMNS FROM `user_bans` LIKE 'admin_unbanned'")->fetch();
-    if (!$hasAdminUnbanned) {
-        $pdo->exec("ALTER TABLE `user_bans` ADD COLUMN `admin_unbanned` VARCHAR(100) NULL DEFAULT NULL AFTER `unbanned_at`;");
-        echo "Column 'admin_unbanned' added to 'user_bans' table.\n";
+    // Add is_suspended column to snippet table if it does not exist
+    $checkSnippetSuspended = $pdo->query("SHOW COLUMNS FROM `snippet` LIKE 'is_suspended'")->fetch();
+    if (!$checkSnippetSuspended) {
+        $pdo->exec("ALTER TABLE `snippet` ADD COLUMN `is_suspended` TINYINT(1) NOT NULL DEFAULT 0;");
+        echo "Column 'is_suspended' added to 'snippet' table.\n";
     }
+
+    // Create snippet_suspensions table if it does not exist
+    $sqlSuspensions = "CREATE TABLE IF NOT EXISTS `snippet_suspensions` (
+        `suspension_id` INT AUTO_INCREMENT PRIMARY KEY,
+        `snippet_id` INT NOT NULL,
+        `admin_suspended` VARCHAR(100) NOT NULL,
+        `reason` TEXT NOT NULL,
+        `suspended_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `admin_unsuspended` VARCHAR(100) NULL DEFAULT NULL,
+        `unsuspended_at` DATETIME NULL DEFAULT NULL,
+        CONSTRAINT `fk_snippet_suspensions_snippet` FOREIGN KEY (`snippet_id`) REFERENCES `snippet`(`snippet_id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+    $pdo->exec($sqlSuspensions);
+    echo "Table 'snippet_suspensions' is created or already exists.\n";
 } catch (PDOException $e) {
     echo "Migration failed: " . $e->getMessage() . "\n";
 }

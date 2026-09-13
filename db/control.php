@@ -23,6 +23,7 @@ class Control{
                     INNER JOIN snippet a ON b.language_id = a.language_id
                     WHERE a.visibility IN ('public','protected')
                     AND (a.deleted = 0 OR a.deleted IS NULL)
+                    AND (a.is_suspended = 0 OR a.is_suspended IS NULL)
                     ORDER BY b.language_name ASC";
             $result = $this->db->query($sql);
             return $result;
@@ -42,6 +43,7 @@ class Control{
                 LEFT JOIN tag t ON st.tag_id = t.tag_id
                 WHERE (a.visibility IN ('public','protected') OR a.user_id = :user_id)
                 AND (a.deleted = 0 OR a.deleted IS NULL)
+                AND (a.is_suspended = 0 OR a.is_suspended IS NULL)
                 GROUP BY a.snippet_id
                 ORDER BY a.snippet_id DESC";
             $stmt = $this->db->prepare($sql);
@@ -62,7 +64,9 @@ class Control{
                 INNER JOIN language b ON a.language_id = b.language_id
                 LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
                 LEFT JOIN tag t ON st.tag_id = t.tag_id
-                WHERE a.user_id = :user_id AND (a.deleted = 0 OR a.deleted IS NULL)";
+                WHERE a.user_id = :user_id 
+                AND (a.deleted = 0 OR a.deleted IS NULL)
+                AND (a.is_suspended = 0 OR a.is_suspended IS NULL)";
 
             if($keyword !== ''){
                 $sql .= " AND (
@@ -104,6 +108,7 @@ class Control{
                 LEFT JOIN snippet_like sl ON a.snippet_id = sl.snippet_id
                 WHERE a.visibility IN ('public','protected')
                 AND (a.deleted = 0 OR a.deleted IS NULL)
+                AND (a.is_suspended = 0 OR a.is_suspended IS NULL)
                 AND (
                     a.title LIKE :keyword
                     OR a.description LIKE :keyword
@@ -141,6 +146,7 @@ class Control{
                 LEFT JOIN tag t ON st.tag_id = t.tag_id
                 WHERE a.visibility IN ('public','protected')
                 AND (a.deleted = 0 OR a.deleted IS NULL)
+                AND (a.is_suspended = 0 OR a.is_suspended IS NULL)
                 AND a.language_id = :language_id
                 GROUP BY a.snippet_id
                 ORDER BY a.snippet_id DESC";
@@ -208,13 +214,18 @@ class Control{
                 : "(s.deleted = 0 OR s.deleted IS NULL)";
             
             $sql = "SELECT s.*, l.language_name,
-                GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags
+                GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags,
+                MAX(susp.reason) as suspension_reason,
+                MAX(susp.suspended_at) as suspension_time,
+                MAX(susp.admin_suspended) as admin_suspended
                 FROM snippet s
                 INNER JOIN language l ON s.language_id = l.language_id
                 LEFT JOIN snippet_tag st ON s.snippet_id = st.snippet_id
                 LEFT JOIN tag t ON st.tag_id = t.tag_id
+                LEFT JOIN snippet_suspensions susp ON (s.snippet_id = susp.snippet_id AND susp.unsuspended_at IS NULL)
                 WHERE s.snippet_id = :snippet_id
                 AND (s.visibility IN ('public','protected') OR s.user_id = :user_id)
+                AND (s.is_suspended = 0 OR s.is_suspended IS NULL OR s.user_id = :user_id)
                 AND $deleted_condition
                 GROUP BY s.snippet_id";
             $stmt = $this->db->prepare($sql);
@@ -232,7 +243,7 @@ class Control{
         try{
             $this->db->beginTransaction();
 
-            $sql = "UPDATE snippet SET title = :title, source_code = :source_code, description = :description, visibility = :visibility, image_path = :image_path, language_id = :language_id WHERE snippet_id = :snippet_id AND user_id = :user_id";
+            $sql = "UPDATE snippet SET title = :title, source_code = :source_code, description = :description, visibility = :visibility, image_path = :image_path, language_id = :language_id WHERE snippet_id = :snippet_id AND user_id = :user_id AND (is_suspended = 0 OR is_suspended IS NULL)";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(":title", $title);
             $stmt->bindParam(":source_code", $source_code);
@@ -282,8 +293,8 @@ class Control{
         try{
             $this->db->beginTransaction();
 
-            // Verify that snippet exists and belongs to user
-            $checkSql = "SELECT snippet_id FROM snippet WHERE snippet_id = :snippet_id AND user_id = :user_id";
+            // Verify that snippet exists and belongs to user (and is not suspended by admin)
+            $checkSql = "SELECT snippet_id FROM snippet WHERE snippet_id = :snippet_id AND user_id = :user_id AND (is_suspended = 0 OR is_suspended IS NULL)";
             $checkStmt = $this->db->prepare($checkSql);
             $checkStmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
             $checkStmt->bindParam(":user_id", $user_id, PDO::PARAM_INT);
@@ -329,7 +340,7 @@ class Control{
 
     function softDeleteSnippet($snippet_id, $user_id){
         try{
-            $sql = "UPDATE snippet SET deleted = 1 WHERE snippet_id = :snippet_id AND user_id = :user_id";
+            $sql = "UPDATE snippet SET deleted = 1 WHERE snippet_id = :snippet_id AND user_id = :user_id AND (is_suspended = 0 OR is_suspended IS NULL)";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
             $stmt->bindParam(":user_id", $user_id, PDO::PARAM_INT);
@@ -342,7 +353,7 @@ class Control{
 
     function restoreSnippet($snippet_id, $user_id){
         try{
-            $sql = "UPDATE snippet SET deleted = 0 WHERE snippet_id = :snippet_id AND user_id = :user_id";
+            $sql = "UPDATE snippet SET deleted = 0 WHERE snippet_id = :snippet_id AND user_id = :user_id AND (is_suspended = 0 OR is_suspended IS NULL)";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
             $stmt->bindParam(":user_id", $user_id, PDO::PARAM_INT);
@@ -364,7 +375,7 @@ class Control{
             if ($only_own) {
                 $sql .= " AND a.user_id = :user_id";
             } else {
-                $sql .= " AND a.visibility IN ('public', 'protected')";
+                $sql .= " AND a.visibility IN ('public', 'protected') AND (a.is_suspended = 0 OR a.is_suspended IS NULL)";
             }
 
             if($keyword !== ''){
@@ -406,7 +417,9 @@ class Control{
         try{
             $sql = "SELECT COUNT(*) as total FROM bookmarks bk
                 INNER JOIN snippet a ON bk.snippet_id = a.snippet_id
-                WHERE bk.user_id = :user_id AND (a.deleted = 0 OR a.deleted IS NULL)";
+                WHERE bk.user_id = :user_id 
+                AND (a.deleted = 0 OR a.deleted IS NULL)
+                AND (a.is_suspended = 0 OR a.is_suspended IS NULL)";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
             $stmt->execute();
@@ -425,18 +438,21 @@ class Control{
 
             $sql = "SELECT a.*, b.language_name,
                 GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags,
-                COUNT(DISTINCT sl.user_id) AS like_count
+                COUNT(DISTINCT sl.user_id) AS like_count,
+                MAX(susp.reason) as suspension_reason,
+                MAX(susp.suspended_at) as suspension_time
                 FROM snippet a
                 INNER JOIN language b ON a.language_id = b.language_id
                 LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
                 LEFT JOIN tag t ON st.tag_id = t.tag_id
                 LEFT JOIN snippet_like sl ON a.snippet_id = sl.snippet_id
+                LEFT JOIN snippet_suspensions susp ON (a.snippet_id = susp.snippet_id AND susp.unsuspended_at IS NULL)
                 WHERE (a.deleted = 0 OR a.deleted IS NULL)";
 
             if ($only_own) {
                 $sql .= " AND a.user_id = :user_id";
             } else {
-                $sql .= " AND a.visibility IN ('public', 'protected')";
+                $sql .= " AND a.visibility IN ('public', 'protected') AND (a.is_suspended = 0 OR a.is_suspended IS NULL)";
             }
 
             if($keyword !== ''){
@@ -499,7 +515,9 @@ class Control{
                 INNER JOIN language b ON a.language_id = b.language_id
                 LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
                 LEFT JOIN tag t ON st.tag_id = t.tag_id
-                WHERE bk.user_id = :user_id AND (a.deleted = 0 OR a.deleted IS NULL)
+                WHERE bk.user_id = :user_id 
+                AND (a.deleted = 0 OR a.deleted IS NULL)
+                AND (a.is_suspended = 0 OR a.is_suspended IS NULL)
                 GROUP BY a.snippet_id
                 ORDER BY bk.bookmarked_at DESC
                 LIMIT :offset, :limit";
@@ -520,7 +538,9 @@ class Control{
             $sql = "SELECT COUNT(DISTINCT a.snippet_id) as total FROM snippet a
                 LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
                 LEFT JOIN tag t ON st.tag_id = t.tag_id
-                WHERE a.user_id = :user_id AND a.deleted = 1";
+                WHERE a.user_id = :user_id 
+                AND a.deleted = 1 
+                AND (a.is_suspended = 0 OR a.is_suspended IS NULL)";
 
             if($keyword !== ''){
                 $sql .= " AND (
@@ -559,7 +579,9 @@ class Control{
                 INNER JOIN language b ON a.language_id = b.language_id
                 LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
                 LEFT JOIN tag t ON st.tag_id = t.tag_id
-                WHERE a.user_id = :user_id AND a.deleted = 1";
+                WHERE a.user_id = :user_id 
+                AND a.deleted = 1 
+                AND (a.is_suspended = 0 OR a.is_suspended IS NULL)";
 
             if($keyword !== ''){
                 $sql .= " AND (
@@ -926,6 +948,94 @@ class Control{
         }
     }
 
+    function suspendSnippetAdmin($snippet_id, $admin_username, $reason){
+        try{
+            $this->db->beginTransaction();
+
+            $sqlSnippet = "UPDATE snippet SET is_suspended = 1 WHERE snippet_id = :snippet_id";
+            $stmtSnippet = $this->db->prepare($sqlSnippet);
+            $stmtSnippet->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmtSnippet->execute();
+
+            $sqlSuspension = "INSERT INTO snippet_suspensions (snippet_id, admin_suspended, reason, suspended_at) 
+                              VALUES (:snippet_id, :admin_suspended, :reason, NOW())";
+            $stmtSuspension = $this->db->prepare($sqlSuspension);
+            $stmtSuspension->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmtSuspension->bindParam(":admin_suspended", $admin_username, PDO::PARAM_STR);
+            $stmtSuspension->bindParam(":reason", $reason, PDO::PARAM_STR);
+            $stmtSuspension->execute();
+
+            $sqlReports = "UPDATE reports SET status = 'removed' WHERE snippet_id = :snippet_id AND status = 'pending'";
+            $stmtReports = $this->db->prepare($sqlReports);
+            $stmtReports->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmtReports->execute();
+
+            $this->db->commit();
+            return true;
+        }catch(PDOException $e){
+            if($this->db->inTransaction()){
+                $this->db->rollBack();
+            }
+            return false;
+        }
+    }
+
+    function unsuspendSnippetAdmin($snippet_id, $admin_username){
+        try{
+            $this->db->beginTransaction();
+
+            $sqlSnippet = "UPDATE snippet SET is_suspended = 0 WHERE snippet_id = :snippet_id";
+            $stmtSnippet = $this->db->prepare($sqlSnippet);
+            $stmtSnippet->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmtSnippet->execute();
+
+            $sqlSuspension = "UPDATE snippet_suspensions 
+                              SET admin_unsuspended = :admin_unsuspended, unsuspended_at = NOW() 
+                              WHERE snippet_id = :snippet_id AND unsuspended_at IS NULL
+                              ORDER BY suspension_id DESC LIMIT 1";
+            $stmtSuspension = $this->db->prepare($sqlSuspension);
+            $stmtSuspension->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmtSuspension->bindParam(":admin_unsuspended", $admin_username, PDO::PARAM_STR);
+            $stmtSuspension->execute();
+
+            $this->db->commit();
+            return true;
+        }catch(PDOException $e){
+            if($this->db->inTransaction()){
+                $this->db->rollBack();
+            }
+            return false;
+        }
+    }
+
+    function getSnippetSuspensionHistory($snippet_id){
+        try{
+            $sql = "SELECT * FROM snippet_suspensions 
+                    WHERE snippet_id = :snippet_id 
+                    ORDER BY suspended_at DESC, suspension_id DESC";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }catch(PDOException $e){
+            return [];
+        }
+    }
+
+    function getLatestSnippetSuspension($snippet_id){
+        try{
+            $sql = "SELECT * FROM snippet_suspensions 
+                    WHERE snippet_id = :snippet_id 
+                    ORDER BY suspended_at DESC, suspension_id DESC LIMIT 1";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        }catch(PDOException $e){
+            return false;
+        }
+    }
+
     function deleteSnippetAdmin($snippet_id){
         try{
             $this->db->beginTransaction();
@@ -989,9 +1099,9 @@ class Control{
 
     function getAllReportsAdmin($statusFilter = null){
         try{
-            $sql = "SELECT r.*, s.title as snippet_title, s.deleted as snippet_deleted, s.source_code,
-                           u.username as reporter_username, u.firstname as reporter_firstname, u.lastname as reporter_lastname,
-                           owner.username as owner_username, owner.firstname as owner_firstname, owner.lastname as owner_lastname
+            $sql = "SELECT r.*, s.title as snippet_title, s.deleted as snippet_deleted, s.is_suspended as snippet_suspended, s.source_code,
+                            u.username as reporter_username, u.firstname as reporter_firstname, u.lastname as reporter_lastname,
+                            owner.username as owner_username, owner.firstname as owner_firstname, owner.lastname as owner_lastname
                     FROM reports r
                     INNER JOIN snippet s ON r.snippet_id = s.snippet_id
                     INNER JOIN user u ON r.user_id = u.user_id
@@ -1016,10 +1126,10 @@ class Control{
 
     function getReportByIdAdmin($report_id){
         try{
-            $sql = "SELECT r.*, s.title as snippet_title, s.deleted as snippet_deleted, s.source_code, s.description as snippet_desc, s.visibility, s.image_path, l.language_name,
-                           GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags,
-                           u.username as reporter_username, u.firstname as reporter_firstname, u.lastname as reporter_lastname,
-                           owner.username as owner_username, owner.firstname as owner_firstname, owner.lastname as owner_lastname
+            $sql = "SELECT r.*, s.title as snippet_title, s.deleted as snippet_deleted, s.is_suspended as snippet_suspended, s.source_code, s.description as snippet_desc, s.visibility, s.image_path, l.language_name,
+                            GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags,
+                            u.username as reporter_username, u.firstname as reporter_firstname, u.lastname as reporter_lastname,
+                            owner.username as owner_username, owner.firstname as owner_firstname, owner.lastname as owner_lastname
                     FROM reports r
                     INNER JOIN snippet s ON r.snippet_id = s.snippet_id
                     INNER JOIN language l ON s.language_id = l.language_id

@@ -217,7 +217,10 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                                 $languageClass .= ' language-css';
                             }
                         ?>
-                        <div class="snippet-card">
+                        <?php 
+                            $isSuspended = (int)($row['is_suspended'] ?? 0) === 1;
+                        ?>
+                        <div class="snippet-card" <?php if($isSuspended): ?>style="border-left: 5px solid #dc2626; background-color: #fffcfc;"<?php endif; ?>>
                             <div class="card-left">
                                 <?php
                                     $title = $row['title'] ?: 'Title';
@@ -225,7 +228,14 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                                         $title = mb_substr($title, 0, 30, 'UTF-8') . '...';
                                     }
                                 ?>
-                                <div class="card-title"><?php echo htmlspecialchars($title); ?></div>
+                                <div class="card-title">
+                                    <?php echo htmlspecialchars($title); ?>
+                                    <?php if($isSuspended): ?>
+                                        <span style="font-size: 0.75rem; font-weight: 700; color: #dc2626; background: #fee2e2; border: 1px solid #fecaca; border-radius: 4px; padding: 2px 6px; margin-left: 8px; vertical-align: middle;">
+                                            SUSPENDED (ถูกระงับ)
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
                                 <?php if(!empty($row['tags'])): ?>
                                     <div class="tag-badge">
                                         <?php foreach(explode(', ', $row['tags']) as $tagName): ?>
@@ -242,10 +252,21 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                                         <span><?php echo date('d/m/Y H:i:s', strtotime($row['created_at'])); ?></span>
                                     </div>
                                 <?php endif; ?>
+
+                                <?php if($isSuspended): ?>
+                                    <!-- Suspension Warning Box for Owner -->
+                                    <div style="margin-top: 10px; background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 8px 12px; font-size: 0.85rem; color: #991b1b; line-height: 1.4;">
+                                        <div style="font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                                            <span>⚠️</span> โพสต์นี้ถูกระงับการแสดงผลโดยผู้ดูแลระบบ
+                                        </div>
+                                        <div><strong>เหตุผล:</strong> <?php echo htmlspecialchars($row['suspension_reason'] ?: 'ทำผิดข้อกำหนดชุมชน'); ?></div>
+                                        <div style="font-size: 0.75rem; color: #b91c1c; margin-top: 3px;">(ซ่อนจากการแสดงผลสาธารณะแล้ว มีเพียงคุณที่มองเห็นการแจ้งเตือนนี้)</div>
+                                    </div>
+                                <?php endif; ?>
+
                                 <button class="btn-view-code">
                                     <a href="viewcode.php?view=<?php echo urlencode($row['snippet_id']); ?>" >View code</a>
                                 </button>
-                                <!-- <a href="viewcode.php?view=<?php echo urlencode($row['snippet_id']); ?>" class="btn-view-code">View code</a> -->
                             </div>
                             
                             <div class="card-middle">
@@ -258,24 +279,30 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                                     $isLiked = in_array($snippetIdInt, $likedIds);
                                     $currentLikeCount = $likeCounts[$snippetIdInt] ?? 0;
                                 ?>
-                                <button class="like-toggle <?php echo $isLiked ? 'liked' : ''; ?>" data-snippet-id="<?php echo $snippetIdInt; ?>" title="<?php echo $isLiked ? 'Unlike' : 'Like'; ?>">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
-                                    </svg>
-                                    <span class="like-count"><?php echo $currentLikeCount; ?></span>
-                                </button>
-                                <button class="bookmark-toggle <?php echo $isBookmarked ? 'bookmarked' : ''; ?>" data-snippet-id="<?php echo (int)$row['snippet_id']; ?>" title="<?php echo $isBookmarked ? 'Remove Bookmark' : 'Add Bookmark'; ?>">
-                                    <svg width="20" height="24" viewBox="0 0 384 512" stroke-width="30">
-                                        <path d="M0 512V48C0 21.49 21.49 0 48 0h288c26.51 0 48 21.49 48 48v464L192 400 0 512z"/>
-                                    </svg>
-                                </button>
-                                <?php if((int)($row['user_id'] ?? 0) === (int)$userId): ?>
-                                <a href="createsnippet.php?edit=<?php echo urlencode($row['snippet_id']); ?>" class="icon-action" title="Edit">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                                </a>
-                                <a href="createsnippet.php?delete=<?php echo urlencode($row['snippet_id']); ?>" class="icon-action" title="Delete" onclick="return confirm('Are you sure you want to delete this item?');">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                </a>
+                                <?php if(!$isSuspended): ?>
+                                    <button class="like-toggle <?php echo $isLiked ? 'liked' : ''; ?>" data-snippet-id="<?php echo $snippetIdInt; ?>" title="<?php echo $isLiked ? 'Unlike' : 'Like'; ?>">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+                                        </svg>
+                                        <span class="like-count"><?php echo $currentLikeCount; ?></span>
+                                    </button>
+                                    <button class="bookmark-toggle <?php echo $isBookmarked ? 'bookmarked' : ''; ?>" data-snippet-id="<?php echo (int)$row['snippet_id']; ?>" title="<?php echo $isBookmarked ? 'Remove Bookmark' : 'Add Bookmark'; ?>">
+                                        <svg width="20" height="24" viewBox="0 0 384 512" stroke-width="30">
+                                            <path d="M0 512V48C0 21.49 21.49 0 48 0h288c26.51 0 48 21.49 48 48v464L192 400 0 512z"/>
+                                        </svg>
+                                    </button>
+                                    <?php if((int)($row['user_id'] ?? 0) === (int)$userId): ?>
+                                    <a href="createsnippet.php?edit=<?php echo urlencode($row['snippet_id']); ?>" class="icon-action" title="Edit">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                    </a>
+                                    <a href="createsnippet.php?delete=<?php echo urlencode($row['snippet_id']); ?>" class="icon-action" title="Delete" onclick="return confirm('Are you sure you want to delete this item?');">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                    </a>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <span style="font-size: 0.8rem; color: #dc2626; font-weight: 600; text-align: center; display: block; padding: 4px 8px; background: #fee2e2; border-radius: 4px;">
+                                        Locked
+                                    </span>
                                 <?php endif; ?>
                             </div>
                         </div>

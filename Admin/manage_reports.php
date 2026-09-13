@@ -9,6 +9,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['action'])) {
         $reportId = (int)($_POST['report_id'] ?? 0);
         $snippetId = (int)($_POST['snippet_id'] ?? 0);
+        $adminUsername = $_SESSION['username'] ?? 'Admin';
         
         if ($_POST['action'] === 'reject') {
             if ($reportId <= 0) {
@@ -20,17 +21,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $errorMsg = "Failed to reject report.";
                 }
             }
-        } elseif ($_POST['action'] === 'delete_snippet') {
+        } elseif ($_POST['action'] === 'suspend_snippet') {
             if ($snippetId <= 0) {
                 $errorMsg = "Invalid snippet ID.";
             } else {
-                // Soft delete snippet
-                if ($control->softDeleteSnippetAdmin($snippetId)) {
-                    // Resolve all reports for this snippet
-                    $control->resolveReportsForSnippet($snippetId);
-                    $successMsg = "Snippet deleted and reports resolved.";
+                $reason = trim($_POST['reason'] ?? 'Reported violation');
+                if ($reason === '') {
+                    $reason = 'Reported violation';
+                }
+                if ($control->suspendSnippetAdmin($snippetId, $adminUsername, $reason)) {
+                    $successMsg = "Snippet suspended successfully and related reports resolved.";
                 } else {
-                    $errorMsg = "Failed to delete snippet.";
+                    $errorMsg = "Failed to suspend snippet.";
+                }
+            }
+        } elseif ($_POST['action'] === 'unsuspend_snippet') {
+            if ($snippetId <= 0) {
+                $errorMsg = "Invalid snippet ID.";
+            } else {
+                if ($control->unsuspendSnippetAdmin($snippetId, $adminUsername)) {
+                    $successMsg = "Snippet unsuspended successfully.";
+                } else {
+                    $errorMsg = "Failed to unsuspend snippet.";
                 }
             }
         }
@@ -203,7 +215,9 @@ if ($reportsResult) {
                                         <td class="col-id"><?php echo htmlspecialchars($rep['report_id']); ?></td>
                                         <td style="font-weight: 600;">
                                             <?php echo htmlspecialchars($rep['snippet_title']); ?> (ID: <?php echo htmlspecialchars($rep['snippet_id']); ?>)
-                                            <?php if ((int)$rep['snippet_deleted'] === 1): ?>
+                                            <?php if ((int)($rep['snippet_suspended'] ?? 0) === 1): ?>
+                                                <span class="badge badge-deleted" style="margin-left: 5px; background: #dc2626; color: white;">Suspended</span>
+                                            <?php elseif ((int)$rep['snippet_deleted'] === 1): ?>
                                                 <span class="badge badge-deleted" style="margin-left: 5px;">Deleted</span>
                                             <?php endif; ?>
                                         </td>
@@ -228,7 +242,7 @@ if ($reportsResult) {
                                             <?php if ($rep['status'] === 'pending'): ?>
                                                 <span class="badge badge-active" style="background-color: #ffeeba; color: #856404; border-color: #ffeeba; text-transform: capitalize;">Pending</span>
                                             <?php elseif ($rep['status'] === 'removed'): ?>
-                                                <span class="badge badge-active" style="background-color: #d4edda; color: #155724; border-color: #d4edda; text-transform: capitalize;">Removed</span>
+                                                <span class="badge badge-active" style="background-color: #d4edda; color: #155724; border-color: #d4edda; text-transform: capitalize;">Resolved</span>
                                             <?php else: ?>
                                                 <span class="badge badge-deleted" style="text-transform: capitalize;">Rejected</span>
                                             <?php endif; ?>
@@ -241,21 +255,29 @@ if ($reportsResult) {
                                                 </a>
                                                 
                                                 <?php if ($rep['status'] === 'pending'): ?>
-                                                    <!-- Reject Report Action -->
+                                                    <!-- Reject / Dismiss Report Action -->
                                                     <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to dismiss this report?');">
                                                         <input type="hidden" name="action" value="reject">
                                                         <input type="hidden" name="report_id" value="<?php echo $rep['report_id']; ?>">
                                                         <button type="submit" class="btn-action btn-restore" style="background-color: #15803D; color: white;">Dismiss</button>
                                                     </form>
-                                                    
-                                                    <?php if ((int)$rep['snippet_deleted'] !== 1): ?>
-                                                        <!-- Delete Snippet Action -->
-                                                        <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this snippet? (This will remove the snippet from the system)');">
-                                                            <input type="hidden" name="action" value="delete_snippet">
-                                                            <input type="hidden" name="snippet_id" value="<?php echo $rep['snippet_id']; ?>">
-                                                            <button type="submit" class="btn-action btn-delete">Delete</button>
-                                                        </form>
-                                                    <?php endif; ?>
+                                                <?php endif; ?>
+
+                                                <?php if ((int)($rep['snippet_suspended'] ?? 0) === 1): ?>
+                                                    <!-- Unsuspend Snippet Action -->
+                                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to unsuspend this snippet?');">
+                                                        <input type="hidden" name="action" value="unsuspend_snippet">
+                                                        <input type="hidden" name="snippet_id" value="<?php echo $rep['snippet_id']; ?>">
+                                                        <button type="submit" class="btn-action btn-restore" style="background-color: #2563eb; color: white;">Unsuspend</button>
+                                                    </form>
+                                                <?php else: ?>
+                                                    <!-- Suspend Snippet Action -->
+                                                    <form method="POST" style="display:inline;" onsubmit="return promptSuspend(this, '<?php echo htmlspecialchars(addslashes($rep['reason'])); ?>');">
+                                                        <input type="hidden" name="action" value="suspend_snippet">
+                                                        <input type="hidden" name="snippet_id" value="<?php echo $rep['snippet_id']; ?>">
+                                                        <input type="hidden" name="reason" value="">
+                                                        <button type="submit" class="btn-action btn-delete" style="background-color: #d97706; color: white;">Suspend</button>
+                                                    </form>
                                                 <?php endif; ?>
                                             </div>
                                         </td>
@@ -293,6 +315,15 @@ if ($reportsResult) {
                 sidebar.classList.remove('active');
                 sidebarOverlay.classList.remove('active');
             });
+        }
+
+        function promptSuspend(form, defaultReason) {
+            const reason = prompt('Please enter the reason for suspending this snippet:', defaultReason || 'Policy violation');
+            if (reason === null) {
+                return false;
+            }
+            form.querySelector('input[name="reason"]').value = reason.trim() || defaultReason || 'Policy violation';
+            return true;
         }
     </script>
 </body>

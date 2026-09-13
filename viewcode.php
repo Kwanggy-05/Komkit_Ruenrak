@@ -70,7 +70,7 @@ if($accessDenied){
             <!-- Top Actions Row -->
             <div class="top-actions-row">
                 <div class="right-actions">
-                    <?php if((int)($snippet['deleted'] ?? 0) !== 1): ?>
+                    <?php if((int)($snippet['deleted'] ?? 0) !== 1 && (int)($snippet['is_suspended'] ?? 0) !== 1): ?>
                         <!-- Report Button -->
                         <button class="btn report-btn <?php echo $isReported ? 'reported' : ''; ?>" id="reportBtn" data-snippet-id="<?php echo (int)$snippet['snippet_id']; ?>" <?php echo $isReported ? 'disabled' : ''; ?>>
                             <svg width="14" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle;">
@@ -101,6 +101,29 @@ if($accessDenied){
                     <button class="btn copy" id="copyBtn">Copy</button>
                 </div>
             </div>
+
+            <?php if((int)($snippet['is_suspended'] ?? 0) === 1): ?>
+                <!-- Suspension Notice for Owner -->
+                <div style="background-color: #fef2f2; border: 1px solid #f87171; border-left: 6px solid #dc2626; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(220, 38, 38, 0.08);">
+                    <div style="display: flex; align-items: flex-start; gap: 12px;">
+                        <span style="font-size: 1.5rem; line-height: 1;">⚠️</span>
+                        <div style="flex: 1;">
+                            <h4 style="margin: 0 0 6px 0; color: #991b1b; font-size: 1.05rem; font-weight: 700;">
+                                โพสต์นี้ถูกระงับการแสดงผลโดยผู้ดูแลระบบ (Suspended by Admin)
+                            </h4>
+                            <div style="color: #7f1d1d; font-size: 0.92rem; line-height: 1.5;">
+                                <p style="margin: 0 0 4px 0;"><strong>เหตุผลในการระงับ:</strong> <?php echo htmlspecialchars($snippet['suspension_reason'] ?: 'ไม่ระบุเหตุผล'); ?></p>
+                                <?php if(!empty($snippet['suspension_time'])): ?>
+                                    <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: #991b1b;"><strong>ระงับเมื่อ:</strong> <?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($snippet['suspension_time']))); ?></p>
+                                <?php endif; ?>
+                                <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: #b91c1c;">
+                                    * โพสต์นี้ถูกซ่อนจากการแสดงผลต่อสาธารณะ ผู้ใช้อื่นจะไม่สามารถมองเห็นหรือค้นหาได้ และคุณไม่สามารถแก้ไขหรือกู้คืนได้จนกว่าผู้ดูแลระบบจะถอนการระงับ
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
 
             <?php if((int)($snippet['deleted'] ?? 0) === 1): ?>
                 <div class="trash-notice">

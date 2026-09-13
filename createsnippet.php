@@ -30,6 +30,10 @@ if(isset($_GET['edit']) && is_numeric($_GET['edit'])){
     $snippet_id = (int)$_GET['edit'];
     $snippet = $control->getSnippetById($snippet_id, $userId);
     if($snippet){
+        if((int)($snippet['is_suspended'] ?? 0) === 1){
+            echo "<script>alert('This snippet is suspended by an administrator and cannot be edited.'); window.location.href='snippet_page.php';</script>";
+            exit;
+        }
         $title = $snippet['title'];
         $language_id = $snippet['language_id'];
         $tags = $snippet['tags'] ?? '';

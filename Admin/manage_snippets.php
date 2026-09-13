@@ -29,6 +29,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 } else {
                     $errorMsg = "Unable to permanently delete the snippet.";
                 }
+            } elseif ($_POST['action'] === 'suspend') {
+                $reason = trim($_POST['reason'] ?? 'Admin suspended');
+                if ($reason === '') {
+                    $reason = 'Admin suspended';
+                }
+                $adminUsername = $_SESSION['username'] ?? 'Admin';
+                if ($control->suspendSnippetAdmin($snippetId, $adminUsername, $reason)) {
+                    $successMsg = "Snippet suspended successfully.";
+                } else {
+                    $errorMsg = "Failed to suspend snippet.";
+                }
+            } elseif ($_POST['action'] === 'unsuspend') {
+                $adminUsername = $_SESSION['username'] ?? 'Admin';
+                if ($control->unsuspendSnippetAdmin($snippetId, $adminUsername)) {
+                    $successMsg = "Snippet unsuspended successfully.";
+                } else {
+                    $errorMsg = "Failed to unsuspend snippet.";
+                }
             }
         }
     }
@@ -216,7 +234,9 @@ if ($snippetResult) {
                                             <?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($snip['created_at']))); ?>
                                         </td>
                                         <td style="text-align: center;">
-                                            <?php if ((int)($snip['deleted'] ?? 0) === 1): ?>
+                                            <?php if ((int)($snip['is_suspended'] ?? 0) === 1): ?>
+                                                <span class="badge badge-deleted" style="background-color: #dc2626; color: white;">Suspended</span>
+                                            <?php elseif ((int)($snip['deleted'] ?? 0) === 1): ?>
                                                 <span class="badge badge-deleted">Trash</span>
                                             <?php else: ?>
                                                 <span class="badge badge-active">Active</span>
@@ -228,6 +248,23 @@ if ($snippetResult) {
                                                 <a href="viewcode.php?view=<?php echo $snip['snippet_id']; ?>" class="btn-action btn-view">
                                                     View Code
                                                 </a>
+
+                                                <?php if ((int)($snip['is_suspended'] ?? 0) === 1): ?>
+                                                    <!-- Unsuspend Action -->
+                                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to unsuspend this snippet?');">
+                                                        <input type="hidden" name="action" value="unsuspend">
+                                                        <input type="hidden" name="snippet_id" value="<?php echo $snip['snippet_id']; ?>">
+                                                        <button type="submit" class="btn-action btn-restore" style="background-color: #2563eb; color: white;">Unsuspend</button>
+                                                    </form>
+                                                <?php else: ?>
+                                                    <!-- Suspend Action -->
+                                                    <form method="POST" style="display:inline;" onsubmit="return promptSuspend(this);">
+                                                        <input type="hidden" name="action" value="suspend">
+                                                        <input type="hidden" name="snippet_id" value="<?php echo $snip['snippet_id']; ?>">
+                                                        <input type="hidden" name="reason" value="">
+                                                        <button type="submit" class="btn-action btn-delete" style="background-color: #d97706; color: white;">Suspend</button>
+                                                    </form>
+                                                <?php endif; ?>
                                                 
                                                 <?php if ((int)($snip['deleted'] ?? 0) === 1): ?>
                                                     <!-- Restore Action -->
@@ -286,6 +323,15 @@ if ($snippetResult) {
                 sidebar.classList.remove('active');
                 sidebarOverlay.classList.remove('active');
             });
+        }
+
+        function promptSuspend(form) {
+            const reason = prompt('Please enter the reason for suspending this snippet:', 'Violation of community guidelines');
+            if (reason === null) {
+                return false;
+            }
+            form.querySelector('input[name="reason"]').value = reason.trim() || 'Violation of community guidelines';
+            return true;
         }
     </script>
 </body>
