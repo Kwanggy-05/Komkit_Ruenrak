@@ -7,6 +7,10 @@ if(getCurrentUserId()){
 }
 
 $errorAlert = "";
+if (isset($_GET['banned'])) {
+    $errorAlert = "Your account has been permanently suspended.\nIf you believe this is a mistake, please contact the administrator.";
+}
+
 $hasAnyUser = $user->countUsers();
 if($hasAnyUser === 0){
     $errorAlert = "Please register an account";
@@ -18,11 +22,18 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
     $result=$user->getUser($username,$password);
 
     if($result){
-        $_SESSION["username"] = $username;
-        $_SESSION["user_id"] = $result["user_id"];
-        $_SESSION["userid"] = $result["user_id"];
-        header("Location:snippet_page.php");
-        exit;
+        if (isset($result['role']) && $result['role'] === 'admin') {
+            $errorAlert = "Incorrect username or password";
+        } elseif (isset($result['account_status']) && $result['account_status'] === 'banned') {
+            $errorAlert = "Your account has been permanently suspended.\nIf you believe this is a mistake, please contact the administrator.";
+        } else {
+            $_SESSION["username"] = $username;
+            $_SESSION["user_id"] = $result["user_id"];
+            $_SESSION["userid"] = $result["user_id"];
+            $_SESSION["role"] = $result["role"] ?? 'user';
+            header("Location:snippet_page.php");
+            exit;
+        }
     } else {
         $errorAlert = "Incorrect username or password";
     }
@@ -74,7 +85,7 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
                     <a href="forget_password.php" class="forgot-password" style="text-decoration: none; display: block;">Forget password?</a>
                 </div>
                 <?php if ($errorAlert !== ""): ?>
-                    <div class="error-alert"><?php echo htmlspecialchars($errorAlert); ?></div>
+                    <div class="error-alert"><?php echo nl2br(htmlspecialchars($errorAlert)); ?></div>
                 <?php endif; ?>
 
                 <input type="submit" name="submit" value="Sign in">

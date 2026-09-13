@@ -5,8 +5,8 @@ $searchQuery = trim($_GET['q'] ?? '');
 $selectedLanguage = $_GET['lang'] ?? '';
 $snippets = [];
 
-// Get all languages
-$languageResult = $control->getLanguage();
+// Get all languages with public/protected snippets for guest page
+$languageResult = $control->getPublicLanguages();
 $languages = [];
 if($languageResult){
     $languages = $languageResult->fetchAll(PDO::FETCH_ASSOC);
@@ -46,13 +46,13 @@ if($searchQuery !== ''){
                         <circle cx="11" cy="11" r="8"></circle>
                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
-                    <input class="search-input" type="text" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>" placeholder="Search Snippet" required>
-                    <input type="hidden" name="lang" value="<?php echo htmlspecialchars($selectedLanguage); ?>">
+                    <input class="search-input" type="text" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>" placeholder="Search Snippet">
+                    <input type="hidden" name="lang" id="searchLang" value="<?php echo htmlspecialchars($selectedLanguage); ?>">
                     <!-- <button type="submit" class="search-submit">Search</button> -->
                 </form>
             </div>
             <div class="language-dropdown">
-                <form method="GET" action="result.php" style="display: inline;">
+                <form method="GET" action="result.php" id="langForm" style="display: inline;">
                     <input type="hidden" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>">
                     <select name="lang" id="language-filter" onchange="this.form.submit()">
                         <option value="">All Languages</option>
@@ -108,5 +108,33 @@ if($searchQuery !== ''){
         </div>
     </main>
 
+    <script>
+        const langFilter = document.getElementById('language-filter');
+        const searchLang = document.getElementById('searchLang');
+
+        if (langFilter) {
+            let clickCount = 0;
+            langFilter.addEventListener('mousedown', () => {
+                clickCount++;
+            });
+            langFilter.addEventListener('click', function() {
+                // If user opened dropdown and clicked "All Languages" again on Home page
+                if (clickCount >= 2 && this.value === '') {
+                    this.form.submit();
+                }
+            });
+            langFilter.addEventListener('blur', () => {
+                clickCount = 0;
+            });
+            langFilter.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && this.value === '') {
+                    this.form.submit();
+                }
+            });
+            langFilter.addEventListener('change', function() {
+                if (searchLang) searchLang.value = this.value;
+            });
+        }
+    </script>
 </body>
 </html>

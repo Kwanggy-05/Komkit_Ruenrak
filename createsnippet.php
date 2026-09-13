@@ -1,6 +1,7 @@
 <?php
 require_once "db/connect.php";
 require_once "layout/session.php";
+require_once "layout/check_user.php";
 $result = $control->getLanguage();
 $all_tags = $control->getAllTags();
 
@@ -18,11 +19,6 @@ $formButton = 'Save';
 $error = '';
 
 $userId = getCurrentUserId();
-
-if(!$userId){
-    header('Location:login.php');
-    exit;
-}
 
 if(isset($_GET['delete']) && is_numeric($_GET['delete'])){
     $control->softDeleteSnippet((int)$_GET['delete'], $userId);
@@ -50,7 +46,7 @@ if(isset($_GET['edit']) && is_numeric($_GET['edit'])){
 if(isset($_POST["submit"])){
     $snippet_id = isset($_POST['snippet_id']) ? (int)$_POST['snippet_id'] : null;
     $title = $_POST["title"];
-    $language_id = $_POST["language_id"]; // เพิ่มส่วนการรับค่า Language
+    $language_id = $_POST["language_id"]; // Language ID input
     $tags = trim($_POST["tags"] ?? '');
     $source_code = $_POST["source_code"];
     $description = $_POST["description"];
@@ -58,7 +54,7 @@ if(isset($_POST["submit"])){
     $current_image_path = $_POST['current_image_path'] ?? '';
     $image_path = $current_image_path;
 
-    // 2. ตรวจสอบว่ามีการอัปโหลดไฟล์มาหรือไม่ และไม่มี error
+    // 2. Check if file is uploaded and has no error
     if(isset($_FILES["image_path"]) && $_FILES["image_path"]["error"] == 0){
         
         $upload_dir = "uploads/"; 
@@ -188,9 +184,9 @@ if(isset($_POST["submit"])){
         const textarea = document.getElementById('source_code');
         const lineNumbers = document.getElementById('line-numbers');
 
-        // ฟังก์ชันปรับความสูงของช่องใส่โค้ดโดยอัตโนมัติ
+        // Auto-resize textarea height
         function autoResizeTextarea() {
-            // ป้องกันการค้างของตำแหน่ง Scroll
+            // Prevent scroll position freezing
             textarea.scrollTop = 0;
             lineNumbers.scrollTop = 0;
 
@@ -198,8 +194,8 @@ if(isset($_POST["submit"])){
             const scrollHeight = textarea.scrollHeight;
             textarea.style.height = scrollHeight + 'px';
 
-            // กำหนดความสูงให้กล่องครอบตัวนอก (Editor Container) ให้ยาวตามโค้ด
-            // โดยมีความสูงขั้นต่ำ 280px เพื่อป้องกันปัญหา CSS Cache
+            // Set editor container height to follow code length
+            // Minimum height 280px to avoid CSS cache issues
             const finalHeight = Math.max(280, scrollHeight);
             const editorContainer = document.querySelector('.editor-container');
             if (editorContainer) {
@@ -207,27 +203,27 @@ if(isset($_POST["submit"])){
             }
         }
 
-        // ฟังก์ชันอัปเดตเลขบรรทัด
+        // Update line numbers
         function updateLineNumbers() {
             const lines = textarea.value.split('\n').length;
             lineNumbers.innerHTML = Array(lines).fill(0).map((_, i) => i + 1).join('<br>');
         }
 
-        // ฟังก์ชันอัปเดตทั้งเลขบรรทัดและความสูงของช่องใส่โค้ด
+        // Update line numbers and textarea height
         function updateEditor() {
             updateLineNumbers();
             autoResizeTextarea();
         }
 
-        // ตรวจจับการพิมพ์หรือการวางโค้ด
+        // Detect typing or pasting code
         textarea.addEventListener('input', updateEditor);
 
-        // ซิงค์การเลื่อน Scroll Bar ระหว่างโค้ดกับเลขบรรทัด
+        // Sync scroll between code and line numbers
         textarea.addEventListener('scroll', () => {
             lineNumbers.scrollTop = textarea.scrollTop;
         });
 
-        // ทำให้สามารถกด Tab ได้ในช่องเขียนโค้ด (ไม่กระโดดไปช่องอื่น)
+        // Enable Tab key support in code textarea
         textarea.addEventListener('keydown', function(e) {
             if (e.key == 'Tab') {
                 e.preventDefault();
@@ -239,11 +235,11 @@ if(isset($_POST["submit"])){
             }
         });
 
-        // กำหนดค่าเริ่มต้นสำหรับเลขบรรทัดและความสูง
+        // Initialize line numbers and height
         updateEditor();
 
         // ----------------------------------------------------
-        // สคริปต์สำหรับแสดงภาพตัวอย่าง (Image Preview)
+        // Image Preview Script
         // ----------------------------------------------------
         const imageInput = document.getElementById('image_input');
         const imagePreview = document.getElementById('image-preview');
@@ -251,35 +247,35 @@ if(isset($_POST["submit"])){
         const currentImagePath = <?php echo json_encode($current_image_path); ?>;
 
         imageInput.addEventListener('change', function(event) {
-            const file = event.target.files[0]; // ดึงไฟล์แรกที่ผู้ใช้เลือก
+            const file = event.target.files[0]; // Get the first selected file
             
             if (file) {
-                // สร้าง URL ชั่วคราวจากไฟล์ที่อยู่ในเครื่อง แล้วยัดใส่ src ของ img
+                // Create temporary URL from file and assign to img src
                 imagePreview.src = URL.createObjectURL(file);
-                imagePreview.style.display = 'block'; // เปลี่ยนจากซ่อนเป็นแสดงรูปภาพ
+                imagePreview.style.display = 'block'; // Show preview image
                 uploadBtnText.textContent = 'Update Image';
             } else {
-                // ถ้าผู้ใช้กดยกเลิกการเลือกไฟล์
+                // If user cancelled file selection
                 if (currentImagePath) {
                     imagePreview.src = currentImagePath;
                     imagePreview.style.display = 'block';
                     uploadBtnText.textContent = 'Update Image';
                 } else {
                     imagePreview.src = '';
-                    imagePreview.style.display = 'none'; // ซ่อนรูปภาพกลับไปเหมือนเดิม
+                    imagePreview.style.display = 'none'; // Hide preview image
                     uploadBtnText.textContent = 'Upload Image';
                 }
             }
         });
 
         // ----------------------------------------------------
-        // สคริปต์สำหรับแนะนำ Tags จากฐานข้อมูล
+        // Suggest Tags from database
         // ----------------------------------------------------
         const tagsInput = document.getElementById('tags');
         const tagsSelector = document.getElementById('tags-selector');
         const allTags = <?php echo json_encode($all_tags); ?> || [];
 
-        // ฟังก์ชันสร้างและเรนเดอร์ Tag Badges
+        // Function to create and render Tag Badges
         function renderTagBadges() {
             tagsSelector.innerHTML = '';
             allTags.forEach(tag => {
@@ -289,7 +285,7 @@ if(isset($_POST["submit"])){
                 badge.dataset.tagName = tag.tag_name;
                 
                 badge.addEventListener('mousedown', (e) => {
-                    // ใช้ mousedown เพื่อชิงโฟกัสไม่ให้เกิด blur ก่อนคลิกทำงาน
+                    // Use mousedown to prevent blur before click activates
                     e.preventDefault();
                     toggleTagSelection(tag.tag_name);
                 });
@@ -299,7 +295,7 @@ if(isset($_POST["submit"])){
             updateBadgeSelectionState();
         }
 
-        // ดึง Tags ปัจจุบันจากช่อง Input ออกมาเป็น Array
+        // Get current tags from input as array
         function getSelectedTagsFromInput() {
             return tagsInput.value
                 .split(',')
@@ -307,25 +303,25 @@ if(isset($_POST["submit"])){
                 .filter(t => t.length > 0);
         }
 
-        // เลือกหรือสลับการเลือก Tag
+        // Select or toggle tag selection
         function toggleTagSelection(tagName) {
             let currentTags = getSelectedTagsFromInput();
             const index = currentTags.findIndex(t => t.toLowerCase() === tagName.toLowerCase());
             
             if (index > -1) {
-                // ถ้ามีอยู่อยู่แล้ว ให้ลบออก
+                // If exists, remove it
                 currentTags.splice(index, 1);
                 tagsInput.value = currentTags.join(', ');
                 if (tagsInput.value.length > 0 && !tagsInput.value.endsWith(', ')) {
                     tagsInput.value += ', ';
                 }
             } else {
-                // ถ้ายังไม่มี ให้ใส่เพิ่ม
+                // If not, add it
                 if (currentTags.length >= 5) {
                     alert('You can only add up to 5 tags');
                     return;
                 }
-                // เช็คคำค้นหาก่อนคอมม่าสุดท้าย ถ้าผู้ใช้กำลังพิมพ์อยู่ให้แทนที่คำนั้นเลย
+                // Check query before last comma to replace if user is typing
                 const parts = tagsInput.value.split(',');
                 const lastPart = parts[parts.length - 1].trim();
                 if (lastPart.length > 0 && tagName.toLowerCase().startsWith(lastPart.toLowerCase())) {
@@ -336,7 +332,7 @@ if(isset($_POST["submit"])){
                     tagsInput.value = currentTags.join(', ');
                 }
                 
-                // ใส่คอมม่าและเว้นวรรคเตรียมไว้สำหรับแท็กถัดไป
+                // Add comma and space for next tag
                 if (!tagsInput.value.endsWith(', ') && tagsInput.value.length > 0) {
                     tagsInput.value += ', ';
                 }
@@ -347,7 +343,7 @@ if(isset($_POST["submit"])){
             tagsInput.focus();
         }
 
-        // อัปเดตสถานะ Active/Selected ของ Badges
+        // Update Active/Selected status of Badges
         function updateBadgeSelectionState() {
             const currentTags = getSelectedTagsFromInput().map(t => t.toLowerCase());
             const badges = tagsSelector.querySelectorAll('.tag-badge');
@@ -361,7 +357,7 @@ if(isset($_POST["submit"])){
             });
         }
 
-        // กรองการแสดงผลของ Tag ตามคำที่พิมพ์
+        // Filter tag badges based on typed text
         function filterTagBadges() {
             const parts = tagsInput.value.split(',');
             const currentQuery = parts[parts.length - 1].trim().toLowerCase();
@@ -377,7 +373,7 @@ if(isset($_POST["submit"])){
             });
         }
 
-        // จัดการ Event Listeners
+        // Manage Event Listeners
         tagsInput.addEventListener('focus', () => {
             tagsSelector.classList.add('active');
             updateBadgeSelectionState();
@@ -389,7 +385,7 @@ if(isset($_POST["submit"])){
             filterTagBadges();
         });
 
-        // ตรวจสอบตอนส่งฟอร์มเพื่อป้องกันการใส่เกิน 5 แท็ก
+        // Check on form submission to prevent exceeding 5 tags
         document.querySelector('.form-container').addEventListener('submit', function(e) {
             const currentTags = getSelectedTagsFromInput();
             if (currentTags.length > 5) {
@@ -399,14 +395,14 @@ if(isset($_POST["submit"])){
             }
         });
 
-        // ซ่อนแท็กเมื่อคลิกข้างนอก
+        // Hide tags on outside click
         document.addEventListener('click', (e) => {
             if (!tagsInput.contains(e.target) && !tagsSelector.contains(e.target)) {
                 tagsSelector.classList.remove('active');
             }
         });
 
-        // เริ่มต้นการสร้าง Badges
+        // Initialize badges
         renderTagBadges();
     </script>
 </body>

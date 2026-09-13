@@ -32,6 +32,12 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 function getCurrentUserId(){
+    $isAdminRoute = isset($_SERVER['SCRIPT_NAME']) && (stripos($_SERVER['SCRIPT_NAME'], '/Admin/') !== false || stripos($_SERVER['SCRIPT_NAME'], '/admin/') !== false);
+    
+    if (!$isAdminRoute && isset($_SESSION['role']) && $_SESSION['role'] === 'admin') {
+        return 0;
+    }
+
     if(isset($_SESSION['user_id']) && is_numeric($_SESSION['user_id'])){
         return (int)$_SESSION['user_id'];
     }

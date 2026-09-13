@@ -6,8 +6,8 @@ $searchQuery = trim($_GET['q'] ?? '');
 $selectedLanguage = $_GET['lang'] ?? '';
 $snippets = [];
 
-// Get all languages
-$languageResult = $control->getLanguage();
+// Get all languages with public/protected snippets for guest page
+$languageResult = $control->getPublicLanguages();
 $languages = [];
 if($languageResult){
     $languages = $languageResult->fetchAll(PDO::FETCH_ASSOC);
@@ -24,11 +24,10 @@ if($selectedLanguage !== ''){
     }
 }
 
-if($searchQuery !== '' || $selectedLanguage !== ''){
-    $result = $control->searchSnippets($searchQuery, $selectedLanguage);
-    if($result){
-        $snippets = $result->fetchAll(PDO::FETCH_ASSOC);
-    }
+// Always fetch snippets (if q and lang are empty, returns all public & protected snippets)
+$result = $control->searchSnippets($searchQuery, $selectedLanguage);
+if($result){
+    $snippets = $result->fetchAll(PDO::FETCH_ASSOC);
 }
 
 $userId = getCurrentUserId();
@@ -66,7 +65,7 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
                         <circle cx="11" cy="11" r="8"></circle>
                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
-                    <input class="search-input" type="text" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>" placeholder="Search Snippet" required>
+                    <input class="search-input" type="text" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>" placeholder="Search Snippet">
                     <input type="hidden" name="lang" value="<?php echo htmlspecialchars($selectedLanguage); ?>">
                     <!-- <button type="submit" class="search-submit">Search</button> -->
                 </form>
@@ -97,23 +96,18 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
     <main class="results-container">
         <div class="results-header">
             <?php if ($searchQuery !== '' && $selectedLanguage !== ''): ?>
-                
-Search results for "<strong><?php echo htmlspecialchars($searchQuery); ?></strong>" in language <strong><?php echo htmlspecialchars($selectedLanguageName); ?></strong>
+                Search results for "<strong><?php echo htmlspecialchars($searchQuery); ?></strong>" in language <strong><?php echo htmlspecialchars($selectedLanguageName); ?></strong>
             <?php elseif ($searchQuery !== ''): ?>              
-Search results for "<strong><?php echo htmlspecialchars($searchQuery); ?></strong>"
+                Search results for "<strong><?php echo htmlspecialchars($searchQuery); ?></strong>"
             <?php elseif ($selectedLanguage !== ''): ?>
-Search results for <strong><?php echo htmlspecialchars($selectedLanguageName); ?></strong>
+                Search results for language <strong><?php echo htmlspecialchars($selectedLanguageName); ?></strong>
             <?php else: ?>
-                Please enter a keyword or select a language above to search snippets.
+                All public & protected snippets
             <?php endif; ?>
         </div>
 
         <div class="snippet-grid">
-            <?php if ($searchQuery === '' && $selectedLanguage === ''): ?>
-                <div class="empty-state">
-                    Please enter a search term or select a language above to start searching.
-                </div>
-            <?php elseif (empty($snippets)): ?>
+            <?php if (empty($snippets)): ?>
                 <div class="empty-state">   
                     No search results found.
                 </div>

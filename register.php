@@ -14,7 +14,7 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
     $username = trim($_POST["username"] ?? "");
     $password = $_POST["password"] ?? "";
     $confirmPassword = $_POST["confirm_password"] ?? "";
-    $question = "What is the name of your favorite character or cartoon?";
+    $question = "What is the name of your favorite movie character?";
     $answer = trim($_POST["answer"] ?? "");
 
     if($firstname === "" || $lastname === "" || $username === "" || $password === "" || $answer === ""){
@@ -91,7 +91,7 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
 
                 <div class="form-group-center">
                     <label for="question">Security Question</label>
-                    <input type="text" id="question" value="What is the name of your favorite character or cartoon?" disabled style="background-color: #f1f3f5; cursor: not-allowed; opacity: 0.85;">
+                    <input type="text" id="question" value="What is the name of your favorite movie character?" disabled style="background-color: #f1f3f5; cursor: not-allowed; opacity: 0.85;">
                 </div>
 
                 <div class="form-group-center">

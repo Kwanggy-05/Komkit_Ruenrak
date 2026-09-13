@@ -4,7 +4,7 @@ require_once "db/connect.php";
 
 header('Content-Type: application/json');
 
-// ตรวจสอบว่า user login แล้วหรือยัง
+// Check if user is logged in
 if(!isset($_SESSION['user_id'])){
     echo json_encode(['status' => 'error', 'message' => 'Please log in.']);
     exit;
@@ -24,7 +24,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
         echo json_encode(['status' => 'error', 'message' => 'Invalid snippet ID']);
         exit;
     }
-    // ตรวจสอบสิทธิ์การเข้าถึง snippet (ไม่ให้ like snippet ที่เป็น private ของคนอื่น)
+    // Check snippet access permission (do not allow liking someone else's private snippet)
     $snippet = $control->getSnippetById($snippet_id, $user_id);
     if(!$snippet){
         echo json_encode(['status' => 'error', 'message' => 'Snippet not found or access denied']);

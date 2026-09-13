@@ -10,8 +10,24 @@ class Control{
             $sql = "SELECT * FROM language";
             $result=$this->db->query($sql);
             return $result;
-        }catch(PDOException){
-            echo $e->Message();
+        }catch(PDOException $e){
+            echo $e->getMessage();
+            return false;
+        }
+    }
+
+    function getPublicLanguages(){
+        try{
+            $sql = "SELECT DISTINCT b.language_id, b.language_name
+                    FROM language b
+                    INNER JOIN snippet a ON b.language_id = a.language_id
+                    WHERE a.visibility IN ('public','protected')
+                    AND (a.deleted = 0 OR a.deleted IS NULL)
+                    ORDER BY b.language_name ASC";
+            $result = $this->db->query($sql);
+            return $result;
+        }catch(PDOException $e){
+            echo $e->getMessage();
             return false;
         }
     }

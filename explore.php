@@ -1,17 +1,12 @@
 <?php
 require_once "layout/session.php";
 require_once "db/connect.php";
-// require_once "layout/check_user.php";
+require_once "layout/check_user.php";
 
 $searchQuery = trim($_GET['q'] ?? '');
 $showBookmarks = isset($_GET['bookmarks']) && $_GET['bookmarks'] === '1';
 $onlyOwn = false;
 $userId = getCurrentUserId();
-
-if(!$userId){
-    header('Location:login.php');
-    exit;
-}
 
 if(isset($_GET['delete']) && is_numeric($_GET['delete'])){
     $control->softDeleteSnippet((int)$_GET['delete'], $userId);
@@ -52,13 +47,13 @@ if($result){
 $totalPages = ceil($totalSnippets / $itemsPerPage);
 if($totalPages === 0) $totalPages = 1;
 
-// ดึง list ของ snippet_id ที่ถูก bookmark ไว้
+// Fetch list of bookmarked snippet IDs
 $bookmarkedIds = [];
 if($userId){
     $bookmarkedIds = $control->getBookmarkedSnippetIds($userId);
 }
 
-// ดึง list ของ snippet_id ที่ถูก like ไว้ และจำนวน like ของแต่ละ snippet
+// Fetch list of liked snippet IDs and like count for each snippet
 $likedIds = [];
 $likeCounts = [];
 if($userId){

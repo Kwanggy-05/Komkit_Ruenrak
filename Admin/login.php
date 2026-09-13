@@ -22,6 +22,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION["username"] = $username;
             $_SESSION["user_id"] = $result["user_id"];
             $_SESSION["userid"] = $result["user_id"];
+            $_SESSION["role"] = "admin";
             header("Location: manage_languages.php");
             exit;
         } else {

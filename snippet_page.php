@@ -1,18 +1,13 @@
 <?php
 require_once "layout/session.php";
 require_once "db/connect.php";
-// require_once "layout/check_user.php";
+require_once "layout/check_user.php";
 
 $searchQuery = trim($_GET['q'] ?? '');
 $selectedLanguage = $_GET['lang'] ?? '';
 $showBookmarks = isset($_GET['bookmarks']) && $_GET['bookmarks'] === '1';
 $onlyOwn = empty($_GET) || (isset($_GET['only_own']) && $_GET['only_own'] === '1');
 $userId = getCurrentUserId();
-
-if(!$userId){
-    header('Location:login.php');
-    exit;
-}
 
 // Get all languages
 $languageResult = $control->getLanguage();
@@ -61,13 +56,13 @@ if($result){
 $totalPages = ceil($totalSnippets / $itemsPerPage);
 if($totalPages === 0) $totalPages = 1;
 
-// ดึง list ของ snippet_id ที่ถูก bookmark ไว้
+// Fetch list of bookmarked snippet IDs
 $bookmarkedIds = [];
 if($userId){
     $bookmarkedIds = $control->getBookmarkedSnippetIds($userId);
 }
 
-// ดึง list ของ snippet_id ที่ถูก like ไว้ และจำนวน like ของแต่ละ snippet
+// Fetch list of liked snippet IDs and like count for each snippet
 $likedIds = [];
 $likeCounts = [];
 if($userId){
@@ -411,7 +406,7 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                         this.title = 'Add Bookmark';
                         showToast('✗ Bookmark removed');
                         
-                        // ถ้าอยู่ในหน้า bookmarks filter ให้โหลดหน้าใหม่
+                        // If on the bookmarks filter view, reload the page
                         const urlParams = new URLSearchParams(window.location.search);
                         if(urlParams.get('bookmarks') === '1') {
                             setTimeout(() => window.location.reload(), 500);

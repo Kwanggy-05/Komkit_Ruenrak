@@ -226,7 +226,7 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
         const textarea = document.getElementById('source_code');
         const lineNumbers = document.getElementById('line-numbers');
 
-        // ฟังก์ชันปรับความสูงของช่องใส่โค้ดโดยอัตโนมัติ
+        // Auto-resize textarea height
         function autoResizeTextarea() {
             if (!textarea || !lineNumbers) return;
             textarea.scrollTop = 0;
@@ -243,7 +243,7 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
             }
         }
 
-        // ฟังก์ชันอัปเดตเลขบรรทัด
+        // Update line numbers
         function updateLineNumbers() {
             if (textarea && lineNumbers) {
                 const lines = textarea.value.split('\n').length;
@@ -257,7 +257,7 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
         }
 
         if (textarea) {
-            // ซิงค์การเลื่อน Scroll Bar ระหว่างโค้ดกับเลขบรรทัด
+            // Sync scroll between code and line numbers
             textarea.addEventListener('scroll', () => {
                 if (lineNumbers) lineNumbers.scrollTop = textarea.scrollTop;
             });

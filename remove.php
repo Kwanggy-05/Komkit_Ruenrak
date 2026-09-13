@@ -1,13 +1,9 @@
 <?php
 require_once "layout/session.php";
 require_once "db/connect.php";
+require_once "layout/check_user.php";
 
 $userId = getCurrentUserId();
-
-if(!$userId){
-    header('Location:login.php');
-    exit;
-}
 
 // Restore action
 if(isset($_GET['restore']) && is_numeric($_GET['restore'])){
