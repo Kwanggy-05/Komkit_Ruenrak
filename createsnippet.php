@@ -52,7 +52,7 @@ if(isset($_POST["submit"])){
     $title = $_POST["title"];
     $language_id = $_POST["language_id"]; // Language ID input
     $tags = trim($_POST["tags"] ?? '');
-    $source_code = $_POST["source_code"];
+    $source_code = str_replace(["\r\n", "\r"], "\n", $_POST["source_code"] ?? '');
     $description = $_POST["description"];
     $visibility = $_POST["visibility"] ?? "private";
     $current_image_path = $_POST['current_image_path'] ?? '';
@@ -77,7 +77,9 @@ if(isset($_POST["submit"])){
     }
 
     $tags_arr = array_filter(array_map('trim', explode(',', $tags)));
-    if(count($tags_arr) > 5){
+    if(mb_strlen($source_code) > 5000){
+        $error = "โค้ดต้องมีความยาวไม่เกิน 5,000 ตัวอักษรเท่านั้น (Code cannot exceed 5,000 characters)";
+    } else if(count($tags_arr) > 5){
         $error = "You can only add up to 5 tags";
     } else {
         if($snippet_id){
@@ -133,10 +135,21 @@ if(isset($_POST["submit"])){
         </div>
 
         <div class="form-group">
-            <label for="source_code">Code</label>
+            <div class="code-label-wrapper">
+                <label for="source_code">Code <span class="code-limit-info">(ใส่ได้ไม่เกิน 5,000 ตัวอักษร)</span></label>
+                <span class="char-counter" id="char-counter"><span id="char-count">0</span> / 5,000</span>
+            </div>
             <div class="editor-container">
                 <div class="line-numbers" id="line-numbers">1</div>
-                <textarea name="source_code" id="source_code" wrap="off"><?php echo htmlspecialchars($source_code); ?></textarea>
+                <textarea name="source_code" id="source_code" wrap="off" maxlength="5000" placeholder="ใส่โค้ดที่นี่ (ไม่เกิน 5,000 ตัวอักษร)..."><?php echo htmlspecialchars($source_code); ?></textarea>
+            </div>
+            <div id="char-warning" class="code-char-warning" style="display: none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px; flex-shrink: 0;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span id="char-warning-text">คุณใส่ข้อความครบ 5,000 ตัวอักษรแล้ว ไม่สามารถใส่เพิ่มได้</span>
             </div>
         </div>
 
@@ -187,6 +200,30 @@ if(isset($_POST["submit"])){
     <script>
         const textarea = document.getElementById('source_code');
         const lineNumbers = document.getElementById('line-numbers');
+        const charCountEl = document.getElementById('char-count');
+        const charCounterEl = document.getElementById('char-counter');
+        const charWarningEl = document.getElementById('char-warning');
+        const charWarningText = document.getElementById('char-warning-text');
+
+        // Update character count and warning display
+        function updateCharCount() {
+            const count = textarea.value.length;
+            if (charCountEl) {
+                charCountEl.textContent = count.toLocaleString();
+            }
+            if (count >= 5000) {
+                if (charCounterEl) charCounterEl.classList.add('limit-reached');
+                if (charWarningEl) {
+                    charWarningEl.style.display = 'flex';
+                    if (charWarningText) {
+                        charWarningText.textContent = 'คุณใส่ข้อความครบ 5,000 ตัวอักษรแล้ว ไม่สามารถใส่เพิ่มได้ (ใส่ได้สูงสุด 5,000 ตัวอักษรเท่านั้น)';
+                    }
+                }
+            } else {
+                if (charCounterEl) charCounterEl.classList.remove('limit-reached');
+                if (charWarningEl) charWarningEl.style.display = 'none';
+            }
+        }
 
         // Auto-resize textarea height
         function autoResizeTextarea() {
@@ -213,26 +250,54 @@ if(isset($_POST["submit"])){
             lineNumbers.innerHTML = Array(lines).fill(0).map((_, i) => i + 1).join('<br>');
         }
 
-        // Update line numbers and textarea height
+        // Update line numbers, textarea height, and character count
         function updateEditor() {
             updateLineNumbers();
             autoResizeTextarea();
+            updateCharCount();
         }
 
         // Detect typing or pasting code
         textarea.addEventListener('input', updateEditor);
+
+        // Detect paste action exceeding 5000 characters
+        textarea.addEventListener('paste', function(e) {
+            const pasteData = (e.clipboardData || window.clipboardData)?.getData('text') || '';
+            const currentLen = this.value.length;
+            const selectedLen = this.selectionEnd - this.selectionStart;
+            if (currentLen - selectedLen + pasteData.length > 5000) {
+                if (charWarningEl) {
+                    charWarningEl.style.display = 'flex';
+                    if (charWarningText) {
+                        charWarningText.textContent = 'ข้อความที่วางเกินขีดจำกัด 5,000 ตัวอักษร ระบบได้ตัดข้อความส่วนเกินออก (ใส่ได้สูงสุด 5,000 ตัวอักษรเท่านั้น)';
+                    }
+                }
+            }
+        });
 
         // Sync scroll between code and line numbers
         textarea.addEventListener('scroll', () => {
             lineNumbers.scrollTop = textarea.scrollTop;
         });
 
-        // Enable Tab key support in code textarea
+        // Enable Tab key support in code textarea with 5000 character check
         textarea.addEventListener('keydown', function(e) {
             if (e.key == 'Tab') {
                 e.preventDefault();
                 var start = this.selectionStart;
                 var end = this.selectionEnd;
+                var currentLen = this.value.length;
+                var selectedLen = end - start;
+                if (currentLen - selectedLen + 4 > 5000) {
+                    if (charWarningEl) {
+                        charWarningEl.style.display = 'flex';
+                        if (charWarningText) {
+                            charWarningText.textContent = 'ไม่สามารถแทรก Tab ได้ เนื่องจากจะเกินขีดจำกัด 5,000 ตัวอักษร (ใส่ได้สูงสุด 5,000 ตัวอักษรเท่านั้น)';
+                        }
+                    }
+                    alert('ใส่โค้ดได้สูงสุด 5,000 ตัวอักษรเท่านั้น');
+                    return;
+                }
                 this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
                 this.selectionStart = this.selectionEnd = start + 4;
                 updateEditor();
@@ -389,8 +454,14 @@ if(isset($_POST["submit"])){
             filterTagBadges();
         });
 
-        // Check on form submission to prevent exceeding 5 tags
+        // Check on form submission to prevent exceeding code limit and tags limit
         document.querySelector('.form-container').addEventListener('submit', function(e) {
+            if (textarea.value.length > 5000) {
+                e.preventDefault();
+                alert('ใส่โค้ดได้สูงสุด 5,000 ตัวอักษรเท่านั้น');
+                textarea.focus();
+                return;
+            }
             const currentTags = getSelectedTagsFromInput();
             if (currentTags.length > 5) {
                 e.preventDefault();

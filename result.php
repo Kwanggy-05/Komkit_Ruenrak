@@ -6,8 +6,8 @@ $searchQuery = trim($_GET['q'] ?? '');
 $selectedLanguage = $_GET['lang'] ?? '';
 $snippets = [];
 
-// Get all languages with public/protected snippets for guest page
-$languageResult = $control->getPublicLanguages();
+// Get all languages with snippet counts
+$languageResult = $control->getAllLanguagesWithSnippetCounts();
 $languages = [];
 if($languageResult){
     $languages = $languageResult->fetchAll(PDO::FETCH_ASSOC);
@@ -109,7 +109,7 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
         <div class="snippet-grid">
             <?php if (empty($snippets)): ?>
                 <div class="empty-state">   
-                    No search results found.
+                    ไม่มีโพสต์
                 </div>
             <?php else: ?>
                 <?php foreach($snippets as $row): ?>

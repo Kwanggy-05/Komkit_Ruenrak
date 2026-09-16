@@ -39,6 +39,18 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
     if($snippet){
         $likeCount = $control->getLikeCount($id);
     }
+    
+    // Check appeal status for owner
+    $latestAppeal = null;
+    $isAppealPending = false;
+    $isAppealRejected = false;
+    if($snippet && $userId && (int)$snippet['user_id'] === (int)$userId){
+        $latestAppeal = $control->getLatestAppealBySnippet($id);
+        if($latestAppeal){
+            $isAppealPending = ($latestAppeal['status'] === 'pending');
+            $isAppealRejected = ($latestAppeal['status'] === 'rejected');
+        }
+    }
 }
 
 if($accessDenied){
@@ -67,10 +79,10 @@ if($accessDenied){
         <div class="empty" style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 16px;">Snippet not found</div>
     <?php else: ?>
         <div class="form-container">
-            <!-- Top Actions Row -->
-            <div class="top-actions-row">
-                <div class="right-actions">
-                    <?php if((int)($snippet['deleted'] ?? 0) !== 1 && (int)($snippet['is_suspended'] ?? 0) !== 1): ?>
+            <!-- Top Actions Row (Hidden if suspended or deleted) -->
+            <?php if((int)($snippet['deleted'] ?? 0) !== 1 && (int)($snippet['is_suspended'] ?? 0) !== 1): ?>
+                <div class="top-actions-row">
+                    <div class="right-actions">
                         <!-- Report Button -->
                         <button class="btn report-btn <?php echo $isReported ? 'reported' : ''; ?>" id="reportBtn" data-snippet-id="<?php echo (int)$snippet['snippet_id']; ?>" <?php echo $isReported ? 'disabled' : ''; ?>>
                             <svg width="14" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle;">
@@ -95,12 +107,12 @@ if($accessDenied){
                             </svg>
                             <span class="like-btn-count"><?php echo $likeCount; ?></span>
                         </button>
-                    <?php endif; ?>
 
-                    <!-- Copy Button -->
-                    <button class="btn copy" id="copyBtn">Copy</button>
+                        <!-- Copy Button -->
+                        <button class="btn copy" id="copyBtn">Copy</button>
+                    </div>
                 </div>
-            </div>
+            <?php endif; ?>
 
             <?php if((int)($snippet['is_suspended'] ?? 0) === 1): ?>
                 <!-- Suspension Notice for Owner -->
@@ -120,6 +132,44 @@ if($accessDenied){
                                     * โพสต์นี้ถูกซ่อนจากการแสดงผลต่อสาธารณะ ผู้ใช้อื่นจะไม่สามารถมองเห็นหรือค้นหาได้ และคุณไม่สามารถแก้ไขหรือกู้คืนได้จนกว่าผู้ดูแลระบบจะถอนการระงับ
                                 </p>
                             </div>
+
+                            <!-- Appeal Section for Owner -->
+                            <?php if((int)($snippet['user_id'] ?? 0) === (int)$userId): ?>
+                                <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed #fca5a5;">
+                                    <?php if($isAppealPending): ?>
+                                        <div style="background-color: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 10px 14px; color: #92400e; font-size: 0.88rem;">
+                                            <div style="font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                                                <span>⏳</span> คำร้องขอถอนการระงับอยู่ระหว่างการพิจารณาโดยผู้ดูแลระบบ
+                                            </div>
+                                            <div><strong>เหตุผลที่คุณยื่น:</strong> <?php echo nl2br(htmlspecialchars($latestAppeal['reason'])); ?></div>
+                                            <div style="font-size: 0.78rem; color: #b45309; margin-top: 4px;">
+                                                ยื่นเมื่อ: <?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($latestAppeal['created_at']))); ?> (ระบบจะแจ้งผลให้ทราบหลังจาก Admin ตรวจสอบ)
+                                            </div>
+                                        </div>
+                                    <?php elseif($isAppealRejected): ?>
+                                        <div style="background-color: #fff5f5; border: 1px solid #fed7d7; border-radius: 6px; padding: 10px 14px; color: #9b2c2c; font-size: 0.88rem; margin-bottom: 10px;">
+                                            <div style="font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                                                <span>❌</span> คำร้องก่อนหน้านี้ของคุณถูกปฏิเสธ
+                                            </div>
+                                            <?php if(!empty($latestAppeal['admin_notes'])): ?>
+                                                <div><strong>เหตุผลจากผู้ดูแลระบบ:</strong> <?php echo nl2br(htmlspecialchars($latestAppeal['admin_notes'])); ?></div>
+                                            <?php endif; ?>
+                                            <div style="font-size: 0.78rem; color: #e53e3e; margin-top: 4px;">
+                                                พิจารณาเมื่อ: <?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($latestAppeal['reviewed_at'] ?? $latestAppeal['created_at']))); ?>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn" id="openAppealModalBtn" style="background-color: #b91c1c; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem; transition: background-color 0.2s;">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                            แจ้ง Admin ขอถอนการระงับใหม่อีกครั้ง
+                                        </button>
+                                    <?php else: ?>
+                                        <button type="button" class="btn" id="openAppealModalBtn" style="background-color: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem; transition: background-color 0.2s;">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                            แจ้ง Admin ขอถอนการระงับโพสต์ (ยื่นคำร้อง)
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -155,7 +205,7 @@ if($accessDenied){
                 <label for="source_code">Code</label>
                 <div class="editor-container">
                     <div class="line-numbers" id="line-numbers">1</div>
-                    <textarea name="source_code" id="source_code" readonly wrap="off"><?php echo htmlspecialchars($snippet['source_code']); ?></textarea>
+                    <textarea name="source_code" id="source_code" readonly wrap="off" <?php if((int)($snippet['is_suspended'] ?? 0) === 1): ?>style="user-select: none; -webkit-user-select: none;" oncopy="return false;" oncut="return false;"<?php endif; ?>><?php echo htmlspecialchars($snippet['source_code']); ?></textarea>
                 </div>
             </div>
 
@@ -245,6 +295,50 @@ if($accessDenied){
         </div>
     </div>
 
+    <!-- Appeal Modal -->
+    <div class="modal-overlay" id="appealModal">
+        <div class="modal-card">
+            <header class="modal-header">
+                <span class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                    ยื่นคำร้องขอถอนการระงับโพสต์
+                </span>
+                <button class="modal-close" id="closeAppealModalBtn">&times;</button>
+            </header>
+            <form id="appealForm">
+                <div class="modal-body">
+                    <p style="margin-bottom: 12px; color: var(--text-muted); font-size: 0.9rem; line-height: 1.5;">
+                        กรุณาระบุเหตุผลหรือคำชี้แจงเพื่อส่งให้ผู้ดูแลระบบพิจารณาถอนการระงับโพสต์นี้
+                    </p>
+                    
+                    <?php if($snippet): ?>
+                        <input type="hidden" name="snippet_id" value="<?php echo (int)$snippet['snippet_id']; ?>">
+                    <?php endif; ?>
+
+                    <div style="background-color: #fef2f2; border: 1px solid #fee2e2; border-radius: 6px; padding: 10px 12px; margin-bottom: 16px; font-size: 0.85rem; color: #991b1b;">
+                        <strong>เหตุผลที่โพสต์ถูกระงับ:</strong> <?php echo htmlspecialchars($snippet['suspension_reason'] ?: 'ไม่ระบุเหตุผล'); ?>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 10px;">
+                        <label for="appealReason" style="display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; color: var(--secondary);">
+                            เหตุผล / คำชี้แจงของคุณ <span style="color: #dc3545;">*</span>
+                        </label>
+                        <textarea id="appealReason" name="reason" placeholder="อธิบายข้อเท็จจริงหรือเหตุผลที่ควรได้รับการถอนการระงับ..." rows="4" required style="width:100%; padding: 10px; border: 1px solid var(--input-border); border-radius: var(--radius-sm); font-size: 0.9rem; resize: vertical; outline: none; box-sizing: border-box;"></textarea>
+                    </div>
+                </div>
+                <footer class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 15px; border-top: 1px solid var(--border-color); margin-top: 15px;">
+                    <button type="button" class="btn" id="cancelAppealBtn" style="border: 1px solid var(--border-color); background: transparent; padding: 8px 16px; border-radius: var(--radius-sm); cursor: pointer;">ยกเลิก</button>
+                    <button type="submit" class="btn" id="submitAppealBtn" style="background-color: #dc2626; border: 1px solid #dc2626; color: #fff; padding: 8px 18px; font-weight: 600; border-radius: var(--radius-sm); cursor: pointer;">ส่งคำร้อง</button>
+                </footer>
+            </form>
+        </div>
+    </div>
+
     <!-- Image Viewer Modal (Lightbox) -->
     <div class="modal-overlay" id="imageModal">
         <div class="modal-card">
@@ -306,7 +400,26 @@ if($accessDenied){
 
         // copy button
         const copyBtn = document.getElementById('copyBtn');
+        const isSuspended = <?php echo ((int)($snippet['is_suspended'] ?? 0) === 1) ? 'true' : 'false'; ?>;
+        
+        if (isSuspended && textarea) {
+            textarea.addEventListener('copy', (e) => {
+                e.preventDefault();
+                showToast('⚠️ โพสต์นี้ถูกระงับ ไม่สามารถคัดลอกโค้ดได้');
+            });
+            textarea.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+                    e.preventDefault();
+                    showToast('⚠️ โพสต์นี้ถูกระงับ ไม่สามารถคัดลอกโค้ดได้');
+                }
+            });
+        }
+
         copyBtn?.addEventListener('click', async ()=>{
+            if (isSuspended) {
+                showToast('⚠️ โพสต์นี้ถูกระงับ ไม่สามารถคัดลอกโค้ดได้');
+                return;
+            }
             const text = textarea.value;
             try{
                 await navigator.clipboard.writeText(text);
@@ -499,6 +612,79 @@ if($accessDenied){
         imageModal?.addEventListener('click', function(e) {
             if (e.target === imageModal) {
                 closeImageModal();
+            }
+        });
+
+        // Appeal Modal functionality
+        const openAppealModalBtn = document.getElementById('openAppealModalBtn');
+        const appealModal = document.getElementById('appealModal');
+        const closeAppealModalBtn = document.getElementById('closeAppealModalBtn');
+        const cancelAppealBtn = document.getElementById('cancelAppealBtn');
+        const appealForm = document.getElementById('appealForm');
+        const submitAppealBtn = document.getElementById('submitAppealBtn');
+
+        function openAppealModal() {
+            appealModal?.classList.add('open');
+        }
+
+        function closeAppealModal() {
+            appealModal?.classList.remove('open');
+            appealForm?.reset();
+        }
+
+        openAppealModalBtn?.addEventListener('click', openAppealModal);
+        closeAppealModalBtn?.addEventListener('click', closeAppealModal);
+        cancelAppealBtn?.addEventListener('click', closeAppealModal);
+
+        window.addEventListener('click', function(e) {
+            if (e.target === appealModal) {
+                closeAppealModal();
+            }
+        });
+
+        appealForm?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const reasonInput = document.getElementById('appealReason');
+            const reason = reasonInput ? reasonInput.value.trim() : '';
+            if (!reason) {
+                showToast('⚠ กรุณากรอกเหตุผลในการยื่นคำร้อง');
+                return;
+            }
+
+            if (submitAppealBtn) {
+                submitAppealBtn.disabled = true;
+                submitAppealBtn.textContent = 'กำลังส่ง...';
+            }
+
+            const formData = new FormData(this);
+
+            try {
+                const response = await fetch('appeal_action.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    showToast('✓ ' + data.message);
+                    closeAppealModal();
+                    // รีโหลดหน้าหลังจากยื่นคำร้องสำเร็จ เพื่ออัปเดตกล่องสถานะ
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1200);
+                } else {
+                    showToast('⚠ ' + data.message);
+                    if (submitAppealBtn) {
+                        submitAppealBtn.disabled = false;
+                        submitAppealBtn.textContent = 'ส่งคำร้อง';
+                    }
+                }
+            } catch (err) {
+                showToast('⚠ เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่');
+                if (submitAppealBtn) {
+                    submitAppealBtn.disabled = false;
+                    submitAppealBtn.textContent = 'ส่งคำร้อง';
+                }
             }
         });
     </script>

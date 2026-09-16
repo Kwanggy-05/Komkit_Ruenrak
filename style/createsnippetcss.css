@@ -193,6 +193,43 @@ textarea[name="source_code"]:focus {
     box-shadow: none;
 }
 
+/* Code character limit and counter */
+.code-label-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.code-limit-info {
+    font-size: 13px;
+    font-weight: normal;
+    color: var(--text-muted);
+    margin-left: 6px;
+}
+
+.char-counter {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    transition: color 0.2s ease;
+}
+
+.char-counter.limit-reached {
+    color: #dc3545;
+}
+
+.code-char-warning {
+    display: flex;
+    align-items: center;
+    color: #721c24;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    font-size: 13px;
+    margin-top: 6px;
+}
+
 .action-row {
     display: flex;
     justify-content: space-between;

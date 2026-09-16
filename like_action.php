@@ -31,6 +31,11 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
         exit;
     }
 
+    if((int)($snippet['is_suspended'] ?? 0) === 1){
+        echo json_encode(['status' => 'error', 'message' => 'โพสต์นี้ถูกระงับ ไม่สามารถกด Like ได้']);
+        exit;
+    }
+
     $result = $control->toggleLike($user_id, $snippet_id);
     echo json_encode($result);
 }else{

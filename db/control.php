@@ -33,6 +33,25 @@ class Control{
         }
     }
 
+    function getAllLanguagesWithSnippetCounts(){
+        try{
+            $sql = "SELECT l.language_id, l.language_name,
+                           COUNT(s.snippet_id) AS snippet_count
+                    FROM language l
+                    LEFT JOIN snippet s ON l.language_id = s.language_id
+                         AND s.visibility IN ('public','protected')
+                         AND (s.deleted = 0 OR s.deleted IS NULL)
+                         AND (s.is_suspended = 0 OR s.is_suspended IS NULL)
+                    GROUP BY l.language_id, l.language_name
+                    ORDER BY l.language_name ASC";
+            $result = $this->db->query($sql);
+            return $result;
+        }catch(PDOException $e){
+            echo $e->getMessage();
+            return false;
+        }
+    }
+
     function getSnippet($current_user_id = 0){
         try{
             $sql = "SELECT a.*, b.language_name,
@@ -1167,6 +1186,207 @@ class Control{
             return $stmt->execute();
         }catch(PDOException $e){
             return false;
+        }
+    }
+
+    // ==========================================
+    // SNIPPET APPEALS (ระบบยื่นคำร้องถอนการระงับโพสต์)
+    // ==========================================
+
+    function createSnippetAppeal($snippet_id, $user_id, $reason){
+        try{
+            // ป้องกันการส่งซ้ำหากมีคำร้องที่ค้างรอพิจารณาอยู่แล้ว
+            $existing = $this->getPendingAppealBySnippet($snippet_id);
+            if ($existing) {
+                return false;
+            }
+
+            $sql = "INSERT INTO snippet_appeals (snippet_id, user_id, reason, status, created_at)
+                    VALUES (:snippet_id, :user_id, :reason, 'pending', NOW())";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmt->bindParam(":user_id", $user_id, PDO::PARAM_INT);
+            $stmt->bindParam(":reason", $reason, PDO::PARAM_STR);
+            return $stmt->execute();
+        }catch(PDOException $e){
+            return false;
+        }
+    }
+
+    function getPendingAppealBySnippet($snippet_id){
+        try{
+            $sql = "SELECT * FROM snippet_appeals 
+                    WHERE snippet_id = :snippet_id AND status = 'pending' 
+                    ORDER BY appeal_id DESC LIMIT 1";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        }catch(PDOException $e){
+            return false;
+        }
+    }
+
+    function getLatestAppealBySnippet($snippet_id){
+        try{
+            $sql = "SELECT * FROM snippet_appeals 
+                    WHERE snippet_id = :snippet_id 
+                    ORDER BY appeal_id DESC LIMIT 1";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        }catch(PDOException $e){
+            return false;
+        }
+    }
+
+    function getSnippetAppealsHistory($snippet_id){
+        try{
+            $sql = "SELECT a.*, u.username as user_username, u.firstname as user_firstname, u.lastname as user_lastname 
+                    FROM snippet_appeals a
+                    JOIN user u ON a.user_id = u.user_id
+                    WHERE a.snippet_id = :snippet_id 
+                    ORDER BY a.created_at DESC, a.appeal_id DESC";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }catch(PDOException $e){
+            return [];
+        }
+    }
+
+    function getAllAppealsAdmin($statusFilter = null){
+        try{
+            $sql = "SELECT a.*, 
+                           s.title as snippet_title, s.deleted as snippet_deleted, s.is_suspended as snippet_suspended, s.source_code,
+                           u.username as appellant_username, u.firstname as appellant_firstname, u.lastname as appellant_lastname,
+                           susp.reason as suspension_reason, susp.suspended_at, susp.admin_suspended
+                    FROM snippet_appeals a
+                    INNER JOIN snippet s ON a.snippet_id = s.snippet_id
+                    INNER JOIN user u ON a.user_id = u.user_id
+                    LEFT JOIN snippet_suspensions susp ON (s.snippet_id = susp.snippet_id AND susp.unsuspended_at IS NULL)";
+            
+            if($statusFilter !== null && $statusFilter !== 'ALL'){
+                $sql .= " WHERE a.status = :status";
+            }
+            
+            $sql .= " ORDER BY a.created_at DESC, a.appeal_id DESC";
+            
+            $stmt = $this->db->prepare($sql);
+            if($statusFilter !== null && $statusFilter !== 'ALL'){
+                $stmt->bindParam(":status", $statusFilter, PDO::PARAM_STR);
+            }
+            $stmt->execute();
+            return $stmt;
+        }catch(PDOException $e){
+            return false;
+        }
+    }
+
+    function getAppealByIdAdmin($appeal_id){
+        try{
+            $sql = "SELECT a.*, 
+                           s.title as snippet_title, s.deleted as snippet_deleted, s.is_suspended as snippet_suspended, s.source_code, s.description as snippet_desc, s.visibility, s.image_path, l.language_name,
+                           GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags,
+                           u.username as appellant_username, u.firstname as appellant_firstname, u.lastname as appellant_lastname,
+                           susp.reason as suspension_reason, susp.suspended_at, susp.admin_suspended
+                    FROM snippet_appeals a
+                    INNER JOIN snippet s ON a.snippet_id = s.snippet_id
+                    INNER JOIN language l ON s.language_id = l.language_id
+                    LEFT JOIN snippet_tag st ON s.snippet_id = st.snippet_id
+                    LEFT JOIN tag t ON st.tag_id = t.tag_id
+                    INNER JOIN user u ON a.user_id = u.user_id
+                    LEFT JOIN snippet_suspensions susp ON (s.snippet_id = susp.snippet_id AND susp.unsuspended_at IS NULL)
+                    WHERE a.appeal_id = :appeal_id
+                    GROUP BY a.appeal_id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(":appeal_id", $appeal_id, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        }catch(PDOException $e){
+            return false;
+        }
+    }
+
+    function approveAppealAdmin($appeal_id, $admin_username, $admin_notes = null){
+        try{
+            $this->db->beginTransaction();
+
+            // ดึง snippet_id จาก appeal
+            $sqlCheck = "SELECT snippet_id FROM snippet_appeals WHERE appeal_id = :appeal_id AND status = 'pending'";
+            $stmtCheck = $this->db->prepare($sqlCheck);
+            $stmtCheck->bindParam(":appeal_id", $appeal_id, PDO::PARAM_INT);
+            $stmtCheck->execute();
+            $appeal = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+
+            if(!$appeal){
+                $this->db->rollBack();
+                return false;
+            }
+
+            $snippet_id = (int)$appeal['snippet_id'];
+
+            // 1. อัปเดตสถานะ Appeal เป็น approved
+            $sqlAppeal = "UPDATE snippet_appeals 
+                          SET status = 'approved', reviewed_by = :reviewed_by, admin_notes = :admin_notes, reviewed_at = NOW() 
+                          WHERE appeal_id = :appeal_id";
+            $stmtAppeal = $this->db->prepare($sqlAppeal);
+            $stmtAppeal->bindParam(":reviewed_by", $admin_username, PDO::PARAM_STR);
+            $stmtAppeal->bindParam(":admin_notes", $admin_notes, PDO::PARAM_STR);
+            $stmtAppeal->bindParam(":appeal_id", $appeal_id, PDO::PARAM_INT);
+            $stmtAppeal->execute();
+
+            // 2. ปลดระงับ snippet
+            $sqlSnippet = "UPDATE snippet SET is_suspended = 0 WHERE snippet_id = :snippet_id";
+            $stmtSnippet = $this->db->prepare($sqlSnippet);
+            $stmtSnippet->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmtSnippet->execute();
+
+            // 3. บันทึกการ unsuspend ใน snippet_suspensions
+            $sqlSuspension = "UPDATE snippet_suspensions 
+                              SET admin_unsuspended = :admin_unsuspended, unsuspended_at = NOW() 
+                              WHERE snippet_id = :snippet_id AND unsuspended_at IS NULL
+                              ORDER BY suspension_id DESC LIMIT 1";
+            $stmtSuspension = $this->db->prepare($sqlSuspension);
+            $stmtSuspension->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmtSuspension->bindParam(":admin_unsuspended", $admin_username, PDO::PARAM_STR);
+            $stmtSuspension->execute();
+
+            $this->db->commit();
+            return true;
+        }catch(PDOException $e){
+            if($this->db->inTransaction()){
+                $this->db->rollBack();
+            }
+            return false;
+        }
+    }
+
+    function rejectAppealAdmin($appeal_id, $admin_username, $admin_notes = null){
+        try{
+            $sql = "UPDATE snippet_appeals 
+                    SET status = 'rejected', reviewed_by = :reviewed_by, admin_notes = :admin_notes, reviewed_at = NOW() 
+                    WHERE appeal_id = :appeal_id AND status = 'pending'";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(":reviewed_by", $admin_username, PDO::PARAM_STR);
+            $stmt->bindParam(":admin_notes", $admin_notes, PDO::PARAM_STR);
+            $stmt->bindParam(":appeal_id", $appeal_id, PDO::PARAM_INT);
+            return $stmt->execute();
+        }catch(PDOException $e){
+            return false;
+        }
+    }
+
+    function getPendingAppealsCountAdmin(){
+        try{
+            $sql = "SELECT COUNT(*) as count FROM snippet_appeals WHERE status = 'pending'";
+            $stmt = $this->db->query($sql);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            return (int)($row['count'] ?? 0);
+        }catch(PDOException $e){
+            return 0;
         }
     }
 }

@@ -99,6 +99,23 @@ try {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
     $pdo->exec($sqlSuspensions);
     echo "Table 'snippet_suspensions' is created or already exists.\n";
+
+    // Create snippet_appeals table if it does not exist
+    $sqlAppeals = "CREATE TABLE IF NOT EXISTS `snippet_appeals` (
+        `appeal_id` INT AUTO_INCREMENT PRIMARY KEY,
+        `snippet_id` INT NOT NULL,
+        `user_id` INT NOT NULL,
+        `reason` TEXT NOT NULL,
+        `status` ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+        `admin_notes` TEXT NULL DEFAULT NULL,
+        `reviewed_by` VARCHAR(100) NULL DEFAULT NULL,
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `reviewed_at` DATETIME NULL DEFAULT NULL,
+        CONSTRAINT `fk_snippet_appeals_snippet` FOREIGN KEY (`snippet_id`) REFERENCES `snippet`(`snippet_id`) ON DELETE CASCADE,
+        CONSTRAINT `fk_snippet_appeals_user` FOREIGN KEY (`user_id`) REFERENCES `user`(`user_id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+    $pdo->exec($sqlAppeals);
+    echo "Table 'snippet_appeals' is created or already exists.\n";
 } catch (PDOException $e) {
     echo "Migration failed: " . $e->getMessage() . "\n";
 }

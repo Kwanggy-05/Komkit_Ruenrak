@@ -9,8 +9,8 @@ $showBookmarks = isset($_GET['bookmarks']) && $_GET['bookmarks'] === '1';
 $onlyOwn = empty($_GET) || (isset($_GET['only_own']) && $_GET['only_own'] === '1');
 $userId = getCurrentUserId();
 
-// Get all languages
-$languageResult = $control->getLanguage();
+// Get all languages with snippet counts
+$languageResult = $control->getAllLanguagesWithSnippetCounts();
 $languages = [];
 if($languageResult){
     $languages = $languageResult->fetchAll(PDO::FETCH_ASSOC);
@@ -192,6 +192,8 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                     <div class="empty-state">
                         <?php if($showBookmarks): ?>
                             No bookmarked snippets yet.
+                        <?php elseif($selectedLanguage !== ''): ?>
+                            ไม่มีโพสต์
                         <?php else: ?>
                             No snippets in the system yet.
                         <?php endif; ?>
@@ -254,13 +256,28 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                                 <?php endif; ?>
 
                                 <?php if($isSuspended): ?>
+                                    <?php 
+                                        $cardAppeal = $control->getLatestAppealBySnippet($row['snippet_id']);
+                                    ?>
                                     <!-- Suspension Warning Box for Owner -->
                                     <div style="margin-top: 10px; background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 8px 12px; font-size: 0.85rem; color: #991b1b; line-height: 1.4;">
                                         <div style="font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
                                             <span>⚠️</span> โพสต์นี้ถูกระงับการแสดงผลโดยผู้ดูแลระบบ
                                         </div>
                                         <div><strong>เหตุผล:</strong> <?php echo htmlspecialchars($row['suspension_reason'] ?: 'ทำผิดข้อกำหนดชุมชน'); ?></div>
-                                        <div style="font-size: 0.75rem; color: #b91c1c; margin-top: 3px;">(ซ่อนจากการแสดงผลสาธารณะแล้ว มีเพียงคุณที่มองเห็นการแจ้งเตือนนี้)</div>
+                                        <?php if($cardAppeal && $cardAppeal['status'] === 'pending'): ?>
+                                            <div style="margin-top: 4px; padding: 3px 8px; background: #fef3c7; border: 1px solid #fde68a; border-radius: 4px; font-size: 0.78rem; color: #92400e; font-weight: 600; display: inline-block;">
+                                                ⏳ ยื่นคำร้องขอถอนการระงับแล้ว (รอการพิจารณา)
+                                            </div>
+                                        <?php elseif($cardAppeal && $cardAppeal['status'] === 'rejected'): ?>
+                                            <div style="margin-top: 4px; padding: 3px 8px; background: #fee2e2; border: 1px solid #fecaca; border-radius: 4px; font-size: 0.78rem; color: #991b1b; font-weight: 600; display: inline-block;">
+                                                ❌ คำร้องถูกปฏิเสธ (คลิก View code เพื่อดูเหตุผลหรือยื่นใหม่)
+                                            </div>
+                                        <?php else: ?>
+                                            <div style="font-size: 0.75rem; color: #b91c1c; margin-top: 3px;">
+                                                (คลิก "View code" เพื่อยื่นคำร้องขอถอนการระงับ)
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
                                 <?php endif; ?>
 

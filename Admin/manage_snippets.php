@@ -112,6 +112,13 @@ if ($snippetResult) {
                     </svg>
                     <span>Manage Reports</span>
                 </a>
+                <a href="manage_appeals.php" class="menu-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 11l3 3L22 4"></path>
+                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                    </svg>
+                    <span>Manage Appeals</span>
+                </a>
             </nav>
         </aside>
 
@@ -236,6 +243,15 @@ if ($snippetResult) {
                                         <td style="text-align: center;">
                                             <?php if ((int)($snip['is_suspended'] ?? 0) === 1): ?>
                                                 <span class="badge badge-deleted" style="background-color: #dc2626; color: white;">Suspended</span>
+                                                <?php 
+                                                    $snipAppeal = $control->getPendingAppealBySnippet($snip['snippet_id']);
+                                                    if ($snipAppeal): 
+                                                ?>
+                                                    <br>
+                                                    <a href="manage_appeals.php?status=pending" style="display: inline-block; margin-top: 4px; font-size: 0.72rem; padding: 2px 6px; background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; border-radius: 4px; text-decoration: none; font-weight: 700;" title="คลิกเพื่อพิจารณาคำร้อง">
+                                                        Appeal Pending ↗
+                                                    </a>
+                                                <?php endif; ?>
                                             <?php elseif ((int)($snip['deleted'] ?? 0) === 1): ?>
                                                 <span class="badge badge-deleted">Trash</span>
                                             <?php else: ?>
