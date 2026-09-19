@@ -24,7 +24,12 @@ try {
         header("Location: login.php");
         exit;
     }
+
+    // Incoming pending alerts count for Admin navigation
+    $pendingReportsCount = $control->getPendingReportsCountAdmin();
+    $pendingAppealsCount = $control->getPendingAppealsCountAdmin();
 } catch (PDOException $e) {
+
     die("Database error: " . $e->getMessage());
 }
 ?>

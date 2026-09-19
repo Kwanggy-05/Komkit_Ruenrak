@@ -118,6 +118,9 @@ if ($languageResult) {
                         <line x1="12" y1="17" x2="12.01" y2="17"></line>
                     </svg>
                     <span>Manage Reports</span>
+                    <?php if (!empty($pendingReportsCount) && $pendingReportsCount > 0): ?>
+                        <span class="sidebar-dot" title="Pending Reports"></span>
+                    <?php endif; ?>
                 </a>
                 <a href="manage_appeals.php" class="menu-item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -125,6 +128,9 @@ if ($languageResult) {
                         <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
                     </svg>
                     <span>Manage Appeals</span>
+                    <?php if (!empty($pendingAppealsCount) && $pendingAppealsCount > 0): ?>
+                        <span class="sidebar-dot" title="Pending Appeals"></span>
+                    <?php endif; ?>
                 </a>
             </nav>
         </aside>

@@ -112,6 +112,9 @@ if ($reportsResult) {
                         <line x1="12" y1="17" x2="12.01" y2="17"></line>
                     </svg>
                     <span>Manage Reports</span>
+                    <?php if (!empty($pendingReportsCount) && $pendingReportsCount > 0): ?>
+                        <span class="sidebar-dot" title="Pending Reports"></span>
+                    <?php endif; ?>
                 </a>
                 <a href="manage_appeals.php" class="menu-item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -119,6 +122,9 @@ if ($reportsResult) {
                         <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
                     </svg>
                     <span>Manage Appeals</span>
+                    <?php if (!empty($pendingAppealsCount) && $pendingAppealsCount > 0): ?>
+                        <span class="sidebar-dot" title="Pending Appeals"></span>
+                    <?php endif; ?>
                 </a>
             </nav>
         </aside>
@@ -187,7 +193,9 @@ if ($reportsResult) {
                     <div class="header-actions">
                         <!-- Filters (lowercase parameters) -->
                         <div style="display: flex; gap: 8px;">
-                            <a href="?status=pending" class="btn-action <?php echo $statusFilter === 'pending' ? 'btn-view' : ''; ?>" style="text-decoration: none; padding: 6px 12px; border: 1px solid var(--border-color); border-radius: var(--rounded-sm); color: var(--text-main); font-weight: 600;">Pending</a>
+                            <a href="?status=pending" class="btn-action <?php echo $statusFilter === 'pending' ? 'btn-view' : ''; ?>" style="text-decoration: none; padding: 6px 12px; border: 1px solid var(--border-color); border-radius: var(--rounded-sm); color: var(--text-main); font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                                Pending<?php if (!empty($pendingReportsCount) && $pendingReportsCount > 0): ?><span class="sidebar-dot" style="margin-left: 2px;" title="New Reports"></span><?php endif; ?>
+                            </a>
                             <a href="?status=removed" class="btn-action <?php echo $statusFilter === 'removed' ? 'btn-view' : ''; ?>" style="text-decoration: none; padding: 6px 12px; border: 1px solid var(--border-color); border-radius: var(--rounded-sm); color: var(--text-main); font-weight: 600;">Removed</a>
                             <a href="?status=rejected" class="btn-action <?php echo $statusFilter === 'rejected' ? 'btn-view' : ''; ?>" style="text-decoration: none; padding: 6px 12px; border: 1px solid var(--border-color); border-radius: var(--rounded-sm); color: var(--text-main); font-weight: 600;">Rejected</a>
                             <a href="?status=ALL" class="btn-action <?php echo $statusFilter === 'ALL' ? 'btn-view' : ''; ?>" style="text-decoration: none; padding: 6px 12px; border: 1px solid var(--border-color); border-radius: var(--rounded-sm); color: var(--text-main); font-weight: 600;">All</a>
@@ -223,7 +231,7 @@ if ($reportsResult) {
                                         <td style="font-weight: 600;">
                                             <?php echo htmlspecialchars($rep['snippet_title']); ?> (ID: <?php echo htmlspecialchars($rep['snippet_id']); ?>)
                                             <?php if ((int)($rep['snippet_suspended'] ?? 0) === 1): ?>
-                                                <span class="badge badge-deleted" style="margin-left: 5px; background: #dc2626; color: white;">Suspended</span>
+                                                <span class="badge badge-suspended" style="margin-left: 5px;">Suspended</span>
                                             <?php elseif ((int)$rep['snippet_deleted'] === 1): ?>
                                                 <span class="badge badge-deleted" style="margin-left: 5px;">Deleted</span>
                                             <?php endif; ?>

@@ -136,7 +136,7 @@ if(isset($_POST["submit"])){
 
         <div class="form-group">
             <div class="code-label-wrapper">
-                <label for="source_code">Code <span class="code-limit-info">(ใส่ได้ไม่เกิน 5,000 ตัวอักษร)</span></label>
+                <label for="source_code">Code</label>
                 <span class="char-counter" id="char-counter"><span id="char-count">0</span> / 5,000</span>
             </div>
             <div class="editor-container">

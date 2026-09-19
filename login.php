@@ -74,14 +74,14 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
                 
                 <div class="form-group">
                     <label for="username">Username</label>
-                    <input type="text" name="username"
+                    <input type="text" name="username" id="username"
                     value="<?php if($_SERVER["REQUEST_METHOD"]=="POST") echo htmlspecialchars($username); ?>"
                     >
                 </div>
                 
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" name="password">
+                    <input type="password" name="password" id="password">
                     <a href="forget_password.php" class="forgot-password" style="text-decoration: none; display: block;">Forget password?</a>
                 </div>
                 <?php if ($errorAlert !== ""): ?>
@@ -93,5 +93,21 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
             </form>
         </div>
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const usernameInput = document.getElementById("username");
+            const passwordInput = document.getElementById("password");
+
+            if (usernameInput && passwordInput) {
+                usernameInput.addEventListener("keydown", function(e) {
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        passwordInput.focus();
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>

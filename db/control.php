@@ -1189,6 +1189,18 @@ class Control{
         }
     }
 
+    function getPendingReportsCountAdmin(){
+        try{
+            $sql = "SELECT COUNT(*) as count FROM reports WHERE status = 'pending'";
+            $stmt = $this->db->query($sql);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            return (int)($row['count'] ?? 0);
+        }catch(PDOException $e){
+            return 0;
+        }
+    }
+
+
     // ==========================================
     // SNIPPET APPEALS (ระบบยื่นคำร้องถอนการระงับโพสต์)
     // ==========================================

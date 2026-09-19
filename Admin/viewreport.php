@@ -118,9 +118,7 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
                 </div>
                 <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color); font-family: 'Lato', sans-serif;">
                     <strong>Report Description:</strong>
-                    <div style="margin-top: 6px; padding: 12px; background-color: var(--neutral-bg); border-radius: var(--radius-sm); border: 1px solid var(--border-color); white-space: pre-wrap; font-size: 0.9rem; line-height: 1.4; color: #333;">
-                        <?php echo htmlspecialchars($report['details'] ?: 'No description'); ?>
-                    </div>
+                    <div style="margin-top: 6px; padding: 12px; background-color: var(--neutral-bg); border-radius: var(--radius-sm); border: 1px solid var(--border-color); white-space: pre-wrap; font-size: 0.9rem; line-height: 1.5; color: #333; word-break: break-word;"><?php echo htmlspecialchars(trim($report['details'] ?: 'No description')); ?></div>
                 </div>
                 
                 <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">

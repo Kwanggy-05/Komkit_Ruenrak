@@ -68,15 +68,6 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
             color: #991b1b;
             border: 1px solid #fecaca;
         }
-        .sidebar-badge {
-            background-color: #dc2626;
-            color: white;
-            font-size: 0.72rem;
-            font-weight: 700;
-            padding: 2px 7px;
-            border-radius: 10px;
-            margin-left: auto;
-        }
     </style>
 </head>
 <body>
@@ -122,6 +113,9 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                         <line x1="12" y1="17" x2="12.01" y2="17"></line>
                     </svg>
                     <span>Manage Reports</span>
+                    <?php if (!empty($pendingReportsCount) && $pendingReportsCount > 0): ?>
+                        <span class="sidebar-dot" title="Pending Reports"></span>
+                    <?php endif; ?>
                 </a>
                 <a href="manage_appeals.php" class="menu-item active">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -129,8 +123,8 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                         <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
                     </svg>
                     <span>Manage Appeals</span>
-                    <?php if ($pendingCount > 0): ?>
-                        <span class="sidebar-badge"><?php echo $pendingCount; ?></span>
+                    <?php if (!empty($pendingAppealsCount) && $pendingAppealsCount > 0): ?>
+                        <span class="sidebar-dot" title="Pending Appeals"></span>
                     <?php endif; ?>
                 </a>
             </nav>
@@ -200,8 +194,8 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                     <div class="header-actions">
                         <!-- Filters -->
                         <div style="display: flex; gap: 8px;">
-                            <a href="?status=pending" class="btn-action <?php echo $statusFilter === 'pending' ? 'btn-view' : ''; ?>" style="text-decoration: none; padding: 6px 12px; border: 1px solid var(--border-color); border-radius: var(--rounded-sm); color: var(--text-main); font-weight: 600;">
-                                Pending <?php if($pendingCount > 0): ?>(<?php echo $pendingCount; ?>)<?php endif; ?>
+                            <a href="?status=pending" class="btn-action <?php echo $statusFilter === 'pending' ? 'btn-view' : ''; ?>" style="text-decoration: none; padding: 6px 12px; border: 1px solid var(--border-color); border-radius: var(--rounded-sm); color: var(--text-main); font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                                Pending<?php if (!empty($pendingAppealsCount) && $pendingAppealsCount > 0): ?><span class="sidebar-dot" style="margin-left: 2px;" title="New Appeals"></span><?php endif; ?>
                             </a>
                             <a href="?status=approved" class="btn-action <?php echo $statusFilter === 'approved' ? 'btn-view' : ''; ?>" style="text-decoration: none; padding: 6px 12px; border: 1px solid var(--border-color); border-radius: var(--rounded-sm); color: var(--text-main); font-weight: 600;">Approved</a>
                             <a href="?status=rejected" class="btn-action <?php echo $statusFilter === 'rejected' ? 'btn-view' : ''; ?>" style="text-decoration: none; padding: 6px 12px; border: 1px solid var(--border-color); border-radius: var(--rounded-sm); color: var(--text-main); font-weight: 600;">Rejected</a>
@@ -216,12 +210,12 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                         <thead>
                             <tr>
                                 <th style="width: 60px;">ID</th>
-                                <th>Snippet</th>
-                                <th>Owner / Appellant</th>
+                                <th style="width: 180px;">Snippet</th>
+                                <th style="width: 170px;">Owner / Appellant</th>
                                 <th>Appeal Reason</th>
-                                <th>Submitted At</th>
+                                <th style="width: 130px;">Submitted At</th>
                                 <th style="width: 100px; text-align: center;">Status</th>
-                                <th style="width: 220px; text-align: center;">Actions</th>
+                                <th style="width: 150px; text-align: center;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -256,16 +250,14 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                                             </span>
                                         </td>
                                         <td>
-                                            <div style="font-size: 0.88rem; max-width: 280px; white-space: pre-wrap; word-break: break-word; line-height: 1.4;">
-                                                <?php 
-                                                    $r = $app['reason'];
-                                                    if(mb_strlen($r, 'UTF-8') > 90){
-                                                        echo htmlspecialchars(mb_substr($r, 0, 90, 'UTF-8')) . '...';
-                                                    } else {
-                                                        echo htmlspecialchars($r);
-                                                    }
-                                                ?>
-                                            </div>
+                                            <div style="font-size: 0.88rem; line-height: 1.5; color: var(--text-main); word-break: break-word; text-align: left;" title="<?php echo htmlspecialchars($app['reason']); ?>"><?php 
+                                                $cleanReason = trim(preg_replace('/\s+/', ' ', $app['reason']));
+                                                if (mb_strlen($cleanReason, 'UTF-8') > 90) {
+                                                    echo htmlspecialchars(mb_substr($cleanReason, 0, 90, 'UTF-8')) . '...';
+                                                } else {
+                                                    echo htmlspecialchars($cleanReason);
+                                                }
+                                            ?></div>
                                         </td>
                                         <td style="font-size: 0.85rem; color: var(--text-muted);">
                                             <?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($app['created_at']))); ?>
