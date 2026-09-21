@@ -214,7 +214,7 @@ if ($snippetResult) {
                                 <th>Owner</th>
                                 <th>Created At</th>
                                 <th style="width: 110px; text-align: center;">Status</th>
-                                <th style="width: 280px; text-align: center;">Action</th>
+                                <th style="width: 220px; text-align: center;">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -285,28 +285,6 @@ if ($snippetResult) {
                                                         <input type="hidden" name="snippet_id" value="<?php echo $snip['snippet_id']; ?>">
                                                         <input type="hidden" name="reason" value="">
                                                         <button type="submit" class="btn-action btn-delete" style="background-color: #d97706; color: white;">Suspend</button>
-                                                    </form>
-                                                <?php endif; ?>
-                                                
-                                                <?php if ((int)($snip['deleted'] ?? 0) === 1): ?>
-                                                    <!-- Restore Action -->
-                                                    <form method="POST" style="display:inline;">
-                                                        <input type="hidden" name="action" value="restore">
-                                                        <input type="hidden" name="snippet_id" value="<?php echo $snip['snippet_id']; ?>">
-                                                        <button type="submit" class="btn-action btn-restore">Restore</button>
-                                                    </form>
-                                                    <!-- Permanent Hard Delete Action -->
-                                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Warning: Are you sure you want to permanently delete this snippet? This action cannot be undone.');">
-                                                        <input type="hidden" name="action" value="hard_delete">
-                                                        <input type="hidden" name="snippet_id" value="<?php echo $snip['snippet_id']; ?>">
-                                                        <button type="submit" class="btn-action btn-delete">Force Delete</button>
-                                                    </form>
-                                                <?php else: ?>
-                                                    <!-- Soft Delete Action -->
-                                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to move this snippet to trash?');">
-                                                        <input type="hidden" name="action" value="soft_delete">
-                                                        <input type="hidden" name="snippet_id" value="<?php echo $snip['snippet_id']; ?>">
-                                                        <button type="submit" class="btn-action btn-delete">Delete</button>
                                                     </form>
                                                 <?php endif; ?>
                                             </div>

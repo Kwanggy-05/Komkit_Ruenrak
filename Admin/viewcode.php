@@ -4,6 +4,9 @@ require_once __DIR__ . '/check_admin.php';
 $snippet = null;
 
 $backUrl = 'manage_snippets.php';
+if ((isset($_GET['from']) && $_GET['from'] === 'appeals') || (isset($_SERVER['HTTP_REFERER']) && strpos($_SERVER['HTTP_REFERER'], 'manage_appeals.php') !== false)) {
+    $backUrl = 'manage_appeals.php';
+}
 
 if(isset($_GET['view']) && is_numeric($_GET['view'])){
     $id = (int)$_GET['view'];

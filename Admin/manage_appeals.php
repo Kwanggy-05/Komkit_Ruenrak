@@ -68,6 +68,24 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
             color: #991b1b;
             border: 1px solid #fecaca;
         }
+        .btn-review-pending {
+            background-color: #d97706;
+            color: #ffffff;
+            white-space: nowrap;
+            padding: 0 14px;
+        }
+        .btn-review-pending:hover {
+            background-color: #b45309;
+        }
+        .btn-review-done {
+            background-color: #64748b;
+            color: #ffffff;
+            white-space: nowrap;
+            padding: 0 14px;
+        }
+        .btn-review-done:hover {
+            background-color: #475569;
+        }
     </style>
 </head>
 <body>
@@ -210,12 +228,12 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                         <thead>
                             <tr>
                                 <th style="width: 60px;">ID</th>
-                                <th style="width: 180px;">Snippet</th>
+                                <th>Snippet & ID</th>
                                 <th style="width: 170px;">Owner / Appellant</th>
                                 <th>Appeal Reason</th>
                                 <th style="width: 130px;">Submitted At</th>
                                 <th style="width: 100px; text-align: center;">Status</th>
-                                <th style="width: 150px; text-align: center;">Actions</th>
+                                <th style="width: 250px; text-align: center;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -229,16 +247,8 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                                 <?php foreach ($appeals as $app): ?>
                                     <tr>
                                         <td class="col-id"><?php echo htmlspecialchars($app['appeal_id']); ?></td>
-                                        <td>
-                                            <div style="font-weight: 600;">
-                                                <?php echo htmlspecialchars($app['snippet_title']); ?>
-                                                <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: normal;">(ID: <?php echo htmlspecialchars($app['snippet_id']); ?>)</span>
-                                            </div>
-                                            <div style="margin-top: 4px;">
-                                                <a href="viewcode.php?view=<?php echo $app['snippet_id']; ?>" target="_blank" style="font-size: 0.78rem; color: #2563eb; text-decoration: underline;">
-                                                    View Snippet Code ↗
-                                                </a>
-                                            </div>
+                                        <td style="font-weight: 600;">
+                                            <?php echo htmlspecialchars($app['snippet_title']); ?> (ID: <?php echo htmlspecialchars($app['snippet_id']); ?>)
                                         </td>
                                         <td>
                                             <span style="font-size: 0.9rem; color: var(--text-main); font-weight: 500;">
@@ -273,9 +283,13 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                                         </td>
                                         <td style="text-align: center;">
                                             <div class="action-buttons" style="justify-content: center;">
-                                                <button type="button" class="btn-action btn-view btn-open-review" 
+                                                <!-- View Code Trigger -->
+                                                <a href="viewcode.php?view=<?php echo $app['snippet_id']; ?>&from=appeals" class="btn-action btn-view">
+                                                    View Code
+                                                </a>
+                                                <button type="button" class="btn-action <?php echo $app['status'] === 'pending' ? 'btn-review-pending' : 'btn-review-done'; ?> btn-open-review" 
                                                     data-appeal='<?php echo htmlspecialchars(json_encode($app), ENT_QUOTES, 'UTF-8'); ?>'>
-                                                    <?php echo $app['status'] === 'pending' ? 'Review Appeal' : 'View Details'; ?>
+                                                    <?php echo $app['status'] === 'pending' ? 'Appeal' : 'View Details'; ?>
                                                 </button>
                                             </div>
                                         </td>
