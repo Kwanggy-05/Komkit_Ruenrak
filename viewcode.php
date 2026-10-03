@@ -56,7 +56,7 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
 if($accessDenied){
     ?>
     <script>
-        alert("Please log in.");
+        alert("กรุณาเข้าสู่ระบบก่อนเข้าชม");
         window.location.href = "login.php";
     </script>
     <?php
@@ -65,18 +65,18 @@ if($accessDenied){
 
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title><?php echo htmlspecialchars($snippet['title'] ?? 'View Snippet'); ?></title>
+    <title><?php echo htmlspecialchars($snippet['title'] ?? 'ดู Snippet'); ?> - Snippet Box</title>
     <link rel="stylesheet" href="style/viewcodecss.css?v=<?php echo time(); ?>">
 </head>
 <body>
-    <a href="<?php echo htmlspecialchars($backUrl); ?>" onclick="if(window.history.length > 1){ window.history.back(); return false; }" class="back-btn">Back</a>
+    <a href="<?php echo htmlspecialchars($backUrl); ?>" onclick="if(window.history.length > 1){ window.history.back(); return false; }" class="back-btn">ย้อนกลับ</a>
 
     <?php if(!$snippet): ?>
-        <div class="empty" style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 16px;">Snippet not found</div>
+        <div class="empty" style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 16px;">ไม่พบข้อมูล Snippet</div>
     <?php else: ?>
         <div class="form-container">
             <!-- Top Actions Row (Hidden if suspended or deleted) -->
@@ -89,7 +89,7 @@ if($accessDenied){
                                 <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
                                 <line x1="4" y1="22" x2="4" y2="15"></line>
                             </svg>
-                            <span><?php echo $isReported ? 'Reported' : 'Report'; ?></span>
+                            <span><?php echo $isReported ? 'รายงานแล้ว' : 'รายงาน'; ?></span>
                         </button>
 
                         <!-- Bookmark Button -->
@@ -97,7 +97,7 @@ if($accessDenied){
                             <svg width="14" height="18" viewBox="0 0 384 512" fill="<?php echo $isBookmarked ? '#fff' : 'none'; ?>" stroke="<?php echo $isBookmarked ? '#fff' : '#111'; ?>" stroke-width="30" style="margin-right: 4px; vertical-align: middle;">
                                 <path d="M0 512V48C0 21.49 21.49 0 48 0h288c26.51 0 48 21.49 48 48v464L192 400 0 512z"/>
                             </svg>
-                            <span><?php echo $isBookmarked ? 'Bookmarked' : 'Bookmark'; ?></span>
+                            <span><?php echo $isBookmarked ? 'บุ๊กมาร์กแล้ว' : 'บุ๊กมาร์ก'; ?></span>
                         </button>
 
                         <!-- Like Button -->
@@ -109,7 +109,7 @@ if($accessDenied){
                         </button>
 
                         <!-- Copy Button -->
-                        <button class="btn copy" id="copyBtn">Copy</button>
+                        <button class="btn copy" id="copyBtn">คัดลอก</button>
                     </div>
                 </div>
             <?php endif; ?>
@@ -181,19 +181,19 @@ if($accessDenied){
                         <polyline points="3 6 5 6 21 6"></polyline>
                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                     </svg>
-                    <span>This snippet is in the Trash. You can restore it or delete it permanently from the <a href="remove.php" style="color: inherit; text-decoration: underline; font-weight: 700;">Trash page</a>.</span>
+                    <span>Snippet นี้อยู่ในถังขยะ คุณสามารถกู้คืนหรือลบถาวรได้ที่ <a href="remove.php" style="color: inherit; text-decoration: underline; font-weight: 700;">หน้าถังขยะ</a></span>
                 </div>
             <?php endif; ?>
 
             <!-- Top Row: Title & Language -->
             <div class="top-row">
                 <div class="form-group">
-                    <label for="title">Title</label>
+                    <label for="title">ชื่อเรื่อง</label>
                     <input type="text" name="title" id="title" value="<?php echo htmlspecialchars($snippet['title']); ?>" readonly>
                 </div>
 
                 <div class="form-group">
-                    <label for="language">Language</label>
+                    <label for="language">ภาษา</label>
                     <select name="language_id" class="language-dropdown" disabled>
                         <option selected><?php echo htmlspecialchars($snippet['language_name'] ?? 'Language'); ?></option>
                     </select>
@@ -202,7 +202,7 @@ if($accessDenied){
 
             <!-- Code Editor Container (Readonly) -->
             <div class="form-group">
-                <label for="source_code">Code</label>
+                <label for="source_code">โค้ด</label>
                 <div class="editor-container">
                     <div class="line-numbers" id="line-numbers">1</div>
                     <textarea name="source_code" id="source_code" readonly wrap="off" <?php if((int)($snippet['is_suspended'] ?? 0) === 1): ?>style="user-select: none; -webkit-user-select: none;" oncopy="return false;" oncut="return false;"<?php endif; ?>><?php echo htmlspecialchars($snippet['source_code']); ?></textarea>
@@ -211,7 +211,7 @@ if($accessDenied){
 
             <!-- Description (Readonly) -->
             <div class="form-group">
-                <label for="description">Description</label>
+                <label for="description">คำอธิบาย</label>
                 <div class="description-view" id="description"><?php echo htmlspecialchars($snippet['description']); ?></div>
             </div>
 
@@ -223,11 +223,11 @@ if($accessDenied){
                 </div>
 
                 <div class="form-group">
-                    <label for="visibility">Visibility</label>
+                    <label for="visibility">การมองเห็น</label>
                     <select name="visibility" class="visibility-dropdown" disabled>
-                        <option value="public" <?php echo (($snippet['visibility'] ?? '') === 'public') ? 'selected' : ''; ?>>Public</option>
-                        <option value="protected" <?php echo (($snippet['visibility'] ?? '') === 'protected') ? 'selected' : ''; ?>>Protected</option>
-                        <option value="private" <?php echo (($snippet['visibility'] ?? '') === 'private') ? 'selected' : ''; ?>>Private</option>
+                        <option value="public" <?php echo (($snippet['visibility'] ?? '') === 'public') ? 'selected' : ''; ?>>สาธารณะ (Public)</option>
+                        <option value="protected" <?php echo (($snippet['visibility'] ?? '') === 'protected') ? 'selected' : ''; ?>>เฉพาะสมาชิก (Protected)</option>
+                        <option value="private" <?php echo (($snippet['visibility'] ?? '') === 'private') ? 'selected' : ''; ?>>ส่วนตัว (Private)</option>
                     </select>
                 </div>
             </div>
@@ -239,7 +239,7 @@ if($accessDenied){
                     <?php if(!empty($snippet['image_path']) && file_exists($snippet['image_path'])): ?>
                         <img id="image-preview" src="<?php echo htmlspecialchars($snippet['image_path']); ?>" alt="Snippet Image" style="display: block;">
                     <?php else: ?>
-                        <span style="font-size: 14px; color: var(--text-muted); font-style: italic;">No Image</span>
+                        <span style="font-size: 14px; color: var(--text-muted); font-style: italic;">ไม่มีรูปภาพ</span>
                     <?php endif; ?>
                 </div>
             </div>
@@ -250,13 +250,13 @@ if($accessDenied){
     <div class="modal-overlay" id="reportModal">
         <div class="modal-card">
             <header class="modal-header">
-                <span class="modal-title">Report Snippet</span>
+                <span class="modal-title">รายงาน Snippet</span>
                 <button class="modal-close" id="closeReportModalBtn">&times;</button>
             </header>
             <form id="reportForm">
                 <div class="modal-body">
                     <p style="margin-bottom: 16px; color: var(--text-muted); font-size: 0.9rem; line-height: 1.5;">
-                        Please select a reason for reporting this snippet for admin review.
+                        กรุณาเลือกเหตุผลในการรายงาน Snippet เพื่อให้ผู้ดูแลระบบตรวจสอบ
                     </p>
                     
                     <?php if($snippet): ?>
@@ -265,31 +265,31 @@ if($accessDenied){
                     
                         <label class="report-option-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem;">
                             <input type="radio" name="reason" value="spam" required>
-                            <span>Spam / Misleading</span>
+                            <span>สแปม / ข้อมูลเท็จหรือหลอกลวง</span>
                         </label>
                         <label class="report-option-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem;">
                             <input type="radio" name="reason" value="inappropriate">
-                            <span>Inappropriate Content / Violent / Harassment</span>
+                            <span>เนื้อหาไม่เหมาะสม / รุนแรง / คุกคาม</span>
                         </label>
                         <label class="report-option-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem;">
                             <input type="radio" name="reason" value="malicious_code">
-                            <span>Malicious Code / Malware</span>
+                            <span>โค้ดอันตราย / มัลแวร์</span>
                         </label>
                         <label class="report-option-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem;">
                             <input type="radio" name="reason" value="other">
-                            <span>Other</span>
+                            <span>อื่นๆ</span>
                         </label>
 
                     <div class="report-desc-group" id="reportDescGroup" style="margin-top: 16px;">
                         <label for="reportDetails" style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; color: var(--secondary);">
-                            Details <span id="reportReqAsterisk" style="color: #dc3545; display: none;">*</span>
+                            รายละเอียดเพิ่มเติม <span id="reportReqAsterisk" style="color: #dc3545; display: none;">*</span>
                         </label>
-                        <textarea id="reportDetails" name="details" placeholder="Additional details (optional)..." rows="3" style="width:100%; padding: 10px; border: 1px solid var(--input-border); border-radius: var(--radius-sm); font-size: 0.9rem; resize: vertical; outline: none; box-sizing: border-box;"></textarea>
+                        <textarea id="reportDetails" name="details" placeholder="รายละเอียดเพิ่มเติม (ไม่บังคับ)..." rows="3" style="width:100%; padding: 10px; border: 1px solid var(--input-border); border-radius: var(--radius-sm); font-size: 0.9rem; resize: vertical; outline: none; box-sizing: border-box;"></textarea>
                     </div>
                 </div>
                 <footer class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 15px; border-top: 1px solid var(--border-color); margin-top: 15px;">
-                    <button type="button" class="btn" id="cancelReportBtn" style="border: 1px solid var(--border-color); background: transparent; padding: 8px 16px;">Cancel</button>
-                    <button type="submit" class="btn copy" style="background-color: #dc3545; border-color: #dc3545; color: #fff; padding: 8px 16px; font-weight: 600;">Submit</button>
+                    <button type="button" class="btn" id="cancelReportBtn" style="border: 1px solid var(--border-color); background: transparent; padding: 8px 16px;">ยกเลิก</button>
+                    <button type="submit" class="btn copy" style="background-color: #dc3545; border-color: #dc3545; color: #fff; padding: 8px 16px; font-weight: 600;">ส่งรายงาน</button>
                 </footer>
             </form>
         </div>
@@ -424,10 +424,10 @@ if($accessDenied){
             try{
                 await navigator.clipboard.writeText(text);
                 const old = copyBtn.innerText;
-                copyBtn.innerText = 'Copied';
+                copyBtn.innerText = 'คัดลอกแล้ว';
                 setTimeout(()=> copyBtn.innerText = old, 1500);
             }catch(e){
-                alert('Copy failed');
+                alert('การคัดลอกล้มเหลว');
             }
         });
 
@@ -453,17 +453,17 @@ if($accessDenied){
                     svg.setAttribute('fill', '#fff');
                     svg.setAttribute('stroke', '#fff');
                     countEl.textContent = data.count;
-                    showToast('👍 Liked!');
+                    showToast('👍 ถูกใจแล้ว!');
                 } else if(data.status === 'removed') {
                     this.classList.remove('liked');
                     svg.setAttribute('fill', 'none');
                     svg.setAttribute('stroke', '#111');
                     countEl.textContent = data.count;
-                    showToast('👎 Like removed');
-                    showToast('⚠ ' + (data.message || 'An error occurred'));
+                    showToast('👎 ยกเลิกถูกใจแล้ว');
+                    showToast('⚠ ' + (data.message || 'เกิดข้อผิดพลาด'));
                 }
             } catch(err) {
-                showToast('⚠ Connection error');
+                showToast('⚠ ข้อผิดพลาดในการเชื่อมต่อ');
             }
         });
 
@@ -488,18 +488,18 @@ if($accessDenied){
                     this.classList.add('bookmarked');
                     svg.setAttribute('fill', '#fff');
                     svg.setAttribute('stroke', '#fff');
-                    if (span) span.textContent = 'Bookmarked';
-                    showToast('✓ Bookmarked!');
+                    if (span) span.textContent = 'บุ๊กมาร์กแล้ว';
+                    showToast('✓ บุ๊กมาร์กแล้ว!');
                 } else if(data.status === 'removed') {
                     this.classList.remove('bookmarked');
                     svg.setAttribute('fill', 'none');
                     svg.setAttribute('stroke', '#111');
-                    if (span) span.textContent = 'Bookmark';
-                    showToast('✗ Bookmark removed');
-                    showToast('⚠ ' + (data.message || 'An error occurred'));
+                    if (span) span.textContent = 'บุ๊กมาร์ก';
+                    showToast('✗ ลบบุ๊กมาร์กแล้ว');
+                    showToast('⚠ ' + (data.message || 'เกิดข้อผิดพลาด'));
                 }
             } catch(err) {
-                showToast('⚠ Connection error');
+                showToast('⚠ ข้อผิดพลาดในการเชื่อมต่อ');
             }
         });
 
@@ -517,7 +517,7 @@ if($accessDenied){
 
         reportBtn?.addEventListener('click', function() {
             if (currentUserId === 0) {
-                showToast('⚠ Please log in first to report.');
+                showToast('⚠ กรุณาเข้าสู่ระบบก่อนรายงาน');
                 setTimeout(() => {
                     window.location.href = 'login.php';
                 }, 1500);
@@ -532,7 +532,7 @@ if($accessDenied){
             reportModal.classList.remove('open');
             reportForm.reset();
             reportDetails.removeAttribute('required');
-            reportDetails.placeholder = "Additional details (optional)...";
+            reportDetails.placeholder = "รายละเอียดเพิ่มเติม (ไม่บังคับ)...";
             if (reportReqAsterisk) reportReqAsterisk.style.display = 'none';
         }
 
@@ -551,12 +551,12 @@ if($accessDenied){
             radio.addEventListener('change', function() {
                 if (this.value === 'other') {
                     reportDetails.setAttribute('required', 'required');
-                    reportDetails.placeholder = "Please specify details for review (required)...";
+                    reportDetails.placeholder = "กรุณาระบุรายละเอียดเพื่อให้ตรวจสอบ (จำเป็น)...";
                     if (reportReqAsterisk) reportReqAsterisk.style.display = 'inline';
                     reportDetails.focus();
                 } else {
                     reportDetails.removeAttribute('required');
-                    reportDetails.placeholder = "Additional details (optional)...";
+                    reportDetails.placeholder = "รายละเอียดเพิ่มเติม (ไม่บังคับ)...";
                     if (reportReqAsterisk) reportReqAsterisk.style.display = 'none';
                 }
             });
@@ -580,12 +580,12 @@ if($accessDenied){
                     // Disable button
                     reportBtn.classList.add('reported');
                     reportBtn.setAttribute('disabled', 'disabled');
-                    reportBtn.querySelector('span').textContent = 'Reported';
+                    reportBtn.querySelector('span').textContent = 'รายงานแล้ว';
                 } else {
                     showToast('⚠ ' + data.message);
                 }
             } catch (err) {
-                showToast('⚠ An error occurred while sending data');
+                showToast('⚠ เกิดข้อผิดพลาดขณะส่งข้อมูล');
             }
         });
 

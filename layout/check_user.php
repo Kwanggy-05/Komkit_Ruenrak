@@ -18,17 +18,25 @@ if(isset($_SESSION['role']) && $_SESSION['role'] === 'admin'){
 }
 
 try {
-    $stmt = $pdo->prepare("SELECT role, account_status FROM user WHERE user_id = :user_id");
+    $stmt = $pdo->prepare("SELECT role FROM user WHERE user_id = :user_id");
     $stmt->bindParam(":user_id", $userId, PDO::PARAM_INT);
     $stmt->execute();
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    if (!$userData || $userData['role'] === 'admin' || (isset($userData['account_status']) && $userData['account_status'] === 'banned')) {
+    $isBanned = false;
+    if ($userData) {
+        $banStmt = $pdo->prepare("SELECT ban_id FROM user_bans WHERE user_id = :user_id AND unbanned_at IS NULL LIMIT 1");
+        $banStmt->bindParam(":user_id", $userId, PDO::PARAM_INT);
+        $banStmt->execute();
+        $isBanned = ($banStmt->fetch() !== false);
+    }
+
+    if (!$userData || $userData['role'] === 'admin' || $isBanned) {
         if (session_status() === PHP_SESSION_ACTIVE) {
             $_SESSION = array();
             session_destroy();
         }
-        $redirectUrl = (isset($userData['account_status']) && $userData['account_status'] === 'banned') ? "login.php?banned=1" : "login.php";
+        $redirectUrl = $isBanned ? "login.php?banned=1" : "login.php";
         header("Location: " . $redirectUrl);
         exit;
     }

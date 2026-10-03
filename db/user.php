@@ -90,12 +90,24 @@ class User{
                         $update_stmt->bindParam(":user_id", $result["user_id"]);
                         $update_stmt->execute();
                     }
+                    $result['is_banned'] = $this->isUserBanned((int)$result['user_id']);
                     return $result;
                 }
             }
             return false;
         }catch(PDOException $e){
             echo $e->getMessage();
+            return false;
+        }
+    }
+
+    function isUserBanned($userId){
+        try {
+            $stmt = $this->db->prepare("SELECT ban_id FROM user_bans WHERE user_id = :user_id AND unbanned_at IS NULL LIMIT 1");
+            $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetch() !== false;
+        } catch (PDOException $e) {
             return false;
         }
     }
@@ -109,11 +121,11 @@ class User{
             $user = $stmt->fetch();
             
             if (!$user) {
-                return ["success" => false, "message" => "Username not found"];
+                return ["success" => false, "message" => "ไม่พบชื่อผู้ใช้นี้ในระบบ"];
             }
             
             if (empty($user['answer'])) {
-                return ["success" => false, "message" => "This account does not have a security question set"];
+                return ["success" => false, "message" => "บัญชีนี้ยังไม่ได้ตั้งคำถามความปลอดภัย"];
             }
             
             $normalized_answer = trim(mb_strtolower($answer));
@@ -135,7 +147,7 @@ class User{
             }
 
             if (!$isAnswerCorrect) {
-                return ["success" => false, "message" => "Incorrect security question answer"];
+                return ["success" => false, "message" => "คำตอบความปลอดภัยไม่ถูกต้อง"];
             }
             
             $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
@@ -145,7 +157,7 @@ class User{
             $update_stmt->bindParam(":user_id", $user['user_id']);
             $update_stmt->execute();
             
-            return ["success" => true, "message" => "Password changed successfully."];
+            return ["success" => true, "message" => "เปลี่ยนรหัสผ่านสำเร็จเรียบร้อย"];
         } catch (PDOException $e) {
             return ["success" => false, "message" => $e->getMessage()];
         }
@@ -157,19 +169,23 @@ class User{
             $limit = max(1, (int)$limit);
             $offset = ($page - 1) * $limit;
 
-            $sql = "SELECT * FROM user WHERE 1=1";
+            $sql = "SELECT u.*, 
+                           CASE WHEN ub.ban_id IS NOT NULL THEN 1 ELSE 0 END AS is_banned
+                    FROM user u
+                    LEFT JOIN user_bans ub ON u.user_id = ub.user_id AND ub.unbanned_at IS NULL
+                    WHERE 1=1";
             
             if ($search !== '') {
-                $sql .= " AND (firstname LIKE :search OR lastname LIKE :search OR username LIKE :search)";
+                $sql .= " AND (u.firstname LIKE :search OR u.lastname LIKE :search OR u.username LIKE :search)";
             }
             if ($role !== '') {
-                $sql .= " AND role = :role";
+                $sql .= " AND u.role = :role";
             }
-            if ($status !== '') {
-                $sql .= " AND account_status = :status";
+            if ($status === 'banned') {
+                $sql .= " AND ub.ban_id IS NOT NULL";
             }
 
-            $sql .= " ORDER BY user_id DESC LIMIT :offset, :limit";
+            $sql .= " ORDER BY u.user_id DESC LIMIT :offset, :limit";
             
             $stmt = $this->db->prepare($sql);
             
@@ -179,9 +195,6 @@ class User{
             }
             if ($role !== '') {
                 $stmt->bindParam(':role', $role, PDO::PARAM_STR);
-            }
-            if ($status !== '') {
-                $stmt->bindParam(':status', $status, PDO::PARAM_STR);
             }
             
             $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
@@ -196,16 +209,19 @@ class User{
 
     function getTotalUsersCount($search = '', $role = '', $status = ''){
         try {
-            $sql = "SELECT COUNT(*) as total FROM user WHERE 1=1";
+            $sql = "SELECT COUNT(*) as total 
+                    FROM user u
+                    LEFT JOIN user_bans ub ON u.user_id = ub.user_id AND ub.unbanned_at IS NULL
+                    WHERE 1=1";
             
             if ($search !== '') {
-                $sql .= " AND (firstname LIKE :search OR lastname LIKE :search OR username LIKE :search)";
+                $sql .= " AND (u.firstname LIKE :search OR u.lastname LIKE :search OR u.username LIKE :search)";
             }
             if ($role !== '') {
-                $sql .= " AND role = :role";
+                $sql .= " AND u.role = :role";
             }
-            if ($status !== '') {
-                $sql .= " AND account_status = :status";
+            if ($status === 'banned') {
+                $sql .= " AND ub.ban_id IS NOT NULL";
             }
 
             $stmt = $this->db->prepare($sql);
@@ -216,9 +232,6 @@ class User{
             }
             if ($role !== '') {
                 $stmt->bindParam(':role', $role, PDO::PARAM_STR);
-            }
-            if ($status !== '') {
-                $stmt->bindParam(':status', $status, PDO::PARAM_STR);
             }
             
             $stmt->execute();
@@ -252,8 +265,8 @@ class User{
             $stmt = $this->db->query("SELECT COUNT(*) as total_today FROM user WHERE DATE(created_at) = CURDATE()");
             $today = (int)$stmt->fetch(PDO::FETCH_ASSOC)['total_today'];
 
-            // Banned users
-            $stmt = $this->db->query("SELECT COUNT(*) as total_banned FROM user WHERE account_status = 'banned'");
+            // Banned users (from user_bans with active ban)
+            $stmt = $this->db->query("SELECT COUNT(DISTINCT user_id) as total_banned FROM user_bans WHERE unbanned_at IS NULL");
             $banned = (int)$stmt->fetch(PDO::FETCH_ASSOC)['total_banned'];
 
             return [
@@ -292,34 +305,32 @@ class User{
             $admin = $adminStmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$admin || $admin['role'] !== 'admin') {
-                return ['success' => false, 'message' => 'You do not have permission to perform this action (Admin only).'];
+                return ['success' => false, 'message' => 'คุณไม่มีสิทธิ์ในการดำเนินการนี้ (สำหรับผู้ดูแลระบบเท่านั้น)'];
             }
 
             $adminBanned = $admin['username'];
 
             // 2. Verify target user
-            $targetStmt = $this->db->prepare("SELECT user_id, username, role, account_status FROM user WHERE user_id = :user_id");
+            $targetStmt = $this->db->prepare("SELECT user_id, username, role FROM user WHERE user_id = :user_id");
             $targetStmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
             $targetStmt->execute();
             $target = $targetStmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$target) {
-                return ['success' => false, 'message' => 'Target user account not found.'];
+                return ['success' => false, 'message' => 'ไม่พบบัญชีผู้ใช้เป้าหมาย'];
             }
 
             // 3. Cannot ban admin
             if ($target['role'] === 'admin') {
-                return ['success' => false, 'message' => 'Cannot ban an Admin account.'];
+                return ['success' => false, 'message' => 'ไม่สามารถแบนบัญชีผู้ดูแลระบบได้'];
             }
 
             // 4. Cannot ban already banned user
-            if ($target['account_status'] === 'banned') {
-                return ['success' => false, 'message' => 'This account is already banned.'];
+            if ($this->isUserBanned($userId)) {
+                return ['success' => false, 'message' => 'บัญชีนี้ถูกแบนอยู่แล้ว'];
             }
 
-            // 5. Execute transaction (insert user_bans and update user.account_status)
-            $this->db->beginTransaction();
-
+            // 5. Insert active ban record into user_bans
             $insertStmt = $this->db->prepare(
                 "INSERT INTO user_bans (user_id, admin_banned, reason, banned_at)
                  VALUES (:user_id, :admin_banned, :reason, NOW())"
@@ -329,20 +340,10 @@ class User{
             $insertStmt->bindParam(':reason', $reason, PDO::PARAM_STR);
             $insertStmt->execute();
 
-            $updateStmt = $this->db->prepare(
-                "UPDATE user SET account_status = 'banned' WHERE user_id = :user_id"
-            );
-            $updateStmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
-            $updateStmt->execute();
-
-            $this->db->commit();
-            return ['success' => true, 'message' => 'Account banned successfully.'];
+            return ['success' => true, 'message' => 'แบนบัญชีผู้ใช้เรียบร้อยแล้ว'];
 
         } catch (Exception $e) {
-            if ($this->db->inTransaction()) {
-                $this->db->rollBack();
-            }
-            return ['success' => false, 'message' => 'Error banning account: ' . $e->getMessage()];
+            return ['success' => false, 'message' => 'เกิดข้อผิดพลาดในการแบนบัญชี: ' . $e->getMessage()];
         }
     }
 
@@ -362,55 +363,40 @@ class User{
             $admin = $adminStmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$admin || $admin['role'] !== 'admin') {
-                return ['success' => false, 'message' => 'You do not have permission to perform this action (Admin only).'];
+                return ['success' => false, 'message' => 'คุณไม่มีสิทธิ์ในการดำเนินการนี้ (สำหรับผู้ดูแลระบบเท่านั้น)'];
             }
 
             $adminUnbanned = $admin['username'];
 
             // 2. Verify target user
-            $targetStmt = $this->db->prepare("SELECT user_id, username, role, account_status FROM user WHERE user_id = :user_id");
+            $targetStmt = $this->db->prepare("SELECT user_id, username, role FROM user WHERE user_id = :user_id");
             $targetStmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
             $targetStmt->execute();
             $target = $targetStmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$target) {
-                return ['success' => false, 'message' => 'Target user account not found.'];
+                return ['success' => false, 'message' => 'ไม่พบบัญชีผู้ใช้เป้าหมาย'];
             }
 
             // 3. Check if target user is currently banned
-            if ($target['account_status'] !== 'banned') {
-                return ['success' => false, 'message' => 'This account is not banned.'];
+            if (!$this->isUserBanned($userId)) {
+                return ['success' => false, 'message' => 'บัญชีนี้ไม่ได้ถูกแบน'];
             }
 
-            $this->db->beginTransaction();
-
-            // 4. Update account_status to active
-            $updateStmt = $this->db->prepare(
-                "UPDATE user SET account_status = 'active' WHERE user_id = :user_id"
-            );
-            $updateStmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
-            $updateStmt->execute();
-
-            // 5. Update user_bans to record unbanned_at and admin_unbanned
+            // 4. Update user_bans to record unbanned_at and admin_unbanned
             $banUpdateStmt = $this->db->prepare(
                 "UPDATE user_bans 
                  SET unbanned_at = NOW(), admin_unbanned = :admin_unbanned 
-                 WHERE user_id = :user_id AND unbanned_at IS NULL 
-                 ORDER BY ban_id DESC LIMIT 1"
+                 WHERE user_id = :user_id AND unbanned_at IS NULL"
             );
             $banUpdateStmt->bindParam(':admin_unbanned', $adminUnbanned, PDO::PARAM_STR);
             $banUpdateStmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
             $banUpdateStmt->execute();
 
-            $this->db->commit();
-
-            return ['success' => true, 'message' => 'User ' . $target['username'] . ' has been unbanned successfully.'];
+            return ['success' => true, 'message' => 'ยกเลิกการแบนผู้ใช้ ' . $target['username'] . ' เรียบร้อยแล้ว'];
 
         } catch (Exception $e) {
-            if ($this->db->inTransaction()) {
-                $this->db->rollBack();
-            }
-            return ['success' => false, 'message' => 'Error unbanning account: ' . $e->getMessage()];
+            return ['success' => false, 'message' => 'เกิดข้อผิดพลาดในการยกเลิกการแบนบัญชี: ' . $e->getMessage()];
         }
     }
 

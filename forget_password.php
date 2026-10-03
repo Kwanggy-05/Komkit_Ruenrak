@@ -14,13 +14,13 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     $confirm_new_password = $_POST["confirm_new_password"] ?? "";
 
     if($username === "" || $answer === "" || $new_password === "" || $confirm_new_password === ""){
-        $error = "Please fill in all fields";
+        $error = "กรุณากรอกข้อมูลให้ครบทุกช่อง";
     } elseif($new_password !== $confirm_new_password){
-        $error = "New password and confirm password do not match";
+        $error = "รหัสผ่านใหม่และยืนยันรหัสผ่านใหม่ไม่ตรงกัน";
     } else {
         $result = $user->resetPasswordWithSecurityAnswer($username, $answer, $new_password);
         if($result["success"]){
-            $success = $result["message"] . " Redirecting to login page...";
+            $success = $result["message"] . " กำลังนำคุณไปยังหน้าเข้าสู่ระบบ...";
             header("Refresh: 2; url=login.php");
         } else {
             $error = $result["message"];
@@ -30,11 +30,11 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forget Password</title>
+    <title>ลืมรหัสผ่าน - Snippet Box</title>
     <link rel="stylesheet" href="style/logincss.css">
     <style>
         .success-alert {
@@ -54,38 +54,38 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 </head>
 <body>
     <div class="container">
-        <a href="login.php"><button class="back-btn" type="button">Back</button></a>
+        <a href="login.php"><button class="back-btn" type="button">ย้อนกลับ</button></a>
 
         <div class="card">
             <div class="title-wrapper">
                 <img src="logo/Logo_snippetBox.png" alt="Logo" width=32px height=32px>
-                <h1 class="text-center">Reset Password</h1>
+                <h1 class="text-center">รีเซ็ตรหัสผ่าน</h1>
             </div>
 
             <form method="POST" action="<?php echo htmlentities($_SERVER['PHP_SELF']) ?>">
                 
                 <div class="form-group">
-                    <label for="username">Username</label>
+                    <label for="username">ชื่อผู้ใช้</label>
                     <input type="text" name="username" id="username" value="<?php echo htmlspecialchars($username); ?>" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="question">Security Question</label>
-                    <input type="text" id="question" value="What is the name of your favorite movie character?" disabled style="background-color: #f1f3f5; cursor: not-allowed; opacity: 0.85;">
+                    <label for="question">คำถามความปลอดภัย</label>
+                    <input type="text" id="question" value="ตัวละครในภาพยนตร์ที่คุณชื่นชอบมากที่สุดคือใคร?" disabled style="background-color: #f1f3f5; cursor: not-allowed; opacity: 0.85;">
                 </div>
 
                 <div class="form-group">
-                    <label for="answer">Security Answer</label>
-                    <input type="text" name="answer" id="answer" value="<?php echo htmlspecialchars($answer); ?>" placeholder="Enter your answer" required>
+                    <label for="answer">คำตอบความปลอดภัย</label>
+                    <input type="text" name="answer" id="answer" value="<?php echo htmlspecialchars($answer); ?>" placeholder="กรุณากรอกคำตอบของคุณ" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="new_password">New Password</label>
+                    <label for="new_password">รหัสผ่านใหม่</label>
                     <input type="password" name="new_password" id="new_password" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="confirm_new_password">Confirm New Password</label>
+                    <label for="confirm_new_password">ยืนยันรหัสผ่านใหม่</label>
                     <input type="password" name="confirm_new_password" id="confirm_new_password" required>
                 </div>
 
@@ -97,7 +97,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                     <div class="success-alert"><?php echo htmlspecialchars($success); ?></div>
                 <?php endif; ?>
 
-                <input type="submit" name="submit" value="Reset Password">
+                <input type="submit" name="submit" value="รีเซ็ตรหัสผ่าน">
                 
             </form>
         </div>

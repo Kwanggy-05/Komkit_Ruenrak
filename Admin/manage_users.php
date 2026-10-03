@@ -28,12 +28,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
     $adminId = (int)$userId;
 
     if ($reasonPreset === '') {
-        $errorMsg = "Please select a reason for banning.";
+        $errorMsg = "กรุณาเลือกเหตุผลในการแบนผู้ใช้";
     } elseif ($reasonPreset === 'Other' && $details === '') {
-        $errorMsg = "Please specify additional details for the 'Other' reason.";
+        $errorMsg = "กรุณาระบุรายละเอียดเพิ่มเติมสำหรับเหตุผล 'อื่นๆ'";
     } else {
         if ($reasonPreset === 'Other') {
-            $reason = $details !== '' ? "Other: " . $details : "Other";
+            $reason = $details !== '' ? "อื่นๆ: " . $details : "อื่นๆ";
         } else {
             $reason = $details !== '' ? $reasonPreset . " - " . $details : $reasonPreset;
         }
@@ -85,11 +85,11 @@ if ($totalPages === 0) $totalPages = 1;
 $stats = $user->getUserStats();
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Users - Admin Panel</title>
+    <title>จัดการผู้ใช้ - Admin Panel</title>
     <link rel="stylesheet" href="style.css?v=<?php echo time(); ?>">
     <style>
         /* Custom User Management specific styles */
@@ -182,7 +182,7 @@ $stats = $user->getUserStats();
                         <line x1="16" y1="17" x2="8" y2="17"></line>
                         <polyline points="10 9 9 9 8 9"></polyline>
                     </svg>
-                    <span>Manage Snippets</span>
+                    <span>จัดการ Snippet</span>
                 </a>
                 <a href="manage_languages.php" class="menu-item">
                     <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -190,7 +190,7 @@ $stats = $user->getUserStats();
                         <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
                         <line x1="12" y1="22.08" x2="12" y2="12"></line>
                     </svg>
-                    <span>Manage Language</span>
+                    <span>จัดการภาษา</span>
                 </a>
                 <a href="manage_users.php" class="menu-item active">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -199,7 +199,7 @@ $stats = $user->getUserStats();
                         <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
                         <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                     </svg>
-                    <span>Manage Users</span>
+                    <span>จัดการผู้ใช้</span>
                 </a>
                 <a href="manage_reports.php" class="menu-item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -207,9 +207,9 @@ $stats = $user->getUserStats();
                         <line x1="12" y1="9" x2="12" y2="13"></line>
                         <line x1="12" y1="17" x2="12.01" y2="17"></line>
                     </svg>
-                    <span>Manage Reports</span>
+                    <span>จัดการรายงาน</span>
                     <?php if (!empty($pendingReportsCount) && $pendingReportsCount > 0): ?>
-                        <span class="sidebar-dot" title="Pending Reports"></span>
+                        <span class="sidebar-dot" title="รายงานที่รอดำเนินการ"></span>
                     <?php endif; ?>
                 </a>
                 <a href="manage_appeals.php" class="menu-item">
@@ -217,9 +217,9 @@ $stats = $user->getUserStats();
                         <path d="M9 11l3 3L22 4"></path>
                         <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
                     </svg>
-                    <span>Manage Appeals</span>
+                    <span>จัดการคำร้อง</span>
                     <?php if (!empty($pendingAppealsCount) && $pendingAppealsCount > 0): ?>
-                        <span class="sidebar-dot" title="Pending Appeals"></span>
+                        <span class="sidebar-dot" title="คำร้องที่รอดำเนินการ"></span>
                     <?php endif; ?>
                 </a>
             </nav>
@@ -233,7 +233,7 @@ $stats = $user->getUserStats();
             <!-- Top Navigation Bar -->
             <header class="top-bar">
                 <div class="top-left">
-                    <button class="menu-toggle" id="menuToggle" aria-label="Toggle Menu">
+                    <button class="menu-toggle" id="menuToggle" aria-label="เปิด/ปิดเมนู">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="3" y1="12" x2="21" y2="12"></line>
                             <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -253,16 +253,16 @@ $stats = $user->getUserStats();
                         </div>
                         <div class="user-info">
                             <span class="user-name"><?php echo htmlspecialchars($_SESSION['username'] ?? 'Admin'); ?></span>
-                            <span class="user-role">Admin</span>
+                            <span class="user-role">ผู้ดูแลระบบ</span>
                         </div>
                     </div>
-                    <a href="login.php" class="btn-logout" onclick="return confirm('Are you sure you want to log out?');">
+                    <a href="login.php" class="btn-logout" onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?');">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                             <polyline points="16 17 21 12 16 7"></polyline>
                             <line x1="21" y1="12" x2="9" y2="12"></line>
                         </svg>
-                        Log out
+                        ออกจากระบบ
                     </a>
                 </div>
             </header>
@@ -282,7 +282,7 @@ $stats = $user->getUserStats();
                         </div>
                         <div class="stat-info">
                             <span class="stat-value"><?php echo $stats['total']; ?></span>
-                            <span class="stat-label">Total Users</span>
+                            <span class="stat-label">ผู้ใช้ทั้งหมด</span>
                         </div>
                     </div>
                     <div class="stat-card">
@@ -296,7 +296,7 @@ $stats = $user->getUserStats();
                         </div>
                         <div class="stat-info">
                             <span class="stat-value"><?php echo $stats['today']; ?></span>
-                            <span class="stat-label">New Users Today</span>
+                            <span class="stat-label">ผู้ใช้ใหม่วันนี้</span>
                         </div>
                     </div>
                     <div class="stat-card">
@@ -308,7 +308,7 @@ $stats = $user->getUserStats();
                         </div>
                         <div class="stat-info">
                             <span class="stat-value"><?php echo $stats['banned']; ?></span>
-                            <span class="stat-label">Banned Users</span>
+                            <span class="stat-label">ผู้ใช้ที่ถูกแบน</span>
                         </div>
                     </div>
                 </div>
@@ -336,13 +336,13 @@ $stats = $user->getUserStats();
 
                 <!-- Content Header Controls -->
                 <div class="content-header" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-                    <h2 class="page-title">Manage Users</h2>
+                    <h2 class="page-title">จัดการผู้ใช้</h2>
                     <button type="button" class="btn-secondary" onclick="openAllHistoryModal()" style="display: inline-flex; align-items: center; gap: 8px;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="10"></circle>
                             <polyline points="12 6 12 12 16 14"></polyline>
                         </svg>
-                        All Ban History
+                        ประวัติการแบนทั้งหมด
                     </button>
                 </div>
 
@@ -354,28 +354,27 @@ $stats = $user->getUserStats();
                                 <circle cx="11" cy="11" r="8"></circle>
                                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                             </svg>
-                            <input type="text" name="q" class="search-input" placeholder="Search name or username..." value="<?php echo htmlspecialchars($searchQuery); ?>" style="border: none; outline: none; width: 100%; font-size: 0.95rem;">
+                            <input type="text" name="q" class="search-input" placeholder="ค้นหาชื่อ หรือชื่อผู้ใช้..." value="<?php echo htmlspecialchars($searchQuery); ?>" style="border: none; outline: none; width: 100%; font-size: 0.95rem;">
                         </div>
                         
                         <select name="role" class="select-per-page" onchange="this.form.submit()" style="height: 38px; border-radius: var(--rounded-md); font-weight: 600; padding: 0 12px; border: 1px solid var(--border-color); background: white;">
-                            <option value="">All Roles</option>
-                            <option value="user" <?php echo $selectedRole === 'user' ? 'selected' : ''; ?>>User</option>
-                            <option value="admin" <?php echo $selectedRole === 'admin' ? 'selected' : ''; ?>>Admin</option>
+                            <option value="">ทุกบทบาท</option>
+                            <option value="user" <?php echo $selectedRole === 'user' ? 'selected' : ''; ?>>ผู้ใช้ทั่วไป (User)</option>
+                            <option value="admin" <?php echo $selectedRole === 'admin' ? 'selected' : ''; ?>>ผู้ดูแลระบบ (Admin)</option>
                         </select>
 
                         <select name="status" class="select-per-page" onchange="this.form.submit()" style="height: 38px; border-radius: var(--rounded-md); font-weight: 600; padding: 0 12px; border: 1px solid var(--border-color); background: white;">
-                            <option value="">All Status</option>
-                            <option value="active" <?php echo $selectedStatus === 'active' ? 'selected' : ''; ?>>Active</option>
-                            <option value="banned" <?php echo $selectedStatus === 'banned' ? 'selected' : ''; ?>>Banned</option>
+                            <option value="">สถานะทั้งหมด</option>
+                            <option value="banned" <?php echo $selectedStatus === 'banned' ? 'selected' : ''; ?>>ผู้ใช้ที่ถูกแบน</option>
                         </select>
                         
                         <?php if ($itemsPerPage !== 10): ?>
                             <input type="hidden" name="limit" value="<?php echo $itemsPerPage; ?>">
                         <?php endif; ?>
                         
-                        <button type="submit" class="btn-primary" style="height: 38px; border-radius: var(--rounded-md); padding: 0 16px; font-weight: 600;">Search</button>
+                        <button type="submit" class="btn-primary" style="height: 38px; border-radius: var(--rounded-md); padding: 0 16px; font-weight: 600;">ค้นหา</button>
                         <?php if ($searchQuery !== '' || $selectedRole !== '' || $selectedStatus !== ''): ?>
-                            <a href="manage_users.php" class="btn-secondary" style="height: 38px; line-height: 20px; display: inline-flex; align-items: center; text-decoration: none;">Clear</a>
+                            <a href="manage_users.php" class="btn-secondary" style="height: 38px; line-height: 20px; display: inline-flex; align-items: center; text-decoration: none;">ล้างตัวกรอง</a>
                         <?php endif; ?>
                     </form>
                 </div>
@@ -386,35 +385,31 @@ $stats = $user->getUserStats();
                         <thead>
                             <tr>
                                 <th class="col-id" style="width: 70px;">ID</th>
-                                <th>Name</th>
-                                <th>Username</th>
-                                <th style="width: 100px;">Role</th>
-                                <th style="width: 110px;">Status</th>
-                                <th style="width: 170px;">Registered At</th>
-                                <th style="width: 200px; text-align: center;">Action</th>
+                                <th>ชื่อ-นามสกุล</th>
+                                <th>ชื่อผู้ใช้</th>
+                                <th style="width: 100px;">บทบาท</th>
+                                <th style="width: 170px;">วันที่สมัคร</th>
+                                <th style="width: 200px; text-align: center;">จัดการ</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($users)): ?>
                                 <tr>
-                                    <td colspan="7" style="text-align: center; padding: 32px; color: var(--text-muted);">
-                                        No users found.
+                                    <td colspan="6" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                                        ไม่พบข้อมูลผู้ใช้
                                     </td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($users as $row): ?>
                                     <?php 
                                         $roleClass = $row['role'] === 'admin' ? 'badge-admin' : 'badge-user';
-                                        $isBanned = isset($row['account_status']) && $row['account_status'] === 'banned';
-                                        $statusBadgeClass = $isBanned ? 'badge-status-banned' : 'badge-status-active';
-                                        $statusLabel = $isBanned ? 'Banned' : 'Active';
+                                        $isBanned = !empty($row['is_banned']);
                                     ?>
                                     <tr>
                                         <td class="col-id"><?php echo htmlspecialchars($row['user_id']); ?></td>
                                         <td style="font-weight: 600;"><?php echo htmlspecialchars($row['firstname'] . ' ' . $row['lastname']); ?></td>
                                         <td><?php echo htmlspecialchars($row['username']); ?></td>
-                                        <td><span class="badge <?php echo $roleClass; ?>"><?php echo htmlspecialchars($row['role']); ?></span></td>
-                                        <td><span class="badge <?php echo $statusBadgeClass; ?>"><?php echo $statusLabel; ?></span></td>
+                                        <td><span class="badge <?php echo $roleClass; ?>"><?php echo $row['role'] === 'admin' ? 'ผู้ดูแลระบบ' : 'ผู้ใช้ทั่วไป'; ?></span></td>
                                         <td style="font-size: 0.9rem; color: var(--text-muted);">
                                             <?php echo !empty($row['created_at']) ? date('d/m/Y H:i:s', strtotime($row['created_at'])) : '-'; ?>
                                         </td>
@@ -427,7 +422,7 @@ $stats = $user->getUserStats();
                                                         <circle cx="12" cy="12" r="10"></circle>
                                                         <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
                                                     </svg>
-                                                    Ban Account
+                                                    แบนบัญชี
                                                 </button>
                                             <?php else: ?>
                                                  <div style="display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
@@ -436,14 +431,14 @@ $stats = $user->getUserStats();
                                                             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                                                             <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
                                                         </svg>
-                                                        Unban
+                                                        ยกเลิกการแบน
                                                     </button>
                                                     <button type="button" class="btn-history" onclick="openUserHistoryModal(<?php echo (int)$row['user_id']; ?>, '<?php echo htmlspecialchars(addslashes($row['username']), ENT_QUOTES); ?>')">
                                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                             <circle cx="12" cy="12" r="10"></circle>
                                                             <polyline points="12 6 12 12 16 14"></polyline>
                                                         </svg>
-                                                        View History
+                                                        ดูประวัติ
                                                     </button>
                                                 </div>
                                             <?php endif; ?>
@@ -482,7 +477,7 @@ $stats = $user->getUserStats();
     <div class="modal-overlay" id="banModalOverlay">
         <div class="modal-card">
             <div class="modal-header">
-                <h3 class="modal-title">Confirm Ban Account</h3>
+                <h3 class="modal-title">ยืนยันการแบนบัญชี</h3>
                 <button type="button" class="modal-close" onclick="closeBanModal()">&times;</button>
             </div>
             <form method="POST" action="manage_users.php" id="banForm" onsubmit="return validateBanForm();">
@@ -492,45 +487,45 @@ $stats = $user->getUserStats();
                     
                     <table class="ban-info-table">
                         <tr>
-                            <td class="ban-info-label">Username:</td>
+                            <td class="ban-info-label">ชื่อผู้ใช้:</td>
                             <td class="ban-info-val" id="banUsernameDisplay">-</td>
                         </tr>
                         <tr>
-                            <td class="ban-info-label">Status:</td>
+                            <td class="ban-info-label">สถานะ:</td>
                             <td>
-                                <span class="badge badge-status-active">Active</span>
+                                <span class="badge badge-status-active">ปกติ</span>
                                 <span style="margin: 0 6px; font-weight: bold; color: var(--text-muted);">→</span>
-                                <span class="badge badge-status-banned">Banned</span>
+                                <span class="badge badge-status-banned">ถูกแบน</span>
                             </td>
                         </tr>
                     </table>
 
                     <div class="form-group" style="margin-top: 16px;">
-                        <label class="form-label" style="margin-bottom: 8px; font-weight: 600;">Ban Reason: <span style="color: var(--danger);">*</span></label>
+                        <label class="form-label" style="margin-bottom: 8px; font-weight: 600;">เหตุผลในการแบน: <span style="color: var(--danger);">*</span></label>
                         <div class="ban-reasons-list" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px;">
                             <label class="ban-reason-option">
-                                <input type="radio" name="reason_preset" value="Spam / Misleading" required onchange="handleReasonPresetChange(this)">
-                                <span>Spam / Misleading</span>
+                                <input type="radio" name="reason_preset" value="สแปม / หลอกลวง" required onchange="handleReasonPresetChange(this)">
+                                <span>สแปม / หลอกลวง</span>
                             </label>
                             <label class="ban-reason-option">
-                                <input type="radio" name="reason_preset" value="Inappropriate Content / Violent / Harassment" onchange="handleReasonPresetChange(this)">
-                                <span>Inappropriate Content / Violent / Harassment</span>
+                                <input type="radio" name="reason_preset" value="เนื้อหาไม่เหมาะสม / ความรุนแรง / การคุกคาม" onchange="handleReasonPresetChange(this)">
+                                <span>เนื้อหาไม่เหมาะสม / ความรุนแรง / การคุกคาม</span>
                             </label>
                             <label class="ban-reason-option">
-                                <input type="radio" name="reason_preset" value="Malicious Code / Malware" onchange="handleReasonPresetChange(this)">
-                                <span>Malicious Code / Malware</span>
+                                <input type="radio" name="reason_preset" value="โค้ดอันตราย / มัลแวร์" onchange="handleReasonPresetChange(this)">
+                                <span>โค้ดอันตราย / มัลแวร์</span>
                             </label>
                             <label class="ban-reason-option">
                                 <input type="radio" name="reason_preset" value="Other" onchange="handleReasonPresetChange(this)">
-                                <span>Other</span>
+                                <span>อื่นๆ</span>
                             </label>
                         </div>
 
                         <label for="banDetails" class="form-label" style="font-size: 0.875rem; color: var(--text-muted); font-weight: 600;">
-                            Additional Details <span id="banDetailsRequired" style="color: var(--danger); display: none;">*</span>:
+                            รายละเอียดเพิ่มเติม <span id="banDetailsRequired" style="color: var(--danger); display: none;">*</span>:
                         </label>
-                        <textarea name="details" id="banDetails" class="form-control" rows="3" style="height: auto; resize: vertical; padding: 10px; font-size: 0.9rem;" placeholder="Specify additional details (optional)..."></textarea>
-                        <div id="banReasonError" style="color: var(--danger); font-size: 0.85rem; margin-top: 6px; display: none;">Please specify a ban reason</div>
+                        <textarea name="details" id="banDetails" class="form-control" rows="3" style="height: auto; resize: vertical; padding: 10px; font-size: 0.9rem;" placeholder="ระบุรายละเอียดเพิ่มเติม (ถ้ามี)..."></textarea>
+                        <div id="banReasonError" style="color: var(--danger); font-size: 0.85rem; margin-top: 6px; display: none;">กรุณาระบุเหตุผลในการแบน</div>
                     </div>
 
                     <div class="ban-warning-box">
@@ -539,12 +534,12 @@ $stats = $user->getUserStats();
                             <line x1="12" y1="9" x2="12" y2="13"></line>
                             <line x1="12" y1="17" x2="12.01" y2="17"></line>
                         </svg>
-                        <span>⚠ This action will permanently ban the account</span>
+                        <span>⚠ การดำเนินการนี้จะระงับการใช้งานบัญชีนี้อย่างถาวร</span>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn-secondary" onclick="closeBanModal()">Cancel</button>
-                    <button type="submit" class="btn-ban" style="padding: 10px 20px; font-size: 0.95rem;">Confirm Ban</button>
+                    <button type="button" class="btn-secondary" onclick="closeBanModal()">ยกเลิก</button>
+                    <button type="submit" class="btn-ban" style="padding: 10px 20px; font-size: 0.95rem;">ยืนยันการแบน</button>
                 </div>
             </form>
         </div>
@@ -554,7 +549,7 @@ $stats = $user->getUserStats();
     <div class="modal-overlay" id="unbanModalOverlay">
         <div class="modal-card">
             <div class="modal-header">
-                <h3 class="modal-title">Confirm Unban Account</h3>
+                <h3 class="modal-title">ยืนยันการยกเลิกการแบนบัญชี</h3>
                 <button type="button" class="modal-close" onclick="closeUnbanModal()">&times;</button>
             </div>
             <form method="POST" action="manage_users.php" id="unbanForm">
@@ -564,15 +559,15 @@ $stats = $user->getUserStats();
                     
                     <table class="ban-info-table">
                         <tr>
-                            <td class="ban-info-label">Username:</td>
+                            <td class="ban-info-label">ชื่อผู้ใช้:</td>
                             <td class="ban-info-val" id="unbanUsernameDisplay">-</td>
                         </tr>
                         <tr>
-                            <td class="ban-info-label">Status:</td>
+                            <td class="ban-info-label">สถานะ:</td>
                             <td>
-                                <span class="badge badge-status-banned">Banned</span>
+                                <span class="badge badge-status-banned">ถูกแบน</span>
                                 <span style="margin: 0 6px; font-weight: bold; color: var(--text-muted);">→</span>
-                                <span class="badge badge-status-active">Active</span>
+                                <span class="badge badge-status-active">ปกติ</span>
                             </td>
                         </tr>
                     </table>
@@ -582,12 +577,12 @@ $stats = $user->getUserStats();
                             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                             <polyline points="22 4 12 14.01 9 11.01"></polyline>
                         </svg>
-                        <span>Once unbanned, this account will be able to log in and use the system normally.</span>
+                        <span>เมื่อยกเลิกการแบน บัญชีนี้จะสามารถเข้าสู่ระบบและใช้งานได้ตามปกติ</span>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn-secondary" onclick="closeUnbanModal()">Cancel</button>
-                    <button type="submit" class="btn-unban" style="padding: 10px 20px; font-size: 0.95rem;">Confirm Unban</button>
+                    <button type="button" class="btn-secondary" onclick="closeUnbanModal()">ยกเลิก</button>
+                    <button type="submit" class="btn-unban" style="padding: 10px 20px; font-size: 0.95rem;">ยืนยันการยกเลิกการแบน</button>
                 </div>
             </form>
         </div>
@@ -597,22 +592,22 @@ $stats = $user->getUserStats();
     <div class="modal-overlay" id="userHistoryModalOverlay">
         <div class="modal-card modal-card-lg">
             <div class="modal-header">
-                <h3 class="modal-title">Ban History: <span id="userHistoryUsername" style="color: var(--primary);"></span></h3>
+                <h3 class="modal-title">ประวัติการแบน: <span id="userHistoryUsername" style="color: var(--primary);"></span></h3>
                 <button type="button" class="modal-close" onclick="closeUserHistoryModal()">&times;</button>
             </div>
             <div class="modal-body">
                 <div id="userHistoryLoading" style="text-align: center; padding: 24px; color: var(--text-muted);">
-                    Loading data...
+                    กำลังโหลดข้อมูล...
                 </div>
                 <div id="userHistoryContent" style="display: none; max-height: 400px; overflow-y: auto;">
                     <table class="history-table" style="width: 100%; border-collapse: collapse;">
                         <thead>
                             <tr>
                                 <th style="width: 60px; padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">ID</th>
-                                <th style="width: 130px; padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">Banned By</th>
-                                <th style="padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">Reason</th>
-                                <th style="width: 150px; padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">Banned At</th>
-                                <th style="width: 150px; padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">Unbanned At</th>
+                                <th style="width: 130px; padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">ผู้สั่งแบน</th>
+                                <th style="padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">เหตุผล</th>
+                                <th style="width: 150px; padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">วันที่แบน</th>
+                                <th style="width: 150px; padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">วันที่ปลดแบน</th>
                             </tr>
                         </thead>
                         <tbody id="userHistoryTableBody">
@@ -621,11 +616,11 @@ $stats = $user->getUserStats();
                     </table>
                 </div>
                 <div id="userHistoryEmpty" style="text-align: center; padding: 24px; color: var(--text-muted); display: none;">
-                    No ban history found for this account.
+                    ไม่พบประวัติการแบนสำหรับบัญชีนี้
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn-secondary" onclick="closeUserHistoryModal()">Close</button>
+                <button type="button" class="btn-secondary" onclick="closeUserHistoryModal()">ปิด</button>
             </div>
         </div>
     </div>
@@ -634,23 +629,23 @@ $stats = $user->getUserStats();
     <div class="modal-overlay" id="allHistoryModalOverlay">
         <div class="modal-card modal-card-lg">
             <div class="modal-header">
-                <h3 class="modal-title">All Ban History in System</h3>
+                <h3 class="modal-title">ประวัติการแบนทั้งหมดในระบบ</h3>
                 <button type="button" class="modal-close" onclick="closeAllHistoryModal()">&times;</button>
             </div>
             <div class="modal-body">
                 <div id="allHistoryLoading" style="text-align: center; padding: 24px; color: var(--text-muted);">
-                    Loading data...
+                    กำลังโหลดข้อมูล...
                 </div>
                 <div id="allHistoryContent" style="display: none; max-height: 400px; overflow-y: auto;">
                     <table class="history-table" style="width: 100%; border-collapse: collapse;">
                         <thead>
                             <tr>
                                 <th style="width: 60px; padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">ID</th>
-                                <th style="width: 120px; padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">Banned User</th>
-                                <th style="width: 120px; padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">Banned By</th>
-                                <th style="padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">Reason</th>
-                                <th style="width: 150px; padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">Banned At</th>
-                                <th style="width: 150px; padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">Unbanned At</th>
+                                <th style="width: 120px; padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">ผู้ถูกแบน</th>
+                                <th style="width: 120px; padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">ผู้สั่งแบน</th>
+                                <th style="padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">เหตุผล</th>
+                                <th style="width: 150px; padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">วันที่แบน</th>
+                                <th style="width: 150px; padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">วันที่ปลดแบน</th>
                             </tr>
                         </thead>
                         <tbody id="allHistoryTableBody">
@@ -659,11 +654,11 @@ $stats = $user->getUserStats();
                     </table>
                 </div>
                 <div id="allHistoryEmpty" style="text-align: center; padding: 24px; color: var(--text-muted); display: none;">
-                    No ban history found in system.
+                    ไม่พบประวัติการแบนในระบบ
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn-secondary" onclick="closeAllHistoryModal()">Close</button>
+                <button type="button" class="btn-secondary" onclick="closeAllHistoryModal()">ปิด</button>
             </div>
         </div>
     </div>
@@ -702,11 +697,11 @@ $stats = $user->getUserStats();
 
             if (radio.value === 'Other') {
                 reqSpan.style.display = 'inline';
-                detailsTextarea.placeholder = 'Please specify details for ban reason...';
+                detailsTextarea.placeholder = 'กรุณาระบุรายละเอียดสำหรับเหตุผลในการแบน...';
                 detailsTextarea.focus();
             } else {
                 reqSpan.style.display = 'none';
-                detailsTextarea.placeholder = 'Specify additional details (optional)...';
+                detailsTextarea.placeholder = 'ระบุรายละเอียดเพิ่มเติม (ถ้ามี)...';
             }
         }
 
@@ -719,7 +714,7 @@ $stats = $user->getUserStats();
             document.querySelectorAll('input[name="reason_preset"]').forEach(r => r.checked = false);
             document.getElementById('banDetails').value = '';
             document.getElementById('banDetailsRequired').style.display = 'none';
-            document.getElementById('banDetails').placeholder = 'Specify additional details (optional)...';
+            document.getElementById('banDetails').placeholder = 'ระบุรายละเอียดเพิ่มเติม (ถ้ามี)...';
             document.getElementById('banReasonError').style.display = 'none';
 
             document.getElementById('banModalOverlay').classList.add('open');
@@ -735,20 +730,20 @@ $stats = $user->getUserStats();
             const errorElem = document.getElementById('banReasonError');
 
             if (!selectedPreset) {
-                errorElem.textContent = 'Please select a reason for banning.';
+                errorElem.textContent = 'กรุณาเลือกเหตุผลในการแบนผู้ใช้';
                 errorElem.style.display = 'block';
                 return false;
             }
 
             if (selectedPreset.value === 'Other' && details === '') {
-                errorElem.textContent = 'Please specify additional details for the Other reason.';
+                errorElem.textContent = 'กรุณาระบุรายละเอียดเพิ่มเติมสำหรับเหตุผลอื่นๆ';
                 errorElem.style.display = 'block';
                 document.getElementById('banDetails').focus();
                 return false;
             }
 
             errorElem.style.display = 'none';
-            return confirm('Are you sure you want to ban this user?');
+            return confirm('คุณแน่ใจหรือไม่ว่าต้องการแบนผู้ใช้นี้?');
         }
 
         // Modal: Unban Confirmation Modal Controls
@@ -780,10 +775,10 @@ $stats = $user->getUserStats();
                     if (data.success && data.data && data.data.length > 0) {
                         data.data.forEach(item => {
                             const tr = document.createElement('tr');
-                            const unbanAdminText = item.admin_unbanned ? ` <span style="font-size: 0.78rem; color: var(--text-muted); display: block;">(by ${escapeHtml(item.admin_unbanned)})</span>` : '';
+                            const unbanAdminText = item.admin_unbanned ? ` <span style="font-size: 0.78rem; color: var(--text-muted); display: block;">(โดย ${escapeHtml(item.admin_unbanned)})</span>` : '';
                             const unbanHtml = item.unbanned_at 
                                 ? `<span style="color: var(--surface); font-weight: 600;">${escapeHtml(item.unbanned_at)}</span>${unbanAdminText}` 
-                                : `<span style="color: var(--danger); font-size: 0.8rem; font-weight: 600; background: rgba(220,53,69,0.1); padding: 3px 8px; border-radius: var(--rounded-sm);">Still Banned</span>`;
+                                : `<span style="color: var(--danger); font-size: 0.8rem; font-weight: 600; background: rgba(220,53,69,0.1); padding: 3px 8px; border-radius: var(--rounded-sm);">ยังคงถูกแบน</span>`;
 
                             tr.innerHTML = `
                                 <td style="padding: 10px 14px; border-bottom: 1px solid var(--border-color);">${escapeHtml(item.ban_id)}</td>
@@ -800,7 +795,7 @@ $stats = $user->getUserStats();
                     }
                 })
                 .catch(err => {
-                    document.getElementById('userHistoryLoading').textContent = 'An error occurred while loading data.';
+                    document.getElementById('userHistoryLoading').textContent = 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
                 });
         }
 
@@ -825,10 +820,10 @@ $stats = $user->getUserStats();
                     if (data.success && data.data && data.data.length > 0) {
                         data.data.forEach(item => {
                             const tr = document.createElement('tr');
-                            const unbanAdminText = item.admin_unbanned ? ` <span style="font-size: 0.78rem; color: var(--text-muted); display: block;">(by ${escapeHtml(item.admin_unbanned)})</span>` : '';
+                            const unbanAdminText = item.admin_unbanned ? ` <span style="font-size: 0.78rem; color: var(--text-muted); display: block;">(โดย ${escapeHtml(item.admin_unbanned)})</span>` : '';
                             const unbanHtml = item.unbanned_at 
                                 ? `<span style="color: var(--surface); font-weight: 600;">${escapeHtml(item.unbanned_at)}</span>${unbanAdminText}` 
-                                : `<span style="color: var(--danger); font-size: 0.8rem; font-weight: 600; background: rgba(220,53,69,0.1); padding: 3px 8px; border-radius: var(--rounded-sm);">Still Banned</span>`;
+                                : `<span style="color: var(--danger); font-size: 0.8rem; font-weight: 600; background: rgba(220,53,69,0.1); padding: 3px 8px; border-radius: var(--rounded-sm);">ยังคงถูกแบน</span>`;
 
                             tr.innerHTML = `
                                 <td style="padding: 10px 14px; border-bottom: 1px solid var(--border-color);">${escapeHtml(item.ban_id)}</td>
@@ -846,7 +841,7 @@ $stats = $user->getUserStats();
                     }
                 })
                 .catch(err => {
-                    document.getElementById('allHistoryLoading').textContent = 'An error occurred while loading data.';
+                    document.getElementById('allHistoryLoading').textContent = 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
                 });
         }
 

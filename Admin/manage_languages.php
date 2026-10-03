@@ -10,39 +10,39 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if ($_POST['action'] === 'add') {
             $langName = trim($_POST['language_name'] ?? '');
             if ($langName === '') {
-                $errorMsg = "Please enter language name.";
+                $errorMsg = "กรุณากรอกชื่อภาษา";
             } else {
                 if ($control->addLanguage($langName)) {
-                    $successMsg = "Add language \"$langName\" Done.";
+                    $successMsg = "เพิ่มภาษา \"$langName\" สำเร็จ";
                 } else {
-                    $errorMsg = "Failed to add language (it may already exist).";
+                    $errorMsg = "ไม่สามารถเพิ่มภาษาได้ (อาจมีภาษานี้อยู่แล้ว)";
                 }
             }
         } elseif ($_POST['action'] === 'edit') {
             $langId = (int)($_POST['language_id'] ?? 0);
             $langName = trim($_POST['language_name'] ?? '');
             if ($langId <= 0 || $langName === '') {
-                $errorMsg = "Invalid data.";
+                $errorMsg = "ข้อมูลไม่ถูกต้อง";
             } else {
                 if ($control->updateLanguage($langId, $langName)) {
-                    $successMsg = "Language updated successfully.";
+                    $successMsg = "อัปเดตข้อมูลภาษาสำเร็จ";
                 } else {
-                    $errorMsg = "Failed to update language.";
+                    $errorMsg = "ไม่สามารถอัปเดตข้อมูลภาษาได้";
                 }
             }
         } elseif ($_POST['action'] === 'delete') {
             $langId = (int)($_POST['language_id'] ?? 0);
             if ($langId <= 0) {
-                $errorMsg = "Invalid data.";
+                $errorMsg = "ข้อมูลไม่ถูกต้อง";
             } else {
                 // Check if language is in use
                 if ($control->isLanguageInUse($langId)) {
-                    $errorMsg = "Cannot delete this language because it is currently used by existing snippets.";
+                    $errorMsg = "ไม่สามารถลบภาษานี้ได้ เนื่องจากมี Snippet ใช้งานภาษานี้อยู่";
                 } else {
                     if ($control->deleteLanguage($langId)) {
-                        $successMsg = "Language deleted successfully.";
+                        $successMsg = "ลบภาษาสำเร็จ";
                     } else {
-                        $errorMsg = "Failed to delete language.";
+                        $errorMsg = "ไม่สามารถลบภาษาได้";
                     }
                 }
             }
@@ -68,11 +68,11 @@ if ($languageResult) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Languages - Admin Panel</title>
+    <title>จัดการภาษา - Admin Panel</title>
     <link rel="stylesheet" href="style.css?v=<?php echo time(); ?>">
 </head>
 <body>
@@ -92,7 +92,7 @@ if ($languageResult) {
                         <line x1="16" y1="17" x2="8" y2="17"></line>
                         <polyline points="10 9 9 9 8 9"></polyline>
                     </svg>
-                    <span>Manage Snippets</span>
+                    <span>จัดการ Snippet</span>
                 </a>
                 <a href="manage_languages.php" class="menu-item active">
                     <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -100,7 +100,7 @@ if ($languageResult) {
                         <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
                         <line x1="12" y1="22.08" x2="12" y2="12"></line>
                     </svg>
-                    <span>Manage Language</span>
+                    <span>จัดการภาษา</span>
                 </a>
                 <a href="manage_users.php" class="menu-item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -109,7 +109,7 @@ if ($languageResult) {
                         <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
                         <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                     </svg>
-                    <span>Manage Users</span>
+                    <span>จัดการผู้ใช้</span>
                 </a>
                 <a href="manage_reports.php" class="menu-item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -117,9 +117,9 @@ if ($languageResult) {
                         <line x1="12" y1="9" x2="12" y2="13"></line>
                         <line x1="12" y1="17" x2="12.01" y2="17"></line>
                     </svg>
-                    <span>Manage Reports</span>
+                    <span>จัดการรายงาน</span>
                     <?php if (!empty($pendingReportsCount) && $pendingReportsCount > 0): ?>
-                        <span class="sidebar-dot" title="Pending Reports"></span>
+                        <span class="sidebar-dot" title="รายงานที่รอดำเนินการ"></span>
                     <?php endif; ?>
                 </a>
                 <a href="manage_appeals.php" class="menu-item">
@@ -127,9 +127,9 @@ if ($languageResult) {
                         <path d="M9 11l3 3L22 4"></path>
                         <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
                     </svg>
-                    <span>Manage Appeals</span>
+                    <span>จัดการคำร้อง</span>
                     <?php if (!empty($pendingAppealsCount) && $pendingAppealsCount > 0): ?>
-                        <span class="sidebar-dot" title="Pending Appeals"></span>
+                        <span class="sidebar-dot" title="คำร้องที่รอดำเนินการ"></span>
                     <?php endif; ?>
                 </a>
             </nav>
@@ -163,16 +163,16 @@ if ($languageResult) {
                         </div>
                         <div class="user-info">
                             <span class="user-name"><?php echo htmlspecialchars($_SESSION['username'] ?? 'Admin'); ?></span>
-                            <span class="user-role">Admin</span>
+                            <span class="user-role">ผู้ดูแลระบบ</span>
                         </div>
                     </div>
-                    <a href="login.php" class="btn-logout" onclick="return confirm('Are you sure you want to log out?');">
+                    <a href="login.php" class="btn-logout" onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?');">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                             <polyline points="16 17 21 12 16 7"></polyline>
                             <line x1="21" y1="12" x2="9" y2="12"></line>
                         </svg>
-                        Log out
+                        ออกจากระบบ
                     </a>
                 </div>
             </header>
@@ -195,7 +195,7 @@ if ($languageResult) {
 
                 <!-- Content Header Controls -->
                 <div class="content-header">
-                    <h2 class="page-title">Manage Language</h2>
+                    <h2 class="page-title">จัดการภาษา</h2>
                     <div class="header-actions">
                         <!-- Search Bar (Pill shape) -->
                         <form method="GET" class="search-form">
@@ -203,13 +203,13 @@ if ($languageResult) {
                                 <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <circle cx="11" cy="11" r="8"></circle>
                                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                                </svg>
-                                <input type="text" name="q" class="search-input" placeholder="python" value="<?php echo htmlspecialchars($searchQuery); ?>">
+                                </a>
+                                <input type="text" name="q" class="search-input" placeholder="ค้นหาภาษา..." value="<?php echo htmlspecialchars($searchQuery); ?>">
                             </div>
                         </form>
 
                         <!-- Add Button (Circular dark + button) -->
-                        <button class="btn-circle" id="btnAddLanguage" title="Add Language">
+                        <button class="btn-circle" id="btnAddLanguage" title="เพิ่มภาษา">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="12" y1="5" x2="12" y2="19"></line>
                                 <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -224,15 +224,15 @@ if ($languageResult) {
                         <thead>
                             <tr>
                                 <th class="col-id" style="width: 100px;">ID</th>
-                                <th>Language name</th>
-                                <th style="width: 200px; text-align: center;">Action</th>
+                                <th>ชื่อภาษา</th>
+                                <th style="width: 200px; text-align: center;">จัดการ</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($languages)): ?>
                                 <tr>
                                     <td colspan="3" style="text-align: center; padding: 32px; color: var(--text-muted);">
-                                        No language data found.
+                                        ไม่พบข้อมูลภาษา
                                     </td>
                                 </tr>
                             <?php else: ?>
@@ -244,12 +244,12 @@ if ($languageResult) {
                                             <div class="action-buttons" style="justify-content: center;">
                                                 <button class="btn-action btn-edit" 
                                                         onclick="openEditModal(<?php echo $lang['language_id']; ?>, '<?php echo htmlspecialchars($lang['language_name'], ENT_QUOTES); ?>')">
-                                                    Edit
+                                                    แก้ไข
                                                 </button>
-                                                <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this language?');">
+                                                <form method="POST" style="display:inline;" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบภาษานี้?');">
                                                     <input type="hidden" name="action" value="delete">
                                                     <input type="hidden" name="language_id" value="<?php echo $lang['language_id']; ?>">
-                                                    <button type="submit" class="btn-action btn-delete">Delete</button>
+                                                    <button type="submit" class="btn-action btn-delete">ลบ</button>
                                                 </form>
                                             </div>
                                         </td>
@@ -267,20 +267,20 @@ if ($languageResult) {
     <div class="modal-overlay" id="addModal">
         <div class="modal-card">
             <header class="modal-header">
-                <span class="modal-title">Add New Language</span>
+                <span class="modal-title">เพิ่มภาษาใหม่</span>
                 <button class="modal-close" onclick="closeModal('addModal')">&times;</button>
             </header>
             <form method="POST">
                 <input type="hidden" name="action" value="add">
                 <div class="modal-body">
                     <div class="form-group">
-                        <label class="form-label" for="add_language_name">Language Name</label>
-                        <input type="text" id="add_language_name" name="language_name" class="form-control" placeholder="e.g. Python, Ruby" required autocomplete="off">
+                        <label class="form-label" for="add_language_name">ชื่อภาษา</label>
+                        <input type="text" id="add_language_name" name="language_name" class="form-control" placeholder="เช่น Python, Ruby" required autocomplete="off">
                     </div>
                 </div>
                 <footer class="modal-footer">
-                    <button type="button" class="btn-secondary" onclick="closeModal('addModal')">Cancel</button>
-                    <button type="submit" class="btn-primary">Save</button>
+                    <button type="button" class="btn-secondary" onclick="closeModal('addModal')">ยกเลิก</button>
+                    <button type="submit" class="btn-primary">บันทึก</button>
                 </footer>
             </form>
         </div>
@@ -290,7 +290,7 @@ if ($languageResult) {
     <div class="modal-overlay" id="editModal">
         <div class="modal-card">
             <header class="modal-header">
-                <span class="modal-title">Edit Language</span>
+                <span class="modal-title">แก้ไขภาษา</span>
                 <button class="modal-close" onclick="closeModal('editModal')">&times;</button>
             </header>
             <form method="POST">
@@ -298,13 +298,13 @@ if ($languageResult) {
                 <input type="hidden" id="edit_language_id" name="language_id" value="">
                 <div class="modal-body">
                     <div class="form-group">
-                        <label class="form-label" for="edit_language_name">Language Name</label>
+                        <label class="form-label" for="edit_language_name">ชื่อภาษา</label>
                         <input type="text" id="edit_language_name" name="language_name" class="form-control" required autocomplete="off">
                     </div>
                 </div>
                 <footer class="modal-footer">
-                    <button type="button" class="btn-secondary" onclick="closeModal('editModal')">Cancel</button>
-                    <button type="submit" class="btn-primary">Save Changes</button>
+                    <button type="button" class="btn-secondary" onclick="closeModal('editModal')">ยกเลิก</button>
+                    <button type="submit" class="btn-primary">บันทึกการแก้ไข</button>
                 </footer>
             </form>
         </div>

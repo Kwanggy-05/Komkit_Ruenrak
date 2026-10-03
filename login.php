@@ -8,12 +8,12 @@ if(getCurrentUserId()){
 
 $errorAlert = "";
 if (isset($_GET['banned'])) {
-    $errorAlert = "Your account has been permanently suspended.\nIf you believe this is a mistake, please contact the administrator.";
+    $errorAlert = "บัญชีของคุณถูกระงับการใช้งานอย่างถาวร\nหากเชื่อว่าเป็นข้อผิดพลาด กรุณาติดต่อผู้ดูแลระบบ";
 }
 
 $hasAnyUser = $user->countUsers();
 if($hasAnyUser === 0){
-    $errorAlert = "Please register an account";
+    $errorAlert = "กรุณาสมัครสมาชิกก่อนเข้าใช้งาน";
 }
 
 if($_SERVER["REQUEST_METHOD"]=="POST"){
@@ -23,9 +23,9 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
 
     if($result){
         if (isset($result['role']) && $result['role'] === 'admin') {
-            $errorAlert = "Incorrect username or password";
-        } elseif (isset($result['account_status']) && $result['account_status'] === 'banned') {
-            $errorAlert = "Your account has been permanently suspended.\nIf you believe this is a mistake, please contact the administrator.";
+            $errorAlert = "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
+        } elseif (!empty($result['is_banned'])) {
+            $errorAlert = "บัญชีของคุณถูกระงับการใช้งานอย่างถาวร\nหากเชื่อว่าเป็นข้อผิดพลาด กรุณาติดต่อผู้ดูแลระบบ";
         } else {
             $_SESSION["username"] = $username;
             $_SESSION["user_id"] = $result["user_id"];
@@ -35,37 +35,29 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
             exit;
         }
     } else {
-        $errorAlert = "Incorrect username or password";
+        $errorAlert = "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
     }
 }
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>เข้าสู่ระบบ - Snippet Box</title>
     <link rel="stylesheet" href="style/logincss.css">
 </head>
 <body>
     <div class="container">
-        <a href="Home.php"><button class="back-btn" type="button">Back to Home</button></a>
+        <a href="Home.php"><button class="back-btn" type="button">กลับหน้าหลัก</button></a>
         
 
         <div class="card">
             <div class="title-wrapper">
-                <!-- <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
-                    <path d="M7 10L5 12L7 14"></path>
-                    <path d="M17 10L19 12L17 14"></path>
-                    <line x1="13" y1="9" x2="11" y2="15"></line>
-                </svg> -->
                 <img src="logo/Logo_snippetBox.png" alt="Logo" width=32px height=32px>
                 <h1 class="text-center">
-                    Login
+                    เข้าสู่ระบบ
                     <span style="display:none;"><?php "Register" ?></span> </h1>
             </div>
             
@@ -73,22 +65,22 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
             <form method="POST" action="<?php echo htmlentities($_SERVER['PHP_SELF']) ?>">
                 
                 <div class="form-group">
-                    <label for="username">Username</label>
+                    <label for="username">ชื่อผู้ใช้</label>
                     <input type="text" name="username" id="username"
                     value="<?php if($_SERVER["REQUEST_METHOD"]=="POST") echo htmlspecialchars($username); ?>"
                     >
                 </div>
                 
                 <div class="form-group">
-                    <label for="password">Password</label>
+                    <label for="password">รหัสผ่าน</label>
                     <input type="password" name="password" id="password">
-                    <a href="forget_password.php" class="forgot-password" style="text-decoration: none; display: block;">Forget password?</a>
+                    <a href="forget_password.php" class="forgot-password" style="text-decoration: none; display: block;">ลืมรหัสผ่าน?</a>
                 </div>
                 <?php if ($errorAlert !== ""): ?>
                     <div class="error-alert"><?php echo nl2br(htmlspecialchars($errorAlert)); ?></div>
                 <?php endif; ?>
 
-                <input type="submit" name="submit" value="Sign in">
+                <input type="submit" name="submit" value="เข้าสู่ระบบ">
                 
             </form>
         </div>

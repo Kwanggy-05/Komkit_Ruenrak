@@ -10,7 +10,7 @@ if (!$userId) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    echo json_encode(["status" => "error", "message" => "Method not allowed"]);
+    echo json_encode(["status" => "error", "message" => "รูปแบบคำขอไม่ถูกต้อง"]);
     exit;
 }
 

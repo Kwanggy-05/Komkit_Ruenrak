@@ -15,6 +15,8 @@
     --radius-sm: 4px;
     --radius-md: 8px;
     --radius-lg: 12px;
+    --grid-line: rgba(0, 0, 0, 0.075);
+    --grid-size: 30px;
 }
 
 * {
@@ -26,6 +28,10 @@
 
 body {
     background-color: var(--neutral-bg);
+    background-image: 
+        linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+    background-size: var(--grid-size) var(--grid-size);
     color: var(--text-color);
     min-height: 100vh;
     display: flex;
@@ -222,19 +228,19 @@ main {
 }
 
 .hero-container {
-    max-width: 640px;
+    max-width: 680px;
     width: 100%;
     padding: 0 20px;
     text-align: left;
 }
 
 .hero-title {
-    font-size: clamp(2.5rem, 5vw, 3.5rem);
-    line-height: 1.15;
+    font-size: clamp(2.1rem, 3.8vw, 3rem);
+    line-height: 1.25;
     color: var(--secondary);
     margin-bottom: 36px;
     font-weight: 700;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
 }
 
 .hero-title .normal {

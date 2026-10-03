@@ -984,9 +984,10 @@ class Control{
             $stmtSuspension->bindParam(":reason", $reason, PDO::PARAM_STR);
             $stmtSuspension->execute();
 
-            $sqlReports = "UPDATE reports SET status = 'removed' WHERE snippet_id = :snippet_id AND status = 'pending'";
+            $sqlReports = "UPDATE reports SET status = 'removed', resolved_by = :resolved_by, resolved_at = NOW() WHERE snippet_id = :snippet_id AND status = 'pending'";
             $stmtReports = $this->db->prepare($sqlReports);
             $stmtReports->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmtReports->bindParam(":resolved_by", $admin_username, PDO::PARAM_STR);
             $stmtReports->execute();
 
             $this->db->commit();
@@ -1167,22 +1168,24 @@ class Control{
         }
     }
 
-    function rejectReportAdmin($report_id){
+    function rejectReportAdmin($report_id, $admin_username = 'Admin'){
         try{
-            $sql = "UPDATE reports SET status = 'rejected' WHERE report_id = :report_id";
+            $sql = "UPDATE reports SET status = 'rejected', resolved_by = :resolved_by, resolved_at = NOW() WHERE report_id = :report_id";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(":report_id", $report_id, PDO::PARAM_INT);
+            $stmt->bindParam(":resolved_by", $admin_username, PDO::PARAM_STR);
             return $stmt->execute();
         }catch(PDOException $e){
             return false;
         }
     }
 
-    function resolveReportsForSnippet($snippet_id){
+    function resolveReportsForSnippet($snippet_id, $admin_username = 'Admin'){
         try{
-            $sql = "UPDATE reports SET status = 'removed' WHERE snippet_id = :snippet_id AND status = 'pending'";
+            $sql = "UPDATE reports SET status = 'removed', resolved_by = :resolved_by, resolved_at = NOW() WHERE snippet_id = :snippet_id AND status = 'pending'";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmt->bindParam(":resolved_by", $admin_username, PDO::PARAM_STR);
             return $stmt->execute();
         }catch(PDOException $e){
             return false;

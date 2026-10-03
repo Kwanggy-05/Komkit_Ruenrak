@@ -48,17 +48,17 @@ if($totalPages === 0) $totalPages = 1;
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trash - Snippet Box</title>
+    <title>ถังขยะ - Snippet Box</title>
     <link rel="stylesheet" href="style/removecss.css">
 </head>
 <body>
     <header class="navbar">
         <div class="nav-left">
-            <a href="snippet_page.php" class="btn-outline">Back to Snippets</a>
+            <a href="snippet_page.php" class="btn-outline">กลับหน้า Snippet</a>
         </div>
         <div class="nav-right">
             <div class="user-profile">
@@ -71,28 +71,28 @@ if($totalPages === 0) $totalPages = 1;
                 </div>
                 <span><?php echo htmlspecialchars($_SESSION['username'] ?? 'User'); ?></span>
             </div>
-            <a href="login.php" class="btn-outline" onclick="return confirm('Do you want to log out?');">Log out</a>
+            <a href="login.php" class="btn-outline" onclick="return confirm('คุณต้องการออกจากระบบหรือไม่?');">ออกจากระบบ</a>
         </div>
     </header>
 
     <div class="main-wrapper">
         <div class="sidebar">
-            <a href="snippet_page.php" class="btn-create">My Snippets</a>
+            <a href="snippet_page.php" class="btn-create">Snippet ของฉัน</a>
         </div>
         
         <div class="content">
             <div class="toolbar">
                 <form method="GET" class="search-box" style="width:350px;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                    <input type="text" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>" placeholder="Search deleted snippets...">
+                    <input type="text" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>" placeholder="ค้นหา Snippet ที่ถูกลบ...">
                     <?php if($itemsPerPage !== 10 || isset($_GET['limit'])): ?><input type="hidden" name="limit" value="<?php echo $itemsPerPage; ?>"><?php endif; ?>
                 </form>
                 <div class="toolbar-actions">
                     <div class="per-page-selector">
-                        <label for="limit-select">Show:</label>
+                        <label for="limit-select">แสดง:</label>
                         <select id="limit-select" class="select-per-page" onchange="changePerPage(this.value)">
                             <?php foreach($allowedLimits as $opt): ?>
-                                <option value="<?php echo $opt; ?>" <?php echo $itemsPerPage === $opt ? 'selected' : ''; ?>><?php echo $opt; ?> / page</option>
+                                <option value="<?php echo $opt; ?>" <?php echo $itemsPerPage === $opt ? 'selected' : ''; ?>><?php echo $opt; ?> / หน้า</option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -100,13 +100,13 @@ if($totalPages === 0) $totalPages = 1;
             </div>
             
             <div class="total-snippets">
-                Deleted Snippets (Trash): <?php echo $totalSnippets; ?><?php if($searchQuery !== ''): ?> (search results for "<?php echo htmlspecialchars($searchQuery); ?>")<?php endif; ?>
+                Snippet ในถังขยะ: <?php echo $totalSnippets; ?><?php if($searchQuery !== ''): ?> (ผลการค้นหาสำหรับ "<?php echo htmlspecialchars($searchQuery); ?>")<?php endif; ?>
             </div>
             
             <div class="snippet-grid">
                 <?php if($totalSnippets === 0): ?>
                     <div class="empty-state">
-                        No deleted snippets in trash.
+                        ไม่มี Snippet ในถังขยะ
                     </div>
                 <?php else: ?>
                     <?php foreach($snippets as $row): ?>
@@ -131,7 +131,7 @@ if($totalPages === 0) $totalPages = 1;
                         <div class="snippet-card">
                             <div class="card-left">
                                 <?php
-                                    $title = $row['title'] ?: 'Title';
+                                    $title = $row['title'] ?: 'ไม่มีชื่อเรื่อง';
                                     if(mb_strlen($title, 'UTF-8') > 30){
                                         $title = mb_substr($title, 0, 30, 'UTF-8') . '...';
                                     }
@@ -154,7 +154,7 @@ if($totalPages === 0) $totalPages = 1;
                                     </div>
                                 <?php endif; ?>
                                 <button class="btn-view-code">
-                                    <a href="viewcode.php?view=<?php echo urlencode($row['snippet_id']); ?>&from_trash=1" >View code</a>
+                                    <a href="viewcode.php?view=<?php echo urlencode($row['snippet_id']); ?>&from_trash=1" >ดูโค้ด</a>
                                 </button>
                             </div>
                             
@@ -164,10 +164,10 @@ if($totalPages === 0) $totalPages = 1;
                             
                             <div class="card-right">
                                 <?php if((int)($row['user_id'] ?? 0) === (int)$userId): ?>
-                                <a href="remove.php?restore=<?php echo urlencode($row['snippet_id']); ?>" class="icon-action" title="Restore Snippet" onclick="return confirm('Are you sure you want to restore this snippet?');">
+                                <a href="remove.php?restore=<?php echo urlencode($row['snippet_id']); ?>" class="icon-action" title="กู้คืน Snippet" onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการกู้คืน Snippet นี้?');">
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#28a745" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
                                 </a>
-                                <a href="remove.php?delete=<?php echo urlencode($row['snippet_id']); ?>" class="icon-action" title="Delete Permanently" onclick="return confirm('Are you sure you want to delete this snippet permanently?');">
+                                <a href="remove.php?delete=<?php echo urlencode($row['snippet_id']); ?>" class="icon-action" title="ลบถาวร" onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบ Snippet นี้อย่างถาวร?');">
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                 </a>
                                 <?php endif; ?>

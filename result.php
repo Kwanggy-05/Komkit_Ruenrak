@@ -40,11 +40,11 @@ $snippetIds = array_column($snippets, 'snippet_id');
 $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Search Results - Snippet Box</title>
+    <title>ผลการค้นหา - Snippet Box</title>
     <link rel="stylesheet" href="style/Homecss.css">
     <link rel="stylesheet" href="style/resultcss.css">
 </head>
@@ -65,7 +65,7 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
                         <circle cx="11" cy="11" r="8"></circle>
                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
-                    <input class="search-input" type="text" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>" placeholder="Search Snippet">
+                    <input class="search-input" type="text" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>" placeholder="ค้นหา Snippet...">
                     <input type="hidden" name="lang" value="<?php echo htmlspecialchars($selectedLanguage); ?>">
                     <!-- <button type="submit" class="search-submit">Search</button> -->
                 </form>
@@ -74,7 +74,7 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
                 <form method="GET" action="" style="display: inline;">
                     <input type="hidden" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>">
                     <select name="lang" id="language-filter" onchange="this.form.submit()">
-                        <option value="">All Languages</option>
+                        <option value="">ทุกภาษา</option>
                         <?php foreach($languages as $lang): ?>
                             <option value="<?php echo htmlspecialchars($lang['language_id']); ?>" 
                                 <?php echo ($selectedLanguage == $lang['language_id']) ? 'selected' : ''; ?>>
@@ -87,22 +87,22 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
         </div>
 
         <div class="header-right">
-          <a href="register.php"><button class="btn btn-register">Register</button></a>
+          <a href="register.php"><button class="btn btn-register">สมัครสมาชิก</button></a>
             
-            <a href="login.php"><button class="btn btn-login">Login</button></a>
+            <a href="login.php"><button class="btn btn-login">เข้าสู่ระบบ</button></a>
         </div>
     </header>
 
     <main class="results-container">
         <div class="results-header">
             <?php if ($searchQuery !== '' && $selectedLanguage !== ''): ?>
-                Search results for "<strong><?php echo htmlspecialchars($searchQuery); ?></strong>" in language <strong><?php echo htmlspecialchars($selectedLanguageName); ?></strong>
+                ผลการค้นหาสำหรับ "<strong><?php echo htmlspecialchars($searchQuery); ?></strong>" ในภาษา <strong><?php echo htmlspecialchars($selectedLanguageName); ?></strong>
             <?php elseif ($searchQuery !== ''): ?>              
-                Search results for "<strong><?php echo htmlspecialchars($searchQuery); ?></strong>"
+                ผลการค้นหาสำหรับ "<strong><?php echo htmlspecialchars($searchQuery); ?></strong>"
             <?php elseif ($selectedLanguage !== ''): ?>
-                Search results for language <strong><?php echo htmlspecialchars($selectedLanguageName); ?></strong>
+                ผลการค้นหาสำหรับภาษา <strong><?php echo htmlspecialchars($selectedLanguageName); ?></strong>
             <?php else: ?>
-                All public & protected snippets
+                Snippet สาธารณะและสำหรับสมาชิกทั้งหมด
             <?php endif; ?>
         </div>
 
@@ -133,11 +133,18 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
                         }elseif($languageKey === 'css'){
                             $languageClass .= ' language-css';
                         }
+
+                        $visLabel = 'สาธารณะ';
+                        if ($row['visibility'] === 'protected') {
+                            $visLabel = 'เฉพาะสมาชิก';
+                        } elseif ($row['visibility'] === 'private') {
+                            $visLabel = 'ส่วนตัว';
+                        }
                     ?>
                     <div class="snippet-card">
                         <div class="card-left">
                             <?php
-                                $title = $row['title'] ?: 'Untitled';
+                                $title = $row['title'] ?: 'ไม่มีชื่อเรื่อง';
                                 if(mb_strlen($title, 'UTF-8') > 45){
                                     $title = mb_substr($title, 0, 45, 'UTF-8') . '...';
                                 }
@@ -152,16 +159,16 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
                                     $viewUrl .= '&lang=' . urlencode($selectedLanguage);
                                 }
                             ?>
-                            <a href="<?php echo htmlspecialchars($viewUrl); ?>" class="btn-view-code">View code</a>
+                            <a href="<?php echo htmlspecialchars($viewUrl); ?>" class="btn-view-code">ดูโค้ด</a>
                         </div>
                         
                         <div class="card-middle" style="gap: 12px;">
                             <div class="<?php echo htmlspecialchars($languageClass); ?>"><?php echo htmlspecialchars($languageName ?: 'Language'); ?></div>
-                            <div class="visibility <?php echo htmlspecialchars($row['visibility']); ?>"><?php echo ucfirst(htmlspecialchars($row['visibility'])); ?></div>
+                            <div class="visibility <?php echo htmlspecialchars($row['visibility']); ?>"><?php echo htmlspecialchars($visLabel); ?></div>
                         </div>
                         
                         <div class="card-right">
-                            <button class="like-toggle <?php echo $isLiked ? 'liked' : ''; ?>" data-snippet-id="<?php echo (int)$row['snippet_id']; ?>" title="<?php echo $isLiked ? 'Unlike' : 'Like'; ?>">
+                            <button class="like-toggle <?php echo $isLiked ? 'liked' : ''; ?>" data-snippet-id="<?php echo (int)$row['snippet_id']; ?>" title="<?php echo $isLiked ? 'ยกเลิกถูกใจ' : 'ถูกใจ'; ?>">
                                 <svg width="32" height="32" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
                                 </svg>
@@ -205,17 +212,17 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
                     
                     if(data.status === 'added') {
                         this.classList.add('liked');
-                        this.title = 'Unlike';
+                        this.title = 'ยกเลิกถูกใจ';
                         countEl.textContent = data.count;
                     } else if(data.status === 'removed') {
                         this.classList.remove('liked');
-                        this.title = 'Like';
+                        this.title = 'ถูกใจ';
                         countEl.textContent = data.count;
                     } else if(data.status === 'error') {
-                        showToast('⚠ ' + (data.message || 'An error occurred'));
+                        showToast('⚠ ' + (data.message || 'เกิดข้อผิดพลาด'));
                     }
                 } catch(err) {
-                    showToast('⚠ Connection error');
+                    showToast('⚠ ข้อผิดพลาดในการเชื่อมต่อ');
                 }
             });
         });

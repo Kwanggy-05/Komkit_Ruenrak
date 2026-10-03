@@ -9,7 +9,7 @@ try {
         reason ENUM('spam', 'inappropriate', 'malicious_code', 'other') NOT NULL,
         details TEXT,
         status ENUM('pending', 'removed', 'rejected') DEFAULT 'pending',
-        resolved_by INT NULL,
+        resolved_by VARCHAR(100) NULL,
         resolved_at DATETIME NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -21,11 +21,18 @@ try {
     $pdo->exec($sql);
     echo "Database migrated successfully. Table 'reports' is created or already exists.\n";
 
-    // Add account_status column to user table if it does not exist
+    // Modify resolved_by in reports to VARCHAR(100) if it is currently INT
+    $colResolvedBy = $pdo->query("SHOW COLUMNS FROM `reports` LIKE 'resolved_by'")->fetch(PDO::FETCH_ASSOC);
+    if ($colResolvedBy && stripos($colResolvedBy['Type'], 'int') !== false) {
+        $pdo->exec("ALTER TABLE `reports` MODIFY COLUMN `resolved_by` VARCHAR(100) NULL DEFAULT NULL;");
+        echo "Column 'resolved_by' in 'reports' modified to VARCHAR(100).\n";
+    }
+
+    // Drop account_status column from user table if it exists (ban status managed via user_bans table)
     $checkColumn = $pdo->query("SHOW COLUMNS FROM `user` LIKE 'account_status'")->fetch();
-    if (!$checkColumn) {
-        $pdo->exec("ALTER TABLE `user` ADD COLUMN `account_status` ENUM('active', 'banned') NOT NULL DEFAULT 'active';");
-        echo "Column 'account_status' added to 'user' table.\n";
+    if ($checkColumn) {
+        $pdo->exec("ALTER TABLE `user` DROP COLUMN `account_status`;");
+        echo "Column 'account_status' dropped from 'user' table.\n";
     }
 
     // Create user_bans table if it does not exist

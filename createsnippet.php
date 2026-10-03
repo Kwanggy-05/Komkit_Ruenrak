@@ -14,8 +14,8 @@ $description = '';
 $visibility = 'private';
 $image_path = '';
 $current_image_path = '';
-$formTitle = 'Create Snippet';
-$formButton = 'Save';
+$formTitle = 'สร้าง Snippet';
+$formButton = 'บันทึก';
 $error = '';
 
 $userId = getCurrentUserId();
@@ -31,7 +31,7 @@ if(isset($_GET['edit']) && is_numeric($_GET['edit'])){
     $snippet = $control->getSnippetById($snippet_id, $userId);
     if($snippet){
         if((int)($snippet['is_suspended'] ?? 0) === 1){
-            echo "<script>alert('This snippet is suspended by an administrator and cannot be edited.'); window.location.href='snippet_page.php';</script>";
+            echo "<script>alert('โพสต์นี้ถูกระงับโดยผู้ดูแลระบบ จึงไม่สามารถแก้ไขได้'); window.location.href='snippet_page.php';</script>";
             exit;
         }
         $title = $snippet['title'];
@@ -42,8 +42,8 @@ if(isset($_GET['edit']) && is_numeric($_GET['edit'])){
         $visibility = $snippet['visibility'];
         $image_path = $snippet['image_path'];
         $current_image_path = $snippet['image_path'];
-        $formTitle = 'Edit Snippet';
-        $formButton = 'Update';
+        $formTitle = 'แก้ไข Snippet';
+        $formButton = 'บันทึกการแก้ไข';
     }
 }
 
@@ -80,7 +80,7 @@ if(isset($_POST["submit"])){
     if(mb_strlen($source_code) > 5000){
         $error = "โค้ดต้องมีความยาวไม่เกิน 5,000 ตัวอักษรเท่านั้น (Code cannot exceed 5,000 characters)";
     } else if(count($tags_arr) > 5){
-        $error = "You can only add up to 5 tags";
+        $error = "คุณสามารถเพิ่มได้สูงสุด 5 tags เท่านั้น";
     } else {
         if($snippet_id){
             $status = $control->updateSnippet($snippet_id,$title,$source_code,$description,$visibility,$image_path,$language_id,$tags, $userId);
@@ -95,18 +95,18 @@ if(isset($_POST["submit"])){
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Snippet</title>
+    <title><?php echo htmlspecialchars($formTitle); ?> - Snippet Box</title>
     <link rel="stylesheet" href="style/createsnippetcss.css?v=<?php echo time(); ?>">
 </head>
 <body>
     
-    <a href="snippet_page.php" class="back-btn">Back</a>
+    <a href="snippet_page.php" class="back-btn">ย้อนกลับ</a>
     
-    <h1>Create Snippet Box</h1>
+    <h1><?php echo htmlspecialchars($formTitle); ?></h1>
     
     <form method="POST" action="createsnippet.php" class="form-container" enctype="multipart/form-data">
         <input type="hidden" name="snippet_id" value="<?php echo htmlspecialchars($snippet_id); ?>">
@@ -120,12 +120,12 @@ if(isset($_POST["submit"])){
         
         <div class="top-row">
             <div class="form-group">
-                <label for="title">Title</label>
+                <label for="title">ชื่อเรื่อง</label>
                 <input type="text" name="title" id="title" value="<?php echo htmlspecialchars($title); ?>">
             </div>
 
             <div class="form-group">
-                <label for="language">Language</label>
+                <label for="language">ภาษา</label>
                 <select name="language_id" class="language-dropdown">
                     <?php while($row=$result->fetch(PDO::FETCH_ASSOC)){ ?>
                         <option value="<?php echo $row["language_id"]; ?>" <?php echo ($row["language_id"] == $language_id) ? 'selected' : ''; ?>><?php echo $row["language_name"]; ?></option>
@@ -136,7 +136,7 @@ if(isset($_POST["submit"])){
 
         <div class="form-group">
             <div class="code-label-wrapper">
-                <label for="source_code">Code</label>
+                <label for="source_code">โค้ด</label>
                 <span class="char-counter" id="char-counter"><span id="char-count">0</span> / 5,000</span>
             </div>
             <div class="editor-container">
@@ -154,13 +154,13 @@ if(isset($_POST["submit"])){
         </div>
 
         <div class="form-group">
-            <label for="description">Description</label>
+            <label for="description">คำอธิบาย</label>
             <textarea name="description" id="description"><?php echo htmlspecialchars($description); ?></textarea>
         </div>
 
         <div class="form-group">
             <label for="tags">Tags</label>
-            <input type="text" name="tags" id="tags" placeholder="e.g. JavaScript, ajax, DOM" autocomplete="off" value="<?php echo htmlspecialchars($tags); ?>">
+            <input type="text" name="tags" id="tags" placeholder="เช่น JavaScript, ajax, DOM" autocomplete="off" value="<?php echo htmlspecialchars($tags); ?>">
             <div class="tags-selector" id="tags-selector"></div>
         </div>
 
@@ -174,7 +174,7 @@ if(isset($_POST["submit"])){
                             <polyline points="5 12 12 5 19 12"></polyline>
                         </svg>
                     </div>
-                    <span id="upload-btn-text"><?php echo !empty($current_image_path) ? 'Update Image' : 'Upload Image'; ?></span>
+                    <span id="upload-btn-text"><?php echo !empty($current_image_path) ? 'เปลี่ยนรูปภาพ' : 'อัปโหลดรูปภาพ'; ?></span>
                     <input type="file" name="image_path" id="image_input" accept="image/*" style="display: none;">
                 </label>
                 
@@ -183,11 +183,11 @@ if(isset($_POST["submit"])){
 
             <div class="right-actions" style="align-items: flex-end;">
                 <div class="form-group">
-                    <label for="visibility">Visibility</label>
+                    <label for="visibility">การมองเห็น</label>
                     <select name="visibility" id="visibility" class="visibility-dropdown">
-                        <option value="public" <?php echo ($visibility === 'public') ? 'selected' : ''; ?>>Public</option>
-                        <option value="protected" <?php echo ($visibility === 'protected') ? 'selected' : ''; ?>>Protected</option>
-                        <option value="private" <?php echo ($visibility === 'private') ? 'selected' : ''; ?>>Private</option>
+                        <option value="public" <?php echo ($visibility === 'public') ? 'selected' : ''; ?>>สาธารณะ (Public)</option>
+                        <option value="protected" <?php echo ($visibility === 'protected') ? 'selected' : ''; ?>>เฉพาะสมาชิก (Protected)</option>
+                        <option value="private" <?php echo ($visibility === 'private') ? 'selected' : ''; ?>>ส่วนตัว (Private)</option>
                     </select>
                 </div>
                 
@@ -322,17 +322,17 @@ if(isset($_POST["submit"])){
                 // Create temporary URL from file and assign to img src
                 imagePreview.src = URL.createObjectURL(file);
                 imagePreview.style.display = 'block'; // Show preview image
-                uploadBtnText.textContent = 'Update Image';
+                uploadBtnText.textContent = 'เปลี่ยนรูปภาพ';
             } else {
                 // If user cancelled file selection
                 if (currentImagePath) {
                     imagePreview.src = currentImagePath;
                     imagePreview.style.display = 'block';
-                    uploadBtnText.textContent = 'Update Image';
+                    uploadBtnText.textContent = 'เปลี่ยนรูปภาพ';
                 } else {
                     imagePreview.src = '';
                     imagePreview.style.display = 'none'; // Hide preview image
-                    uploadBtnText.textContent = 'Upload Image';
+                    uploadBtnText.textContent = 'อัปโหลดรูปภาพ';
                 }
             }
         });
@@ -387,7 +387,7 @@ if(isset($_POST["submit"])){
             } else {
                 // If not, add it
                 if (currentTags.length >= 5) {
-                    alert('You can only add up to 5 tags');
+                    alert('คุณสามารถเพิ่มได้สูงสุด 5 tags เท่านั้น');
                     return;
                 }
                 // Check query before last comma to replace if user is typing
@@ -465,7 +465,7 @@ if(isset($_POST["submit"])){
             const currentTags = getSelectedTagsFromInput();
             if (currentTags.length > 5) {
                 e.preventDefault();
-                alert('You can only add up to 5 tags');
+                alert('คุณสามารถเพิ่มได้สูงสุด 5 tags เท่านั้น');
                 tagsInput.focus();
             }
         });

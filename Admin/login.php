@@ -26,20 +26,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             header("Location: manage_languages.php");
             exit;
         } else {
-            $errorAlert = "This account does not have administrator privileges. (Admin Only)";
+            $errorAlert = "บัญชีนี้ไม่มีสิทธิ์ของผู้ดูแลระบบ (เฉพาะผู้ดูแลระบบเท่านั้น)";
         }
     } else {
-        $errorAlert = "Incorrect username or password";
+        $errorAlert = "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
     }
 }
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login</title>
+    <title>เข้าสู่ระบบผู้ดูแลระบบ - Snippet Box</title>
     <link rel="stylesheet" href="../style/logincss.css">
     <style>
         /* Small style tweaks for Admin Login visual distinction */
@@ -62,13 +62,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 </head>
 <body>
     <div class="container">
-        <a href="../Home.php"><button class="back-btn" type="button">Back</button></a>
+        <a href="../Home.php"><button class="back-btn" type="button">ย้อนกลับ</button></a>
         
         <div class="card">
             <div class="title-wrapper">
                 <img src="../logo/Logo_snippetBox.png" alt="Logo" width="32px" height="32px">
                 <h1 class="text-center" style="margin-bottom: 0;">
-                    Admin Login
+                    เข้าสู่ระบบผู้ดูแลระบบ
                 </h1>
                 <!-- <div class="text-center">
                     <span class="admin-tag">Administrator Only</span>
@@ -77,13 +77,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             
             <form method="POST" action="login.php">
                 <div class="form-group">
-                    <label for="username">Username</label>
+                    <label for="username">ชื่อผู้ใช้</label>
                     <input type="text" name="username" id="username" required
                            value="<?php if ($_SERVER["REQUEST_METHOD"] == "POST") echo htmlspecialchars($username); ?>">
                 </div>
                 
                 <div class="form-group">
-                    <label for="password">Password</label>
+                    <label for="password">รหัสผ่าน</label>
                     <input type="password" name="password" id="password" required>
                 </div>
                 
@@ -93,7 +93,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </div>
                 <?php endif; ?>
 
-                <input type="submit" name="submit" value="Sign in to Admin Panel">
+                <input type="submit" name="submit" value="เข้าสู่ระบบ Admin Panel">
             </form>
         </div>
     </div>

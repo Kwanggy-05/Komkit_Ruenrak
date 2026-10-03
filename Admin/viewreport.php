@@ -14,36 +14,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         if ($_POST['action'] === 'reject') {
             if ($reportId <= 0) {
-                $errorMsg = "Invalid report ID.";
+                $errorMsg = "รหัสรายงานไม่ถูกต้อง";
             } else {
-                if ($control->rejectReportAdmin($reportId)) {
-                    $successMsg = "Report dismissed.";
+                if ($control->rejectReportAdmin($reportId, $adminUsername)) {
+                    $successMsg = "ปฏิเสธรายงานเรียบร้อยแล้ว";
                 } else {
-                    $errorMsg = "Failed to dismiss report.";
+                    $errorMsg = "ไม่สามารถปฏิเสธรายงานได้";
                 }
             }
         } elseif ($_POST['action'] === 'suspend_snippet') {
             if ($snippetId <= 0) {
-                $errorMsg = "Invalid snippet ID.";
+                $errorMsg = "รหัส Snippet ไม่ถูกต้อง";
             } else {
-                $reason = trim($_POST['reason'] ?? 'Reported violation');
+                $reason = trim($_POST['reason'] ?? 'ได้รับการรายงานว่าละเมิดนโยบาย');
                 if ($reason === '') {
-                    $reason = 'Reported violation';
+                    $reason = 'ได้รับการรายงานว่าละเมิดนโยบาย';
                 }
                 if ($control->suspendSnippetAdmin($snippetId, $adminUsername, $reason)) {
-                    $successMsg = "Snippet suspended successfully and related reports resolved.";
+                    $successMsg = "ระงับ Snippet เรียบร้อยแล้วและปิดรายงานที่เกี่ยวข้อง";
                 } else {
-                    $errorMsg = "Failed to suspend snippet.";
+                    $errorMsg = "ไม่สามารถระงับ Snippet ได้";
                 }
             }
         } elseif ($_POST['action'] === 'unsuspend_snippet') {
             if ($snippetId <= 0) {
-                $errorMsg = "Invalid snippet ID.";
+                $errorMsg = "รหัส Snippet ไม่ถูกต้อง";
             } else {
                 if ($control->unsuspendSnippetAdmin($snippetId, $adminUsername)) {
-                    $successMsg = "Snippet unsuspended successfully.";
+                    $successMsg = "ยกเลิกการระงับ Snippet สำเร็จ";
                 } else {
-                    $errorMsg = "Failed to unsuspend snippet.";
+                    $errorMsg = "ไม่สามารถยกเลิกการระงับ Snippet ได้";
                 }
             }
         }
@@ -62,18 +62,18 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Report Details - Admin</title>
+    <title>รายละเอียดรายงาน - Admin</title>
     <link rel="stylesheet" href="../style/viewcodecss.css?v=<?php echo time(); ?>">
 </head>
 <body>
-    <a href="<?php echo htmlspecialchars($backUrl); ?>" class="back-btn">Back</a>
+    <a href="<?php echo htmlspecialchars($backUrl); ?>" class="back-btn">ย้อนกลับ</a>
 
     <?php if(!$report): ?>
-        <div class="empty" style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 16px;">Report not found</div>
+        <div class="empty" style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 16px;">ไม่พบรายงาน</div>
     <?php else: ?>
         <div class="form-container" style="max-width: 900px; margin: 0 auto; gap: 20px;">
             <!-- Status Alerts -->
@@ -96,40 +96,52 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
                         <line x1="12" y1="9" x2="12" y2="13"></line>
                         <line x1="12" y1="17" x2="12.01" y2="17"></line>
                     </svg>
-                    Report Details #<?php echo htmlspecialchars($report['report_id']); ?>
+                    รายละเอียดรายงาน #<?php echo htmlspecialchars($report['report_id']); ?>
                 </h3>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; font-size: 0.95rem; font-family: 'Lato', sans-serif;">
                     <div>
-                        <strong>Reported Reason:</strong> 
+                        <strong>เหตุผลที่รายงาน:</strong> 
                         <span style="color: #dc3545; font-weight: bold; text-transform: capitalize;"><?php echo htmlspecialchars($report['reason']); ?></span>
                     </div>
                     <div>
-                        <strong>Reporter:</strong> 
+                        <strong>ผู้รายงาน:</strong> 
                         <span><?php echo htmlspecialchars($report['reporter_firstname'] . ' ' . $report['reporter_lastname']); ?> (@<?php echo htmlspecialchars($report['reporter_username']); ?>)</span>
                     </div>
                     <div>
-                        <strong>Snippet Owner:</strong> 
+                        <strong>เจ้าของ Snippet:</strong> 
                         <span><?php echo htmlspecialchars($report['owner_firstname'] . ' ' . $report['owner_lastname']); ?> (@<?php echo htmlspecialchars($report['owner_username']); ?>)</span>
                     </div>
                     <div>
-                        <strong>Report Date:</strong> 
+                        <strong>วันที่รายงาน:</strong> 
                         <span><?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($report['created_at']))); ?></span>
                     </div>
+                    <?php if (!empty($report['resolved_by'])): ?>
+                    <div>
+                        <strong>จัดการโดย:</strong> 
+                        <span style="font-weight: 600; color: #1e293b;"><?php echo htmlspecialchars($report['resolved_by']); ?></span>
+                    </div>
+                    <?php endif; ?>
+                    <?php if (!empty($report['resolved_at'])): ?>
+                    <div>
+                        <strong>วันที่จัดการ:</strong> 
+                        <span><?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($report['resolved_at']))); ?></span>
+                    </div>
+                    <?php endif; ?>
                 </div>
                 <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color); font-family: 'Lato', sans-serif;">
-                    <strong>Report Description:</strong>
-                    <div style="margin-top: 6px; padding: 12px; background-color: var(--neutral-bg); border-radius: var(--radius-sm); border: 1px solid var(--border-color); white-space: pre-wrap; font-size: 0.9rem; line-height: 1.5; color: #333; word-break: break-word;"><?php echo htmlspecialchars(trim($report['details'] ?: 'No description')); ?></div>
+                    <strong>คำอธิบายรายงาน:</strong>
+                    <div style="margin-top: 6px; padding: 12px; background-color: var(--neutral-bg); border-radius: var(--radius-sm); border: 1px solid var(--border-color); white-space: pre-wrap; font-size: 0.9rem; line-height: 1.5; color: #333; word-break: break-word;"><?php echo htmlspecialchars(trim($report['details'] ?: 'ไม่มีคำอธิบายเพิ่มเติม')); ?></div>
                 </div>
                 
                 <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
                     <div>
-                        <span style="font-weight: 600; font-family: 'Lato', sans-serif; font-size: 0.95rem;">Snippet Status: </span>
+                        <span style="font-weight: 600; font-family: 'Lato', sans-serif; font-size: 0.95rem;">สถานะ Snippet: </span>
                         <?php if ((int)($report['snippet_suspended'] ?? 0) === 1): ?>
-                            <span style="font-weight: bold; color: #dc2626; padding: 3px 8px; background: #fee2e2; border-radius: 4px; font-size: 0.85rem;">SUSPENDED (ถูกระงับ)</span>
+                            <span style="font-weight: bold; color: #dc2626; padding: 3px 8px; background: #fee2e2; border-radius: 4px; font-size: 0.85rem;">ถูกระงับ</span>
                         <?php elseif ((int)($report['snippet_deleted'] ?? 0) === 1): ?>
-                            <span style="font-weight: bold; color: #6b7280; padding: 3px 8px; background: #f3f4f6; border-radius: 4px; font-size: 0.85rem;">DELETED (ผู้ใช้ลบ)</span>
+                            <span style="font-weight: bold; color: #6b7280; padding: 3px 8px; background: #f3f4f6; border-radius: 4px; font-size: 0.85rem;">ถูกลบ</span>
                         <?php else: ?>
-                            <span style="font-weight: bold; color: #15803d; padding: 3px 8px; background: #dcfce7; border-radius: 4px; font-size: 0.85rem;">ACTIVE (ปกติ)</span>
+                            <span style="font-weight: bold; color: #15803d; padding: 3px 8px; background: #dcfce7; border-radius: 4px; font-size: 0.85rem;">ปกติ</span>
                         <?php endif; ?>
                     </div>
                     <div style="display: flex; gap: 12px; align-items: center;">
@@ -138,7 +150,7 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
                             <form method="POST" style="margin: 0;">
                                 <input type="hidden" name="action" value="reject">
                                 <input type="hidden" name="report_id" value="<?php echo $report['report_id']; ?>">
-                                <button type="submit" class="btn" style="border-color: var(--border-color); color: white; background: #15803D;" onclick="return confirm('Dismiss this report?');">Dismiss Report</button>
+                                <button type="submit" class="btn" style="border-color: var(--border-color); color: white; background: #15803D;" onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการปฏิเสธรายงานนี้?');">ปฏิเสธรายงาน</button>
                             </form>
                         <?php endif; ?>
 
@@ -147,7 +159,7 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
                             <form method="POST" style="margin: 0;">
                                 <input type="hidden" name="action" value="unsuspend_snippet">
                                 <input type="hidden" name="snippet_id" value="<?php echo $report['snippet_id']; ?>">
-                                <button type="submit" class="btn" style="background-color: #2563eb; color: white;" onclick="return confirm('Are you sure you want to unsuspend this snippet?');">Unsuspend Snippet</button>
+                                <button type="submit" class="btn" style="background-color: #2563eb; color: white;" onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการยกเลิกการระงับ Snippet นี้?');">ยกเลิกการระงับ Snippet</button>
                             </form>
                         <?php else: ?>
                             <!-- Suspend Snippet Form -->
@@ -155,7 +167,7 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
                                 <input type="hidden" name="action" value="suspend_snippet">
                                 <input type="hidden" name="snippet_id" value="<?php echo $report['snippet_id']; ?>">
                                 <input type="hidden" name="reason" value="">
-                                <button type="submit" class="btn copy" style="background-color: #d97706; border-color: #d97706; color: white;">Suspend Snippet</button>
+                                <button type="submit" class="btn copy" style="background-color: #d97706; border-color: #d97706; color: white;">ระงับ Snippet</button>
                             </form>
                         <?php endif; ?>
                     </div>
@@ -169,22 +181,22 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
                         <circle cx="12" cy="12" r="10"></circle>
                         <polyline points="12 6 12 12 16 14"></polyline>
                     </svg>
-                    Snippet Suspension History (ประวัติการระงับ)
+                    ประวัติการระงับ Snippet
                 </h3>
                 <?php if (empty($suspensionHistory)): ?>
-                    <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem; font-style: italic;">No suspension history recorded for this snippet.</p>
+                    <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem; font-style: italic;">ไม่มีประวัติการระงับสำหรับ Snippet นี้</p>
                 <?php else: ?>
                     <div style="overflow-x: auto;">
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
                             <thead>
                                 <tr style="border-bottom: 2px solid var(--border-color); text-align: left; color: var(--text-muted);">
                                     <th style="padding: 8px 12px;">#</th>
-                                    <th style="padding: 8px 12px;">Suspended By</th>
-                                    <th style="padding: 8px 12px;">Reason</th>
-                                    <th style="padding: 8px 12px;">Suspended At</th>
-                                    <th style="padding: 8px 12px;">Unsuspended By</th>
-                                    <th style="padding: 8px 12px;">Unsuspended At</th>
-                                    <th style="padding: 8px 12px;">Status</th>
+                                    <th style="padding: 8px 12px;">ผู้สั่งระงับ</th>
+                                    <th style="padding: 8px 12px;">เหตุผล</th>
+                                    <th style="padding: 8px 12px;">วันที่ระงับ</th>
+                                    <th style="padding: 8px 12px;">ผู้ยกเลิกการระงับ</th>
+                                    <th style="padding: 8px 12px;">วันที่ยกเลิกการระงับ</th>
+                                    <th style="padding: 8px 12px;">สถานะ</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -198,9 +210,9 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
                                         <td style="padding: 10px 12px; color: var(--text-muted);"><?php echo $sh['unsuspended_at'] ? htmlspecialchars(date('d/m/Y H:i', strtotime($sh['unsuspended_at']))) : '-'; ?></td>
                                         <td style="padding: 10px 12px;">
                                             <?php if (empty($sh['unsuspended_at'])): ?>
-                                                <span style="color: #dc2626; font-weight: 600;">Active Suspension</span>
+                                                <span style="color: #dc2626; font-weight: 600;">กำลังถูกระงับ</span>
                                             <?php else: ?>
-                                                <span style="color: #15803d; font-weight: 600;">Restored</span>
+                                                <span style="color: #15803d; font-weight: 600;">ยกเลิกการระงับแล้ว</span>
                                             <?php endif; ?>
                                         </td>
                                     </tr>
@@ -217,28 +229,28 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
                 <div class="top-actions-row">
                     <div class="right-actions">
                         <!-- Copy Button -->
-                        <button class="btn copy" id="copyBtn">Copy</button>
+                        <button class="btn copy" id="copyBtn">คัดลอก</button>
                     </div>
                 </div>
 
                 <!-- Top Row: Title & Language -->
                 <div class="top-row">
                     <div class="form-group">
-                        <label for="title">Title</label>
+                        <label for="title">ชื่อเรื่อง</label>
                         <input type="text" name="title" id="title" value="<?php echo htmlspecialchars($report['snippet_title']); ?>" readonly>
                     </div>
 
                     <div class="form-group">
-                        <label for="language">Language</label>
+                        <label for="language">ภาษา</label>
                         <select name="language_id" class="language-dropdown" disabled>
-                            <option selected><?php echo htmlspecialchars($report['language_name'] ?? 'Language'); ?></option>
+                            <option selected><?php echo htmlspecialchars($report['language_name'] ?? 'ภาษา'); ?></option>
                         </select>
                     </div>
                 </div>
 
                 <!-- Code Editor Container (Readonly) -->
                 <div class="form-group">
-                    <label for="source_code">Code</label>
+                    <label for="source_code">โค้ด</label>
                     <div class="editor-container">
                         <div class="line-numbers" id="line-numbers">1</div>
                         <textarea name="source_code" id="source_code" readonly wrap="off"><?php echo htmlspecialchars($report['source_code']); ?></textarea>
@@ -247,7 +259,7 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
 
                 <!-- Description (Readonly) -->
                 <div class="form-group">
-                    <label for="description">Description</label>
+                    <label for="description">คำอธิบาย</label>
                     <div class="description-view" id="description"><?php echo htmlspecialchars($report['snippet_desc']); ?></div>
                 </div>
 
@@ -259,11 +271,11 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
                     </div>
 
                     <div class="form-group">
-                        <label for="visibility">Visibility</label>
+                        <label for="visibility">การมองเห็น</label>
                         <select name="visibility" class="visibility-dropdown" disabled>
-                            <option value="public" <?php echo (($report['visibility'] ?? '') === 'public') ? 'selected' : ''; ?>>Public</option>
-                            <option value="protected" <?php echo (($report['visibility'] ?? '') === 'protected') ? 'selected' : ''; ?>>Protected</option>
-                            <option value="private" <?php echo (($report['visibility'] ?? '') === 'private') ? 'selected' : ''; ?>>Private</option>
+                            <option value="public" <?php echo (($report['visibility'] ?? '') === 'public') ? 'selected' : ''; ?>>สาธารณะ (Public)</option>
+                            <option value="protected" <?php echo (($report['visibility'] ?? '') === 'protected') ? 'selected' : ''; ?>>เฉพาะสมาชิก (Protected)</option>
+                            <option value="private" <?php echo (($report['visibility'] ?? '') === 'private') ? 'selected' : ''; ?>>ส่วนตัว (Private)</option>
                         </select>
                     </div>
                 </div>
@@ -275,7 +287,7 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
                         <?php if(!empty($report['image_path']) && file_exists('../' . $report['image_path'])): ?>
                             <img id="image-preview" src="<?php echo '../' . htmlspecialchars($report['image_path']); ?>" alt="Snippet Image" style="display: block;">
                         <?php else: ?>
-                            <span style="font-size: 14px; color: var(--text-muted); font-style: italic;">No Image</span>
+                            <span style="font-size: 14px; color: var(--text-muted); font-style: italic;">ไม่มีรูปภาพ</span>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -352,10 +364,10 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
             try{
                 await navigator.clipboard.writeText(text);
                 const old = copyBtn.innerText;
-                copyBtn.innerText = 'Copied';
+                copyBtn.innerText = 'คัดลอกแล้ว';
                 setTimeout(()=> copyBtn.innerText = old, 1500);
             }catch(e){
-                alert('Copy failed');
+                alert('ไม่สามารถคัดลอกได้');
             }
         });
 
@@ -386,11 +398,11 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
         });
 
         function promptSuspend(form, defaultReason) {
-            const reason = prompt('Please enter the reason for suspending this snippet:', defaultReason || 'Policy violation');
+            const reason = prompt('กรุณาระบุเหตุผลในการระงับ Snippet นี้:', defaultReason || 'ละเมิดนโยบาย');
             if (reason === null) {
                 return false;
             }
-            form.querySelector('input[name="reason"]').value = reason.trim() || defaultReason || 'Policy violation';
+            form.querySelector('input[name="reason"]').value = reason.trim() || defaultReason || 'ละเมิดนโยบาย';
             return true;
         }
     </script>

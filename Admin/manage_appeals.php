@@ -12,19 +12,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $adminNotes = trim($_POST['admin_notes'] ?? '');
 
         if ($appealId <= 0) {
-            $errorMsg = "Invalid appeal ID.";
+            $errorMsg = "รหัสคำร้องไม่ถูกต้อง";
         } else {
             if ($_POST['action'] === 'approve') {
                 if ($control->approveAppealAdmin($appealId, $adminUsername, $adminNotes)) {
-                    $successMsg = "Appeal approved successfully. The snippet has been unsuspended.";
+                    $successMsg = "อนุมัติคำร้องเรียบร้อยแล้ว Snippet ได้รับการยกเลิกการระงับ";
                 } else {
-                    $errorMsg = "Failed to approve appeal.";
+                    $errorMsg = "ไม่สามารถอนุมัติคำร้องได้";
                 }
             } elseif ($_POST['action'] === 'reject') {
                 if ($control->rejectAppealAdmin($appealId, $adminUsername, $adminNotes)) {
-                    $successMsg = "Appeal rejected successfully. The snippet remains suspended.";
+                    $successMsg = "ปฏิเสธคำร้องเรียบร้อยแล้ว Snippet ยังคงถูกระงับ";
                 } else {
-                    $errorMsg = "Failed to reject appeal.";
+                    $errorMsg = "ไม่สามารถปฏิเสธคำร้องได้";
                 }
             }
         }
@@ -46,11 +46,11 @@ if ($appealsResult) {
 $pendingCount = $control->getPendingAppealsCountAdmin();
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Appeals - Admin Panel</title>
+    <title>จัดการคำร้อง - Admin Panel</title>
     <link rel="stylesheet" href="style.css?v=<?php echo time(); ?>">
     <style>
         .badge-pending {
@@ -105,7 +105,7 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                         <line x1="16" y1="17" x2="8" y2="17"></line>
                         <polyline points="10 9 9 9 8 9"></polyline>
                     </svg>
-                    <span>Manage Snippets</span>
+                    <span>จัดการ Snippet</span>
                 </a>
                 <a href="manage_languages.php" class="menu-item">
                     <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -113,7 +113,7 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                         <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
                         <line x1="12" y1="22.08" x2="12" y2="12"></line>
                     </svg>
-                    <span>Manage Language</span>
+                    <span>จัดการภาษา</span>
                 </a>
                 <a href="manage_users.php" class="menu-item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -122,7 +122,7 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                         <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
                         <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                     </svg>
-                    <span>Manage Users</span>
+                    <span>จัดการผู้ใช้</span>
                 </a>
                 <a href="manage_reports.php" class="menu-item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -130,9 +130,9 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                         <line x1="12" y1="9" x2="12" y2="13"></line>
                         <line x1="12" y1="17" x2="12.01" y2="17"></line>
                     </svg>
-                    <span>Manage Reports</span>
+                    <span>จัดการรายงาน</span>
                     <?php if (!empty($pendingReportsCount) && $pendingReportsCount > 0): ?>
-                        <span class="sidebar-dot" title="Pending Reports"></span>
+                        <span class="sidebar-dot" title="รายงานที่รอดำเนินการ"></span>
                     <?php endif; ?>
                 </a>
                 <a href="manage_appeals.php" class="menu-item active">
@@ -140,9 +140,9 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                         <path d="M9 11l3 3L22 4"></path>
                         <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
                     </svg>
-                    <span>Manage Appeals</span>
+                    <span>จัดการคำร้อง</span>
                     <?php if (!empty($pendingAppealsCount) && $pendingAppealsCount > 0): ?>
-                        <span class="sidebar-dot" title="Pending Appeals"></span>
+                        <span class="sidebar-dot" title="คำร้องที่รอดำเนินการ"></span>
                     <?php endif; ?>
                 </a>
             </nav>
@@ -156,7 +156,7 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
             <!-- Top Navigation Bar -->
             <header class="top-bar">
                 <div class="top-left">
-                    <button class="menu-toggle" id="menuToggle" aria-label="Toggle Menu">
+                    <button class="menu-toggle" id="menuToggle" aria-label="เปิด/ปิดเมนู">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="3" y1="12" x2="21" y2="12"></line>
                             <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -176,16 +176,16 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                         </div>
                         <div class="user-info">
                             <span class="user-name"><?php echo htmlspecialchars($_SESSION['username'] ?? 'Admin'); ?></span>
-                            <span class="user-role">Admin</span>
+                            <span class="user-role">ผู้ดูแลระบบ</span>
                         </div>
                     </div>
-                    <a href="login.php" class="btn-logout" onclick="return confirm('Are you sure you want to log out?');">
+                    <a href="login.php" class="btn-logout" onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?');">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                             <polyline points="16 17 21 12 16 7"></polyline>
                             <line x1="21" y1="12" x2="9" y2="12"></line>
                         </svg>
-                        Log out
+                        ออกจากระบบ
                     </a>
                 </div>
             </header>
@@ -208,16 +208,16 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
 
                 <!-- Content Header Controls -->
                 <div class="content-header">
-                    <h2 class="page-title">Manage Snippet Appeals (คำร้องถอนการระงับโพสต์)</h2>
+                    <h2 class="page-title">จัดการคำร้องถอนการระงับโพสต์ (Appeals)</h2>
                     <div class="header-actions">
                         <!-- Filters -->
                         <div style="display: flex; gap: 8px;">
                             <a href="?status=pending" class="btn-action <?php echo $statusFilter === 'pending' ? 'btn-view' : ''; ?>" style="text-decoration: none; padding: 6px 12px; border: 1px solid var(--border-color); border-radius: var(--rounded-sm); color: var(--text-main); font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
-                                Pending<?php if (!empty($pendingAppealsCount) && $pendingAppealsCount > 0): ?><span class="sidebar-dot" style="margin-left: 2px;" title="New Appeals"></span><?php endif; ?>
+                                รอดำเนินการ<?php if (!empty($pendingAppealsCount) && $pendingAppealsCount > 0): ?><span class="sidebar-dot" style="margin-left: 2px;" title="คำร้องใหม่"></span><?php endif; ?>
                             </a>
-                            <a href="?status=approved" class="btn-action <?php echo $statusFilter === 'approved' ? 'btn-view' : ''; ?>" style="text-decoration: none; padding: 6px 12px; border: 1px solid var(--border-color); border-radius: var(--rounded-sm); color: var(--text-main); font-weight: 600;">Approved</a>
-                            <a href="?status=rejected" class="btn-action <?php echo $statusFilter === 'rejected' ? 'btn-view' : ''; ?>" style="text-decoration: none; padding: 6px 12px; border: 1px solid var(--border-color); border-radius: var(--rounded-sm); color: var(--text-main); font-weight: 600;">Rejected</a>
-                            <a href="?status=ALL" class="btn-action <?php echo $statusFilter === 'ALL' ? 'btn-view' : ''; ?>" style="text-decoration: none; padding: 6px 12px; border: 1px solid var(--border-color); border-radius: var(--rounded-sm); color: var(--text-main); font-weight: 600;">All</a>
+                            <a href="?status=approved" class="btn-action <?php echo $statusFilter === 'approved' ? 'btn-view' : ''; ?>" style="text-decoration: none; padding: 6px 12px; border: 1px solid var(--border-color); border-radius: var(--rounded-sm); color: var(--text-main); font-weight: 600;">อนุมัติแล้ว</a>
+                            <a href="?status=rejected" class="btn-action <?php echo $statusFilter === 'rejected' ? 'btn-view' : ''; ?>" style="text-decoration: none; padding: 6px 12px; border: 1px solid var(--border-color); border-radius: var(--rounded-sm); color: var(--text-main); font-weight: 600;">ปฏิเสธแล้ว</a>
+                            <a href="?status=ALL" class="btn-action <?php echo $statusFilter === 'ALL' ? 'btn-view' : ''; ?>" style="text-decoration: none; padding: 6px 12px; border: 1px solid var(--border-color); border-radius: var(--rounded-sm); color: var(--text-main); font-weight: 600;">ทั้งหมด</a>
                         </div>
                     </div>
                 </div>
@@ -229,18 +229,18 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                             <tr>
                                 <th style="width: 60px;">ID</th>
                                 <th>Snippet & ID</th>
-                                <th style="width: 170px;">Owner / Appellant</th>
-                                <th>Appeal Reason</th>
-                                <th style="width: 130px;">Submitted At</th>
-                                <th style="width: 100px; text-align: center;">Status</th>
-                                <th style="width: 250px; text-align: center;">Actions</th>
+                                <th style="width: 170px;">เจ้าของ / ผู้ยื่นคำร้อง</th>
+                                <th>เหตุผลในการยื่นคำร้อง</th>
+                                <th style="width: 130px;">วันที่ยื่น</th>
+                                <th style="width: 100px; text-align: center;">สถานะ</th>
+                                <th style="width: 250px; text-align: center;">จัดการ</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($appeals)): ?>
                                 <tr>
                                     <td colspan="7" style="text-align: center; padding: 32px; color: var(--text-muted);">
-                                        No appeals found.
+                                        ไม่พบคำร้อง
                                     </td>
                                 </tr>
                             <?php else: ?>
@@ -274,22 +274,22 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                                         </td>
                                         <td style="text-align: center;">
                                             <?php if ($app['status'] === 'pending'): ?>
-                                                <span class="badge badge-pending">Pending</span>
+                                                <span class="badge badge-pending">รอดำเนินการ</span>
                                             <?php elseif ($app['status'] === 'approved'): ?>
-                                                <span class="badge badge-approved">Approved</span>
+                                                <span class="badge badge-approved">อนุมัติแล้ว</span>
                                             <?php else: ?>
-                                                <span class="badge badge-rejected">Rejected</span>
+                                                <span class="badge badge-rejected">ปฏิเสธแล้ว</span>
                                             <?php endif; ?>
                                         </td>
                                         <td style="text-align: center;">
                                             <div class="action-buttons" style="justify-content: center;">
                                                 <!-- View Code Trigger -->
                                                 <a href="viewcode.php?view=<?php echo $app['snippet_id']; ?>&from=appeals" class="btn-action btn-view">
-                                                    View Code
+                                                    ดูโค้ด
                                                 </a>
                                                 <button type="button" class="btn-action <?php echo $app['status'] === 'pending' ? 'btn-review-pending' : 'btn-review-done'; ?> btn-open-review" 
                                                     data-appeal='<?php echo htmlspecialchars(json_encode($app), ENT_QUOTES, 'UTF-8'); ?>'>
-                                                    <?php echo $app['status'] === 'pending' ? 'Appeal' : 'View Details'; ?>
+                                                    <?php echo $app['status'] === 'pending' ? 'พิจารณาคำร้อง' : 'ดูรายละเอียด'; ?>
                                                 </button>
                                             </div>
                                         </td>
@@ -314,7 +314,7 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                         <line x1="16" y1="13" x2="8" y2="13"></line>
                         <line x1="16" y1="17" x2="8" y2="17"></line>
                     </svg>
-                    Appeal Details & Review
+                    รายละเอียดและพิจารณาคำร้อง
                 </span>
                 <button class="modal-close" id="closeReviewModalBtn">&times;</button>
             </header>
@@ -326,7 +326,7 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                     <div style="margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
                         <div style="font-size: 1.05rem; font-weight: 700; color: var(--text-main);" id="modalSnippetTitle"></div>
                         <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">
-                            Owner: <span id="modalAppellantName" style="font-weight: 600; color: var(--text-main);"></span> 
+                            เจ้าของ: <span id="modalAppellantName" style="font-weight: 600; color: var(--text-main);"></span> 
                             (<span id="modalAppellantUsername"></span>)
                         </div>
                     </div>
@@ -334,7 +334,7 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                     <!-- Original Suspension Reason -->
                     <div style="background-color: #fef2f2; border: 1px solid #fee2e2; border-radius: 6px; padding: 10px 14px; margin-bottom: 14px;">
                         <div style="font-size: 0.8rem; font-weight: 700; color: #991b1b; text-transform: uppercase; margin-bottom: 3px;">
-                            Original Suspension Reason (เหตุผลที่ระงับ)
+                            เหตุผลเดิมที่ถูกระงับ
                         </div>
                         <div style="font-size: 0.9rem; color: #7f1d1d;" id="modalSuspensionReason"></div>
                     </div>
@@ -342,7 +342,7 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                     <!-- User's Appeal Reason -->
                     <div style="background-color: #eff6ff; border: 1px solid #dbeafe; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px;">
                         <div style="font-size: 0.8rem; font-weight: 700; color: #1e40af; text-transform: uppercase; margin-bottom: 3px;">
-                            User's Appeal Reason (คำชี้แจงของผู้ใช้)
+                            คำชี้แจงของผู้ใช้
                         </div>
                         <div style="font-size: 0.9rem; color: #1e3a8a; white-space: pre-wrap;" id="modalAppealReason"></div>
                         <div style="font-size: 0.75rem; color: #3b82f6; margin-top: 6px;" id="modalSubmittedTime"></div>
@@ -351,7 +351,7 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                     <!-- Review Decision Info (if already reviewed) -->
                     <div id="reviewedInfoBox" style="display: none; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px;">
                         <div style="font-size: 0.8rem; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 4px;">
-                            Review Result (ผลการพิจารณา)
+                            ผลการพิจารณา
                         </div>
                         <div style="font-size: 0.88rem; color: var(--text-main);" id="modalReviewDetails"></div>
                     </div>
@@ -359,21 +359,21 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                     <!-- Admin Notes Input (enabled for pending) -->
                     <div id="adminNotesGroup" class="form-group" style="margin-top: 10px;">
                         <label for="adminNotesInput" style="display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 6px; color: var(--text-main);">
-                            Admin Notes / Feedback to User (บันทึกหรือเหตุผลจากแอดมิน):
+                            บันทึกหรือข้อเสนอแนะจากแอดมินถึงผู้ใช้:
                         </label>
                         <textarea id="adminNotesInput" name="admin_notes" rows="3" placeholder="ระบุเหตุผลหรือข้อความตอบกลับผู้ใช้ (ถ้ามี)..." style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: var(--rounded-sm); font-size: 0.9rem; resize: vertical; box-sizing: border-box;"></textarea>
                     </div>
                 </div>
 
                 <footer class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--border-color); background-color: #fafafa; border-radius: 0 0 12px 12px;">
-                    <button type="button" class="btn-action" id="closeReviewBtn" style="border: 1px solid var(--border-color); background: #fff; padding: 8px 16px;">Close</button>
+                    <button type="button" class="btn-action" id="closeReviewBtn" style="border: 1px solid var(--border-color); background: #fff; padding: 8px 16px;">ปิด</button>
                     
                     <div id="pendingActionButtons" style="display: flex; gap: 8px;">
                         <button type="button" class="btn-action btn-delete" id="btnRejectAppeal" style="background-color: #dc2626; color: white; padding: 8px 16px; border: none;">
-                            Reject Appeal
+                            ปฏิเสธคำร้อง
                         </button>
                         <button type="button" class="btn-action btn-restore" id="btnApproveAppeal" style="background-color: #16a34a; color: white; padding: 8px 16px; border: none;">
-                            Approve & Unsuspend
+                            อนุมัติและยกเลิกการระงับ
                         </button>
                     </div>
                 </footer>
@@ -393,9 +393,6 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                     sidebar.classList.toggle('collapsed');
                 } else {
                     sidebar.classList.toggle('active');
-                    if (sidebarOverlay) {
-                        sidebarOverlay.classList.toggle('active');
-                    }
                 }
             });
         }
@@ -448,9 +445,9 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                 modalSnippetTitle.textContent = appeal.snippet_title + ' (Snippet ID: #' + appeal.snippet_id + ')';
                 modalAppellantName.textContent = appeal.appellant_firstname + ' ' + appeal.appellant_lastname;
                 modalAppellantUsername.textContent = '@' + appeal.appellant_username;
-                modalSuspensionReason.textContent = appeal.suspension_reason || 'No suspension reason specified';
+                modalSuspensionReason.textContent = appeal.suspension_reason || 'ไม่ได้ระบุเหตุผลการระงับ';
                 modalAppealReason.textContent = appeal.reason;
-                modalSubmittedTime.textContent = 'Submitted on: ' + appeal.created_at;
+                modalSubmittedTime.textContent = 'ยื่นเมื่อ: ' + appeal.created_at;
 
                 if (appeal.status === 'pending') {
                     reviewedInfoBox.style.display = 'none';
@@ -460,11 +457,11 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                     pendingActionButtons.style.display = 'flex';
                 } else {
                     reviewedInfoBox.style.display = 'block';
-                    let statusLabel = appeal.status === 'approved' ? '<span style="color:#16a34a; font-weight:700;">APPROVED</span>' : '<span style="color:#dc2626; font-weight:700;">REJECTED</span>';
-                    modalReviewDetails.innerHTML = '<strong>Status:</strong> ' + statusLabel + '<br>' +
-                                                   '<strong>Reviewed By:</strong> ' + (appeal.reviewed_by || 'Admin') + '<br>' +
-                                                   '<strong>Reviewed At:</strong> ' + (appeal.reviewed_at || '-') + '<br>' +
-                                                   '<strong>Admin Notes:</strong> ' + (appeal.admin_notes ? appeal.admin_notes : '<em>None</em>');
+                    let statusLabel = appeal.status === 'approved' ? '<span style="color:#16a34a; font-weight:700;">อนุมัติแล้ว (APPROVED)</span>' : '<span style="color:#dc2626; font-weight:700;">ปฏิเสธแล้ว (REJECTED)</span>';
+                    modalReviewDetails.innerHTML = '<strong>สถานะ:</strong> ' + statusLabel + '<br>' +
+                                                   '<strong>พิจารณาโดย:</strong> ' + (appeal.reviewed_by || 'Admin') + '<br>' +
+                                                   '<strong>วันที่พิจารณา:</strong> ' + (appeal.reviewed_at || '-') + '<br>' +
+                                                   '<strong>บันทึกจากแอดมิน:</strong> ' + (appeal.admin_notes ? appeal.admin_notes : '<em>ไม่มี</em>');
                     adminNotesGroup.style.display = 'none';
                     pendingActionButtons.style.display = 'none';
                 }
@@ -474,14 +471,14 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
         });
 
         btnApproveAppeal?.addEventListener('click', function() {
-            if (confirm('Are you sure you want to APPROVE this appeal and UNSUSPEND this snippet?')) {
+            if (confirm('คุณแน่ใจหรือไม่ว่าต้องการอนุมัติคำร้องนี้และยกเลิกการระงับ Snippet?')) {
                 modalAction.value = 'approve';
                 reviewForm.submit();
             }
         });
 
         btnRejectAppeal?.addEventListener('click', function() {
-            if (confirm('Are you sure you want to REJECT this appeal? The snippet will remain suspended.')) {
+            if (confirm('คุณแน่ใจหรือไม่ว่าต้องการปฏิเสธคำร้องนี้? โพสต์จะยังคงถูกระงับต่อไป')) {
                 modalAction.value = 'reject';
                 reviewForm.submit();
             }

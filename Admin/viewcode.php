@@ -15,46 +15,46 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
 
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title><?php echo htmlspecialchars($snippet['title'] ?? 'View Snippet - Admin'); ?></title>
+    <title><?php echo htmlspecialchars($snippet['title'] ?? 'ดู Snippet - Admin'); ?></title>
     <link rel="stylesheet" href="../style/viewcodecss.css?v=<?php echo time(); ?>">
 </head>
 <body>
-    <a href="<?php echo htmlspecialchars($backUrl); ?>" class="back-btn">Back</a>
+    <a href="<?php echo htmlspecialchars($backUrl); ?>" class="back-btn">ย้อนกลับ</a>
 
     <?php if(!$snippet): ?>
-        <div class="empty" style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 16px;">Snippet not found</div>
+        <div class="empty" style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 16px;">ไม่พบ Snippet</div>
     <?php else: ?>
         <div class="form-container">
             <!-- Top Actions Row -->
             <div class="top-actions-row">
                 <div class="right-actions">
                     <!-- Copy Button -->
-                    <button class="btn copy" id="copyBtn">Copy</button>
+                    <button class="btn copy" id="copyBtn">คัดลอก</button>
                 </div>
             </div>
 
             <!-- Top Row: Title & Language -->
             <div class="top-row">
                 <div class="form-group">
-                    <label for="title">Title</label>
+                    <label for="title">ชื่อเรื่อง</label>
                     <input type="text" name="title" id="title" value="<?php echo htmlspecialchars($snippet['title']); ?>" readonly>
                 </div>
 
                 <div class="form-group">
-                    <label for="language">Language</label>
+                    <label for="language">ภาษา</label>
                     <select name="language_id" class="language-dropdown" disabled>
-                        <option selected><?php echo htmlspecialchars($snippet['language_name'] ?? 'Language'); ?></option>
+                        <option selected><?php echo htmlspecialchars($snippet['language_name'] ?? 'ภาษา'); ?></option>
                     </select>
                 </div>
             </div>
 
             <!-- Code Editor Container (Readonly) -->
             <div class="form-group">
-                <label for="source_code">Code</label>
+                <label for="source_code">โค้ด</label>
                 <div class="editor-container">
                     <div class="line-numbers" id="line-numbers">1</div>
                     <textarea name="source_code" id="source_code" readonly wrap="off"><?php echo htmlspecialchars($snippet['source_code']); ?></textarea>
@@ -63,7 +63,7 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
 
             <!-- Description (Readonly) -->
             <div class="form-group">
-                <label for="description">Description</label>
+                <label for="description">คำอธิบาย</label>
                 <div class="description-view" id="description"><?php echo htmlspecialchars($snippet['description']); ?></div>
             </div>
 
@@ -75,11 +75,11 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
                 </div>
 
                 <div class="form-group">
-                    <label for="visibility">Visibility</label>
+                    <label for="visibility">การมองเห็น</label>
                     <select name="visibility" class="visibility-dropdown" disabled>
-                        <option value="public" <?php echo (($snippet['visibility'] ?? '') === 'public') ? 'selected' : ''; ?>>Public</option>
-                        <option value="protected" <?php echo (($snippet['visibility'] ?? '') === 'protected') ? 'selected' : ''; ?>>Protected</option>
-                        <option value="private" <?php echo (($snippet['visibility'] ?? '') === 'private') ? 'selected' : ''; ?>>Private</option>
+                        <option value="public" <?php echo (($snippet['visibility'] ?? '') === 'public') ? 'selected' : ''; ?>>สาธารณะ (Public)</option>
+                        <option value="protected" <?php echo (($snippet['visibility'] ?? '') === 'protected') ? 'selected' : ''; ?>>เฉพาะสมาชิก (Protected)</option>
+                        <option value="private" <?php echo (($snippet['visibility'] ?? '') === 'private') ? 'selected' : ''; ?>>ส่วนตัว (Private)</option>
                     </select>
                 </div>
             </div>
@@ -91,7 +91,7 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
                     <?php if(!empty($snippet['image_path']) && file_exists('../' . $snippet['image_path'])): ?>
                         <img id="image-preview" src="<?php echo '../' . htmlspecialchars($snippet['image_path']); ?>" alt="Snippet Image" style="display: block;">
                     <?php else: ?>
-                        <span style="font-size: 14px; color: var(--text-muted); font-style: italic;">No Image</span>
+                        <span style="font-size: 14px; color: var(--text-muted); font-style: italic;">ไม่มีรูปภาพ</span>
                     <?php endif; ?>
                 </div>
             </div>
@@ -165,10 +165,10 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
             try{
                 await navigator.clipboard.writeText(text);
                 const old = copyBtn.innerText;
-                copyBtn.innerText = 'Copied';
+                copyBtn.innerText = 'คัดลอกแล้ว';
                 setTimeout(()=> copyBtn.innerText = old, 1500);
             }catch(e){
-                alert('Copy failed');
+                alert('ไม่สามารถคัดลอกได้');
             }
         });
 

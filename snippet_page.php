@@ -92,11 +92,11 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Snippet Page</title>
+    <title>Snippet ของฉัน - Snippet Box</title>
     <link rel="stylesheet" href="style/snippet_pagecss.css">
 </head>
 <body>
@@ -124,16 +124,33 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                 </div>
                 <span><?php echo htmlspecialchars($_SESSION['username'] ?? 'Komkit'); ?></span>
             </div>
-            <a href="login.php" class="btn-outline" onclick="return confirm('Do you want to log out?');">Log out</a>
+            <a href="login.php" class="btn-outline" onclick="return confirm('คุณต้องการออกจากระบบหรือไม่?');">ออกจากระบบ</a>
         </div>
     </header>
 
     <div class="main-wrapper">
-        <div class="sidebar">
-            <a href="createsnippet.php" class="btn-create">+ Create</a>
-            <a href="remove.php" class="btn-bookmark" style="margin-top:12px; justify-content:center;">
+        <div class="sidebar" style="display: flex; flex-direction: column; gap: 12px;">
+            <a href="createsnippet.php" class="btn-create">+ สร้าง Snippet</a>
+            
+            <a href="snippet_page.php" class="btn-bookmark active" style="justify-content: flex-start;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                Snippet ของฉัน
+            </a>
+            
+            <a href="explore.php" class="btn-bookmark" style="justify-content: flex-start;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                สำรวจ
+            </a>
+            
+            <a href="remove.php" class="btn-bookmark" style="justify-content: flex-start;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                Trash
+                ถังขยะ
             </a>
         </div>
         
@@ -142,11 +159,11 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                 <form method="GET" style="display: flex; align-items: center; gap: 15px;">
                     <div class="search-box" style="width:350px;">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                        <input type="text" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>" placeholder="Search snippets...">
+                        <input type="text" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>" placeholder="ค้นหา Snippet...">
                     </div>
                     
                     <select name="lang" class="select-per-page" onchange="this.form.submit()">
-                        <option value="">All Languages</option>
+                        <option value="">ทุกภาษา</option>
                         <?php foreach($languages as $lang): ?>
                             <option value="<?php echo htmlspecialchars($lang['language_id']); ?>" 
                                 <?php echo ($selectedLanguage == $lang['language_id']) ? 'selected' : ''; ?>>
@@ -157,7 +174,7 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                     
                     <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--secondary); cursor: pointer; user-select: none;">
                         <input type="checkbox" name="only_own" value="1" <?php echo $onlyOwn ? 'checked' : ''; ?> onchange="this.form.submit()" style="cursor: pointer; width: 18px; height: 18px; accent-color: var(--primary); margin: 0;">
-                        <span>Only My Snippets</span>
+                        <span>เฉพาะ Snippet ของฉัน</span>
                     </label>
 
                     <?php if($showBookmarks): ?><input type="hidden" name="bookmarks" value="1"><?php endif; ?>
@@ -165,25 +182,25 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                 </form>
                 <div class="toolbar-actions">
                     <div class="per-page-selector">
-                        <label for="limit-select">Show:</label>
+                        <label for="limit-select">แสดง:</label>
                         <select id="limit-select" class="select-per-page" onchange="changePerPage(this.value)">
                             <?php foreach($allowedLimits as $opt): ?>
-                                <option value="<?php echo $opt; ?>" <?php echo $itemsPerPage === $opt ? 'selected' : ''; ?>><?php echo $opt; ?> / page</option>
+                                <option value="<?php echo $opt; ?>" <?php echo $itemsPerPage === $opt ? 'selected' : ''; ?>><?php echo $opt; ?> / หน้า</option>
                             <?php endforeach; ?>
                         </select>
                     </div>
                     <a href="<?php echo htmlspecialchars($bookmarkUrl); ?>" class="btn-bookmark <?php echo $showBookmarks ? 'active' : ''; ?>">
                         <svg width="14" height="18" viewBox="0 0 384 512" fill="<?php echo $showBookmarks ? '#fff' : 'currentColor'; ?>"><path d="M0 512V48C0 21.49 21.49 0 48 0h288c26.51 0 48 21.49 48 48v464L192 400 0 512z"/></svg>
-                        Bookmark
+                        บุ๊กมาร์ก
                     </a>
                 </div>
             </div>
             
             <div class="total-snippets">
                 <?php if($showBookmarks): ?>
-                    Your Bookmarked Snippets: <?php echo $totalSnippets; ?>
+                    Snippet ที่คุณบุ๊กมาร์กไว้: <?php echo $totalSnippets; ?>
                 <?php else: ?>
-                    Your Snippets: <?php echo $totalSnippets; ?><?php if($searchQuery !== ''): ?> (search results for "<?php echo htmlspecialchars($searchQuery); ?>")<?php endif; ?>
+                    Snippet ของคุณ: <?php echo $totalSnippets; ?><?php if($searchQuery !== ''): ?> (ผลการค้นหาสำหรับ "<?php echo htmlspecialchars($searchQuery); ?>")<?php endif; ?>
                 <?php endif; ?>
             </div>
             
@@ -191,11 +208,11 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                 <?php if($totalSnippets === 0): ?>
                     <div class="empty-state">
                         <?php if($showBookmarks): ?>
-                            No bookmarked snippets yet.
+                            ยังไม่มี Snippet ที่บุ๊กมาร์กไว้
                         <?php elseif($selectedLanguage !== ''): ?>
                             ไม่มีโพสต์
                         <?php else: ?>
-                            No snippets in the system yet.
+                            ยังไม่มี Snippet ในระบบ
                         <?php endif; ?>
                     </div>
                 <?php else: ?>
@@ -225,7 +242,7 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                         <div class="snippet-card" <?php if($isSuspended): ?>style="border-left: 5px solid #dc2626; background-color: #fffcfc;"<?php endif; ?>>
                             <div class="card-left">
                                 <?php
-                                    $title = $row['title'] ?: 'Title';
+                                    $title = $row['title'] ?: 'ไม่มีชื่อเรื่อง';
                                     if(mb_strlen($title, 'UTF-8') > 30){
                                         $title = mb_substr($title, 0, 30, 'UTF-8') . '...';
                                     }
@@ -234,7 +251,7 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                                     <?php echo htmlspecialchars($title); ?>
                                     <?php if($isSuspended): ?>
                                         <span style="font-size: 0.75rem; font-weight: 700; color: #dc2626; background: #fee2e2; border: 1px solid #fecaca; border-radius: 4px; padding: 2px 6px; margin-left: 8px; vertical-align: middle;">
-                                            SUSPENDED (ถูกระงับ)
+                                            ถูกระงับ (Suspended)
                                         </span>
                                     <?php endif; ?>
                                 </div>
@@ -271,18 +288,18 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                                             </div>
                                         <?php elseif($cardAppeal && $cardAppeal['status'] === 'rejected'): ?>
                                             <div style="margin-top: 4px; padding: 3px 8px; background: #fee2e2; border: 1px solid #fecaca; border-radius: 4px; font-size: 0.78rem; color: #991b1b; font-weight: 600; display: inline-block;">
-                                                ❌ คำร้องถูกปฏิเสธ (คลิก View code เพื่อดูเหตุผลหรือยื่นใหม่)
+                                                ❌ คำร้องถูกปฏิเสธ (คลิก "ดูโค้ด" เพื่อดูเหตุผลหรือยื่นใหม่)
                                             </div>
                                         <?php else: ?>
                                             <div style="font-size: 0.75rem; color: #b91c1c; margin-top: 3px;">
-                                                (คลิก "View code" เพื่อยื่นคำร้องขอถอนการระงับ)
+                                                (คลิก "ดูโค้ด" เพื่อยื่นคำร้องขอถอนการระงับ)
                                             </div>
                                         <?php endif; ?>
                                     </div>
                                 <?php endif; ?>
 
                                 <button class="btn-view-code">
-                                    <a href="viewcode.php?view=<?php echo urlencode($row['snippet_id']); ?>" >View code</a>
+                                    <a href="viewcode.php?view=<?php echo urlencode($row['snippet_id']); ?>" >ดูโค้ด</a>
                                 </button>
                             </div>
                             
@@ -297,28 +314,28 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                                     $currentLikeCount = $likeCounts[$snippetIdInt] ?? 0;
                                 ?>
                                 <?php if(!$isSuspended): ?>
-                                    <button class="like-toggle <?php echo $isLiked ? 'liked' : ''; ?>" data-snippet-id="<?php echo $snippetIdInt; ?>" title="<?php echo $isLiked ? 'Unlike' : 'Like'; ?>">
+                                    <button class="like-toggle <?php echo $isLiked ? 'liked' : ''; ?>" data-snippet-id="<?php echo $snippetIdInt; ?>" title="<?php echo $isLiked ? 'ยกเลิกถูกใจ' : 'ถูกใจ'; ?>">
                                         <svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                             <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
                                         </svg>
                                         <span class="like-count"><?php echo $currentLikeCount; ?></span>
                                     </button>
-                                    <button class="bookmark-toggle <?php echo $isBookmarked ? 'bookmarked' : ''; ?>" data-snippet-id="<?php echo (int)$row['snippet_id']; ?>" title="<?php echo $isBookmarked ? 'Remove Bookmark' : 'Add Bookmark'; ?>">
+                                    <button class="bookmark-toggle <?php echo $isBookmarked ? 'bookmarked' : ''; ?>" data-snippet-id="<?php echo (int)$row['snippet_id']; ?>" title="<?php echo $isBookmarked ? 'ลบบุ๊กมาร์ก' : 'เพิ่มบุ๊กมาร์ก'; ?>">
                                         <svg width="20" height="24" viewBox="0 0 384 512" stroke-width="30">
                                             <path d="M0 512V48C0 21.49 21.49 0 48 0h288c26.51 0 48 21.49 48 48v464L192 400 0 512z"/>
                                         </svg>
                                     </button>
                                     <?php if((int)($row['user_id'] ?? 0) === (int)$userId): ?>
-                                    <a href="createsnippet.php?edit=<?php echo urlencode($row['snippet_id']); ?>" class="icon-action" title="Edit">
+                                    <a href="createsnippet.php?edit=<?php echo urlencode($row['snippet_id']); ?>" class="icon-action" title="แก้ไข">
                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                     </a>
-                                    <a href="createsnippet.php?delete=<?php echo urlencode($row['snippet_id']); ?>" class="icon-action" title="Delete" onclick="return confirm('Are you sure you want to delete this item?');">
+                                    <a href="createsnippet.php?delete=<?php echo urlencode($row['snippet_id']); ?>" class="icon-action" title="ลบ" onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?');">
                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                     </a>
                                     <?php endif; ?>
                                 <?php else: ?>
                                     <span style="font-size: 0.8rem; color: #dc2626; font-weight: 600; text-align: center; display: block; padding: 4px 8px; background: #fee2e2; border-radius: 4px;">
-                                        Locked
+                                        ถูกระงับ
                                     </span>
                                 <?php endif; ?>
                             </div>
@@ -408,18 +425,18 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                     
                     if(data.status === 'added') {
                         this.classList.add('liked');
-                        this.title = 'Unlike';
+                        this.title = 'ยกเลิกถูกใจ';
                         countEl.textContent = data.count;
                         // showToast('👍 Liked!');
                     } else if(data.status === 'removed') {
                         this.classList.remove('liked');
-                        this.title = 'Like';
+                        this.title = 'ถูกใจ';
                         countEl.textContent = data.count;
                         // showToast('👎 Like removed');
-                        showToast('⚠ ' + (data.message || 'An error occurred'));
+                        showToast('⚠ ' + (data.message || 'เกิดข้อผิดพลาด'));
                     }
                 } catch(err) {
-                    showToast('⚠ Something went wrong. Please try again later.');
+                    showToast('⚠ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
                 }
             });
         });
@@ -443,12 +460,12 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                     
                     if(data.status === 'added') {
                         this.classList.add('bookmarked');
-                        this.title = 'Remove Bookmark';
-                        showToast('✓ Bookmarked!');
+                        this.title = 'ลบบุ๊กมาร์ก';
+                        showToast('✓ บุ๊กมาร์กแล้ว!');
                     } else if(data.status === 'removed') {
                         this.classList.remove('bookmarked');
-                        this.title = 'Add Bookmark';
-                        showToast('✗ Bookmark removed');
+                        this.title = 'เพิ่มบุ๊กมาร์ก';
+                        showToast('✗ ลบบุ๊กมาร์กแล้ว');
                         
                         // If on the bookmarks filter view, reload the page
                         const urlParams = new URLSearchParams(window.location.search);
@@ -456,10 +473,10 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                             setTimeout(() => window.location.reload(), 500);
                         }
                     } else if(data.status === 'error') {
-                        showToast('⚠ ' + (data.message || 'Something went wrong'));
+                        showToast('⚠ ' + (data.message || 'เกิดข้อผิดพลาด'));
                     }
                 } catch(err) {
-                    showToast('⚠ Something went wrong. Please try again later.');
+                    showToast('⚠ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
                 }
             });
         });
