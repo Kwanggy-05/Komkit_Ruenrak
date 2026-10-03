@@ -20,6 +20,7 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title><?php echo htmlspecialchars($snippet['title'] ?? 'ดู Snippet - Admin'); ?></title>
+    <link rel="stylesheet" href="../style/fonts.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="../style/viewcodecss.css?v=<?php echo time(); ?>">
 </head>
 <body>
@@ -31,6 +32,14 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
         <div class="form-container">
             <!-- Top Actions Row -->
             <div class="top-actions-row">
+                <div class="author-credit" title="เจ้าของ Snippet">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="author-icon">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span class="author-label">โดย</span>
+                    <span class="author-username">@<?php echo htmlspecialchars($snippet['username'] ?? 'Unknown'); ?></span>
+                </div>
                 <div class="right-actions">
                     <!-- Copy Button -->
                     <button class="btn copy" id="copyBtn">คัดลอก</button>

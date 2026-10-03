@@ -82,7 +82,8 @@ $bookmarkUrl = 'explore.php' . (!empty($bookmarkParams) ? '?' . http_build_query
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>สำรวจ Snippet - Snippet Box</title>
-    <link rel="stylesheet" href="style/snippet_pagecss.css">
+    <link rel="stylesheet" href="style/fonts.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="style/snippet_pagecss.css?v=<?php echo time(); ?>">
 </head>
 <body>
     <header class="navbar">
@@ -141,7 +142,7 @@ $bookmarkUrl = 'explore.php' . (!empty($bookmarkParams) ? '?' . http_build_query
         
         <div class="content">
             <div class="toolbar">
-                <form method="GET" class="search-box" style="width:350px;">
+                <form method="GET" class="search-box">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                     <input type="text" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>" placeholder="ค้นหา Snippet สาธารณะ...">
                     <?php if($showBookmarks): ?><input type="hidden" name="bookmarks" value="1"><?php endif; ?>

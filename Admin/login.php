@@ -40,7 +40,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>เข้าสู่ระบบผู้ดูแลระบบ - Snippet Box</title>
-    <link rel="stylesheet" href="../style/logincss.css">
+    <link rel="stylesheet" href="../style/fonts.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="../style/logincss.css?v=<?php echo time(); ?>">
     <style>
         /* Small style tweaks for Admin Login visual distinction */
         .card {

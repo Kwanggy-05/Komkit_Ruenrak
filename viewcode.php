@@ -70,6 +70,7 @@ if($accessDenied){
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title><?php echo htmlspecialchars($snippet['title'] ?? 'ดู Snippet'); ?> - Snippet Box</title>
+    <link rel="stylesheet" href="style/fonts.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="style/viewcodecss.css?v=<?php echo time(); ?>">
 </head>
 <body>
@@ -79,9 +80,18 @@ if($accessDenied){
         <div class="empty" style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 16px;">ไม่พบข้อมูล Snippet</div>
     <?php else: ?>
         <div class="form-container">
-            <!-- Top Actions Row (Hidden if suspended or deleted) -->
-            <?php if((int)($snippet['deleted'] ?? 0) !== 1 && (int)($snippet['is_suspended'] ?? 0) !== 1): ?>
-                <div class="top-actions-row">
+            <!-- Top Actions Row -->
+            <div class="top-actions-row">
+                <div class="author-credit" title="เจ้าของ Snippet">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="author-icon">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span class="author-label">โดย</span>
+                    <span class="author-username">@<?php echo htmlspecialchars($snippet['username'] ?? 'Unknown'); ?></span>
+                </div>
+
+                <?php if((int)($snippet['deleted'] ?? 0) !== 1 && (int)($snippet['is_suspended'] ?? 0) !== 1): ?>
                     <div class="right-actions">
                         <!-- Report Button -->
                         <button class="btn report-btn <?php echo $isReported ? 'reported' : ''; ?>" id="reportBtn" data-snippet-id="<?php echo (int)$snippet['snippet_id']; ?>" <?php echo $isReported ? 'disabled' : ''; ?>>
@@ -111,8 +121,8 @@ if($accessDenied){
                         <!-- Copy Button -->
                         <button class="btn copy" id="copyBtn">คัดลอก</button>
                     </div>
-                </div>
-            <?php endif; ?>
+                <?php endif; ?>
+            </div>
 
             <?php if((int)($snippet['is_suspended'] ?? 0) === 1): ?>
                 <!-- Suspension Notice for Owner -->

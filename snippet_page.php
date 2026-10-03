@@ -97,7 +97,8 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Snippet ของฉัน - Snippet Box</title>
-    <link rel="stylesheet" href="style/snippet_pagecss.css">
+    <link rel="stylesheet" href="style/fonts.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="style/snippet_pagecss.css?v=<?php echo time(); ?>">
 </head>
 <body>
     <header class="navbar">
@@ -129,26 +130,9 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
     </header>
 
     <div class="main-wrapper">
-        <div class="sidebar" style="display: flex; flex-direction: column; gap: 12px;">
+        <div class="sidebar">
             <a href="createsnippet.php" class="btn-create">+ สร้าง Snippet</a>
-            
-            <a href="snippet_page.php" class="btn-bookmark active" style="justify-content: flex-start;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                </svg>
-                Snippet ของฉัน
-            </a>
-            
-            <a href="explore.php" class="btn-bookmark" style="justify-content: flex-start;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-                สำรวจ
-            </a>
-            
-            <a href="remove.php" class="btn-bookmark" style="justify-content: flex-start;">
+            <a href="remove.php" class="btn-bookmark" style="margin-top: 12px; justify-content: center;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                 ถังขยะ
             </a>
@@ -156,8 +140,8 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
         
         <div class="content">
             <div class="toolbar">
-                <form method="GET" style="display: flex; align-items: center; gap: 15px;">
-                    <div class="search-box" style="width:350px;">
+                <form method="GET" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <div class="search-box">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                         <input type="text" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>" placeholder="ค้นหา Snippet...">
                     </div>
@@ -172,7 +156,7 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                         <?php endforeach; ?>
                     </select>
                     
-                    <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--secondary); cursor: pointer; user-select: none;">
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--secondary); cursor: pointer; user-select: none; white-space: nowrap;">
                         <input type="checkbox" name="only_own" value="1" <?php echo $onlyOwn ? 'checked' : ''; ?> onchange="this.form.submit()" style="cursor: pointer; width: 18px; height: 18px; accent-color: var(--primary); margin: 0;">
                         <span>เฉพาะ Snippet ของฉัน</span>
                     </label>

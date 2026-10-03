@@ -45,8 +45,9 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ผลการค้นหา - Snippet Box</title>
-    <link rel="stylesheet" href="style/Homecss.css">
-    <link rel="stylesheet" href="style/resultcss.css">
+    <link rel="stylesheet" href="style/fonts.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="style/Homecss.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="style/resultcss.css?v=<?php echo time(); ?>">
 </head>
 <body>
 

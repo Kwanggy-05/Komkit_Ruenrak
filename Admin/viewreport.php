@@ -67,6 +67,7 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>รายละเอียดรายงาน - Admin</title>
+    <link rel="stylesheet" href="../style/fonts.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="../style/viewcodecss.css?v=<?php echo time(); ?>">
 </head>
 <body>
@@ -90,7 +91,7 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
 
             <!-- Report Information Card -->
             <div class="report-info-card" style="background-color: #fff; border: 1px solid var(--border-color); border-left: 4px solid #dc3545; border-radius: var(--radius-md); padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; flex-direction: column; width: 100%; box-sizing: border-box;">
-                <h3 style="margin-top: 0; margin-bottom: 12px; color: #dc3545; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; font-family: 'Lato', sans-serif;">
+                <h3 style="margin-top: 0; margin-bottom: 12px; color: #dc3545; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; font-family: 'Noto Sans Thai', 'Lato', sans-serif;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
                         <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
                         <line x1="12" y1="9" x2="12" y2="13"></line>
@@ -98,7 +99,7 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
                     </svg>
                     รายละเอียดรายงาน #<?php echo htmlspecialchars($report['report_id']); ?>
                 </h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; font-size: 0.95rem; font-family: 'Lato', sans-serif;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; font-size: 0.95rem; font-family: 'Noto Sans Thai', 'Lato', sans-serif;">
                     <div>
                         <strong>เหตุผลที่รายงาน:</strong> 
                         <span style="color: #dc3545; font-weight: bold; text-transform: capitalize;"><?php echo htmlspecialchars($report['reason']); ?></span>
@@ -128,14 +129,14 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
                     </div>
                     <?php endif; ?>
                 </div>
-                <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color); font-family: 'Lato', sans-serif;">
+                <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color); font-family: 'Noto Sans Thai', 'Lato', sans-serif;">
                     <strong>คำอธิบายรายงาน:</strong>
                     <div style="margin-top: 6px; padding: 12px; background-color: var(--neutral-bg); border-radius: var(--radius-sm); border: 1px solid var(--border-color); white-space: pre-wrap; font-size: 0.9rem; line-height: 1.5; color: #333; word-break: break-word;"><?php echo htmlspecialchars(trim($report['details'] ?: 'ไม่มีคำอธิบายเพิ่มเติม')); ?></div>
                 </div>
                 
                 <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
                     <div>
-                        <span style="font-weight: 600; font-family: 'Lato', sans-serif; font-size: 0.95rem;">สถานะ Snippet: </span>
+                        <span style="font-weight: 600; font-family: 'Noto Sans Thai', 'Lato', sans-serif; font-size: 0.95rem;">สถานะ Snippet: </span>
                         <?php if ((int)($report['snippet_suspended'] ?? 0) === 1): ?>
                             <span style="font-weight: bold; color: #dc2626; padding: 3px 8px; background: #fee2e2; border-radius: 4px; font-size: 0.85rem;">ถูกระงับ</span>
                         <?php elseif ((int)($report['snippet_deleted'] ?? 0) === 1): ?>
@@ -175,7 +176,7 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
             </div>
 
             <!-- Suspension History Card -->
-            <div class="report-info-card" style="background-color: #fff; border: 1px solid var(--border-color); border-left: 4px solid #2563eb; border-radius: var(--radius-md); padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; flex-direction: column; width: 100%; box-sizing: border-box; font-family: 'Lato', sans-serif;">
+            <div class="report-info-card" style="background-color: #fff; border: 1px solid var(--border-color); border-left: 4px solid #2563eb; border-radius: var(--radius-md); padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; flex-direction: column; width: 100%; box-sizing: border-box; font-family: 'Noto Sans Thai', 'Lato', sans-serif;">
                 <h3 style="margin-top: 0; margin-bottom: 12px; color: #2563eb; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>

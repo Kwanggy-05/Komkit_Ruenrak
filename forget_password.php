@@ -35,7 +35,8 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ลืมรหัสผ่าน - Snippet Box</title>
-    <link rel="stylesheet" href="style/logincss.css">
+    <link rel="stylesheet" href="style/fonts.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="style/logincss.css?v=<?php echo time(); ?>">
     <style>
         .success-alert {
             background-color: #d4edda;

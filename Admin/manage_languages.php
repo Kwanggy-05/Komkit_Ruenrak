@@ -73,6 +73,7 @@ if ($languageResult) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>จัดการภาษา - Admin Panel</title>
+    <link rel="stylesheet" href="../style/fonts.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="style.css?v=<?php echo time(); ?>">
 </head>
 <body>
@@ -80,7 +81,7 @@ if ($languageResult) {
         <!-- Sidebar Navigation -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <img src="../logo/Logo_snippetBox.png" alt="Snippet Box Logo">
+                <img src="../logo/Logo_snippetBox2.png" alt="Snippet Box Logo">
                 <h1>Snippet Box</h1>
             </div>
             <nav class="sidebar-menu">

@@ -1,4 +1,5 @@
 /* Flat Design Corporativo Theme - registercss.css */
+@import url('fonts.css');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400;1,700&display=swap');
 
 :root {
@@ -22,14 +23,14 @@
 
 * {
     box-sizing: border-box;
-    font-family: 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Noto Sans Thai', 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 body {
     background-color: var(--neutral-bg);
     margin: 0;
     padding: 0;
-    font-family: 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Noto Sans Thai', 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -153,7 +154,7 @@ input[type="password"] {
     height: 44px;
     padding: 0 14px;
     font-size: 14px;
-    font-family: 'Lato', sans-serif;
+    font-family: 'Noto Sans Thai', 'Lato', sans-serif;
     outline: none;
     width: 100%;
     box-sizing: border-box;

@@ -60,12 +60,13 @@ if ($snippetResult) {
     $snippets = $snippetResult->fetchAll(PDO::FETCH_ASSOC);
 }
 ?>
-<<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>จัดการ Snippet - Admin Panel</title>
+    <link rel="stylesheet" href="../style/fonts.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="style.css?v=<?php echo time(); ?>">
 </head>
 <body>
@@ -73,7 +74,7 @@ if ($snippetResult) {
         <!-- Sidebar Navigation -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <img src="../logo/Logo_snippetBox.png" alt="Snippet Box Logo">
+                <img src="../logo/Logo_snippetBox2.png" alt="Snippet Box Logo">
                 <h1>Snippet Box</h1>
             </div>
             <nav class="sidebar-menu">
@@ -230,7 +231,7 @@ if ($snippetResult) {
                                         <td class="col-id"><?php echo htmlspecialchars($snip['snippet_id']); ?></td>
                                         <td style="font-weight: 600;"><?php echo htmlspecialchars($snip['title']); ?></td>
                                         <td>
-                                            <span style="font-family: 'Lato', sans-serif; font-size: 0.85rem; padding: 2px 6px; background-color: var(--neutral); border-radius: var(--rounded-sm); border: 1px solid var(--border-color);">
+                                            <span style="font-family: 'Noto Sans Thai', 'Lato', sans-serif; font-size: 0.85rem; padding: 2px 6px; background-color: var(--neutral); border-radius: var(--rounded-sm); border: 1px solid var(--border-color);">
                                                 <?php echo htmlspecialchars($snip['language_name']); ?>
                                             </span>
                                         </td>

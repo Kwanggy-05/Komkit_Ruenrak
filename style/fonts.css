@@ -1,0 +1,81 @@
+/* ========================================================
+   Noto Sans Thai Font Definitions
+   Supports both online Google CDN & local offline fonts
+   ======================================================== */
+
+/* 1. Google Fonts CDN fallback (ensures font always loads) */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');
+
+/* 2. Local Variable Font (weights 100-900) */
+@font-face {
+    font-family: 'Noto Sans Thai';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: local('Noto Sans Thai'),
+         url('../Noto_Sans_Thai/NotoSansThai-VariableFont_wdth,wght.ttf') format('truetype');
+}
+
+/* 3. Local Static Weights Fallbacks */
+@font-face {
+    font-family: 'Noto Sans Thai';
+    font-style: normal;
+    font-weight: 300;
+    font-display: swap;
+    src: local('Noto Sans Thai Light'),
+         url('../Noto_Sans_Thai/static/NotoSansThai-Light.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Noto Sans Thai';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: local('Noto Sans Thai Regular'), local('Noto Sans Thai'),
+         url('../Noto_Sans_Thai/static/NotoSansThai-Regular.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Noto Sans Thai';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: local('Noto Sans Thai Medium'),
+         url('../Noto_Sans_Thai/static/NotoSansThai-Medium.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Noto Sans Thai';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: local('Noto Sans Thai SemiBold'),
+         url('../Noto_Sans_Thai/static/NotoSansThai-SemiBold.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Noto Sans Thai';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: local('Noto Sans Thai Bold'),
+         url('../Noto_Sans_Thai/static/NotoSansThai-Bold.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Noto Sans Thai';
+    font-style: normal;
+    font-weight: 800;
+    font-display: swap;
+    src: local('Noto Sans Thai ExtraBold'),
+         url('../Noto_Sans_Thai/static/NotoSansThai-ExtraBold.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Noto Sans Thai';
+    font-style: normal;
+    font-weight: 900;
+    font-display: swap;
+    src: local('Noto Sans Thai Black'),
+         url('../Noto_Sans_Thai/static/NotoSansThai-Black.ttf') format('truetype');
+}

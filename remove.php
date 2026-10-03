@@ -53,7 +53,8 @@ if($totalPages === 0) $totalPages = 1;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ถังขยะ - Snippet Box</title>
-    <link rel="stylesheet" href="style/removecss.css">
+    <link rel="stylesheet" href="style/fonts.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="style/removecss.css?v=<?php echo time(); ?>">
 </head>
 <body>
     <header class="navbar">
@@ -82,7 +83,7 @@ if($totalPages === 0) $totalPages = 1;
         
         <div class="content">
             <div class="toolbar">
-                <form method="GET" class="search-box" style="width:350px;">
+                <form method="GET" class="search-box">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                     <input type="text" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>" placeholder="ค้นหา Snippet ที่ถูกลบ...">
                     <?php if($itemsPerPage !== 10 || isset($_GET['limit'])): ?><input type="hidden" name="limit" value="<?php echo $itemsPerPage; ?>"><?php endif; ?>

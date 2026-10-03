@@ -37,7 +37,7 @@ if ($reason === 'other' && empty($details)) {
 
 // Check duplicate report
 if ($control->hasUserReported($userId, $snippetId)) {
-    echo json_encode(["status" => "error", "message" => "คุณได้รายงาน Snippet นี้ไปแล้ว"]);
+    echo json_encode(["status" => "error", "message" => "คุณได้รายงาน Snippet นี้ไปแล้วและอยู่ระหว่างรอการตรวจสอบ"]);
     exit;
 }
 

@@ -1,4 +1,5 @@
 /* Flat Design Corporativo Theme - createsnippetcss.css */
+@import url('fonts.css');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400;1,700&display=swap');
 
 :root {
@@ -19,12 +20,12 @@
 
 * {
     box-sizing: border-box;
-    font-family: 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Noto Sans Thai', 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 body {
     background-color: var(--neutral-bg);
-    font-family: 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Noto Sans Thai', 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
     margin: 0;
     padding: 30px;
     color: var(--text-color);
@@ -84,7 +85,7 @@ input[type="text"], textarea {
     border: 1px solid var(--input-border);
     border-radius: var(--radius-md);
     padding: 10px 14px;
-    font-family: 'Lato', sans-serif;
+    font-family: 'Noto Sans Thai', 'Lato', sans-serif;
     font-size: 14px;
     background-color: var(--surface);
     color: var(--text-color);
@@ -116,7 +117,7 @@ input[name="tags"] {
     border-radius: var(--radius-md);
     background-color: var(--surface);
     font-size: 14px;
-    font-family: 'Lato', sans-serif;
+    font-family: 'Noto Sans Thai', 'Lato', sans-serif;
     font-weight: 500;
     color: var(--text-color);
     cursor: pointer;
@@ -163,7 +164,7 @@ textarea[name="description"] {
     color: var(--text-muted);
     text-align: center;
     padding: 10px 0;
-    font-family: 'Lato', sans-serif;
+    font-family: 'JetBrains Mono', 'Noto Sans Thai', monospace;
     font-size: 13px;
     line-height: 21px;
     overflow: hidden;
@@ -177,7 +178,7 @@ textarea[name="source_code"] {
     border-radius: 0;
     padding: 10px 14px;
     margin: 0;
-    font-family: 'Lato', sans-serif;
+    font-family: 'JetBrains Mono', 'Noto Sans Thai', monospace;
     font-size: 14px;
     line-height: 21px;
     resize: none;
@@ -297,7 +298,7 @@ textarea[name="source_code"]:focus {
     border-radius: var(--radius-md);
     background-color: var(--surface);
     font-size: 14px;
-    font-family: 'Lato', sans-serif;
+    font-family: 'Noto Sans Thai', 'Lato', sans-serif;
     color: var(--text-color);
     cursor: pointer;
     outline: none;

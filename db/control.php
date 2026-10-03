@@ -232,13 +232,14 @@ class Control{
                 ? "(s.deleted = 0 OR s.deleted IS NULL OR (s.deleted = 1 AND s.user_id = :user_id))"
                 : "(s.deleted = 0 OR s.deleted IS NULL)";
             
-            $sql = "SELECT s.*, l.language_name,
+            $sql = "SELECT s.*, l.language_name, u.username,
                 GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags,
                 MAX(susp.reason) as suspension_reason,
                 MAX(susp.suspended_at) as suspension_time,
                 MAX(susp.admin_suspended) as admin_suspended
                 FROM snippet s
                 INNER JOIN language l ON s.language_id = l.language_id
+                LEFT JOIN user u ON s.user_id = u.user_id
                 LEFT JOIN snippet_tag st ON s.snippet_id = st.snippet_id
                 LEFT JOIN tag t ON st.tag_id = t.tag_id
                 LEFT JOIN snippet_suspensions susp ON (s.snippet_id = susp.snippet_id AND susp.unsuspended_at IS NULL)
@@ -928,10 +929,11 @@ class Control{
 
     function getSnippetByIdAdmin($snippet_id){
         try{
-            $sql = "SELECT s.*, l.language_name,
+            $sql = "SELECT s.*, l.language_name, u.username,
                 GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags
                 FROM snippet s
                 INNER JOIN language l ON s.language_id = l.language_id
+                LEFT JOIN user u ON s.user_id = u.user_id
                 LEFT JOIN snippet_tag st ON s.snippet_id = st.snippet_id
                 LEFT JOIN tag t ON st.tag_id = t.tag_id
                 WHERE s.snippet_id = :snippet_id
@@ -1105,7 +1107,7 @@ class Control{
 
     function hasUserReported($user_id, $snippet_id){
         try{
-            $sql = "SELECT COUNT(*) as count FROM reports WHERE user_id = :user_id AND snippet_id = :snippet_id";
+            $sql = "SELECT COUNT(*) as count FROM reports WHERE user_id = :user_id AND snippet_id = :snippet_id AND status = 'pending'";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(":user_id", $user_id, PDO::PARAM_INT);
             $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);

@@ -13,13 +13,25 @@ try {
         resolved_at DATETIME NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY unique_snippet_user (snippet_id, user_id),
+        INDEX idx_reports_snippet_id (snippet_id),
+        INDEX idx_reports_user (user_id),
         CONSTRAINT fk_reports_snippet FOREIGN KEY (snippet_id) REFERENCES snippet(snippet_id) ON DELETE CASCADE,
         CONSTRAINT fk_reports_user FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
     
     $pdo->exec($sql);
     echo "Database migrated successfully. Table 'reports' is created or already exists.\n";
+
+    // Drop unique_snippet_user if exists so users can report again after admin resolves previous report
+    $uniqueIndices = $pdo->query("SHOW INDEX FROM `reports` WHERE Key_name = 'unique_snippet_user'")->fetchAll();
+    if (!empty($uniqueIndices)) {
+        $idxSnippet = $pdo->query("SHOW INDEX FROM `reports` WHERE Key_name = 'idx_reports_snippet_id'")->fetchAll();
+        if (empty($idxSnippet)) {
+            $pdo->exec("ALTER TABLE `reports` ADD INDEX `idx_reports_snippet_id` (`snippet_id`);");
+        }
+        $pdo->exec("ALTER TABLE `reports` DROP INDEX `unique_snippet_user`;");
+        echo "Dropped UNIQUE KEY 'unique_snippet_user' from 'reports'.\n";
+    }
 
     // Modify resolved_by in reports to VARCHAR(100) if it is currently INT
     $colResolvedBy = $pdo->query("SHOW COLUMNS FROM `reports` LIKE 'resolved_by'")->fetch(PDO::FETCH_ASSOC);
