@@ -83,7 +83,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             <form method="POST" action="<?php echo htmlentities($_SERVER['PHP_SELF']) ?>">
                 
                 <div class="form-group">
-                    <label for="username">ชื่อผู้ใช้</label>
+                    <label for="username">ชื่อผู้ใช้ <span style="color: red; margin-left: 5px;">*</span></label>
                     <input type="text" name="username" id="username" value="<?php echo htmlspecialchars($username); ?>" required>
                 </div>
 
@@ -93,17 +93,17 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 </div>
 
                 <div class="form-group">
-                    <label for="answer">คำตอบความปลอดภัย</label>
+                    <label for="answer">คำตอบความปลอดภัย <span style="color: red; margin-left: 5px;">*</span></label>
                     <input type="text" name="answer" id="answer" value="<?php echo htmlspecialchars($answer); ?>" placeholder="กรุณากรอกคำตอบของคุณ" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="new_password">รหัสผ่านใหม่</label>
+                    <label for="new_password">รหัสผ่านใหม่ <span style="color: red; margin-left: 5px;">*</span></label>
                     <input type="password" name="new_password" id="new_password" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="confirm_new_password">ยืนยันรหัสผ่านใหม่</label>
+                    <label for="confirm_new_password">ยืนยันรหัสผ่านใหม่ <span style="color: red; margin-left: 5px;">*</span></label>
                     <input type="password" name="confirm_new_password" id="confirm_new_password" required>
                 </div>
 

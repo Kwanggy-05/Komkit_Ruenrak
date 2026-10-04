@@ -701,7 +701,7 @@ class Control{
      * พารามิเตอร์: $user_id, $keyword
      * คืนค่า: int
      */
-    function getTotalDeletedUserSnippetCount($user_id, $keyword = ''){
+    function getTotalDeletedUserSnippetCount($user_id, $keyword = '', $language_id = ''){
         try{
             $sql = "SELECT COUNT(DISTINCT a.snippet_id) as total FROM snippet a
                 LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
@@ -709,6 +709,10 @@ class Control{
                 WHERE a.user_id = :user_id 
                 AND a.deleted = 1 
                 AND (a.is_suspended = 0 OR a.is_suspended IS NULL)";
+
+            if($language_id !== ''){
+                $sql .= " AND a.language_id = :language_id";
+            }
 
             if($keyword !== ''){
                 $sql .= " AND (
@@ -721,6 +725,10 @@ class Control{
 
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+
+            if($language_id !== ''){
+                $stmt->bindParam(':language_id', $language_id, PDO::PARAM_INT);
+            }
 
             if($keyword !== ''){
                 $searchTerm = '%' . $keyword . '%';
@@ -739,10 +747,10 @@ class Control{
      * ฟังก์ชัน: getDeletedUserSnippetsPaginated
      * ส่วนที่: [ส่วนที่ 4: การแบ่งหน้าและการนับจำนวน]
      * หน้าที่: ดึงรายการ Snippet ในถังขยะแบบแบ่งหน้า (สำหรับหน้า Remove / Recycle Bin)
-     * พารามิเตอร์: $user_id, $page, $limit, $keyword
+     * พารามิเตอร์: $user_id, $page, $limit, $keyword, $language_id
      * คืนค่า: PDOStatement
      */
-    function getDeletedUserSnippetsPaginated($user_id, $page = 1, $limit = 10, $keyword = ''){
+    function getDeletedUserSnippetsPaginated($user_id, $page = 1, $limit = 10, $keyword = '', $language_id = ''){
         try{
             $page = max(1, (int)$page);
             $limit = max(1, (int)$limit);
@@ -757,6 +765,10 @@ class Control{
                 WHERE a.user_id = :user_id 
                 AND a.deleted = 1 
                 AND (a.is_suspended = 0 OR a.is_suspended IS NULL)";
+
+            if($language_id !== ''){
+                $sql .= " AND a.language_id = :language_id";
+            }
 
             if($keyword !== ''){
                 $sql .= " AND (
@@ -775,6 +787,10 @@ class Control{
             $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
             $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
             $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+
+            if($language_id !== ''){
+                $stmt->bindParam(':language_id', $language_id, PDO::PARAM_INT);
+            }
 
             if($keyword !== ''){
                 $searchTerm = '%' . $keyword . '%';

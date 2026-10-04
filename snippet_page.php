@@ -118,15 +118,10 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
 <body>
     <header class="navbar">
         <div class="nav-left">
-            <!-- <a href="Home.html" class="btn-outline">Back</a> -->
-            <!-- <div class="search-box">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                <input type="text" placeholder="Search snippet..." disabled>
-            </div>
-            <div class="dropdown">
-                All Languages
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-            </div> -->
+            <a href="snippet_page.php" class="logo-brand">
+                <img src="logo/Logo_snippetBox.png" alt="Snippet Box Logo" class="logo-img">
+                <span class="logo-text">Snippet Box</span>
+            </a>
         </div>
         <div class="nav-right">
             

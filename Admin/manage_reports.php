@@ -165,7 +165,7 @@ if ($reportsResult) {
                             <line x1="3" y1="18" x2="21" y2="18"></line>
                         </svg>
                     </button>
-                    <span class="top-bar-title">Admin Panel</span>
+                    <span class="top-bar-title">แผงควบคุมผู้ดูแลระบบ</span>
                 </div>
                 
                 <div class="top-right">

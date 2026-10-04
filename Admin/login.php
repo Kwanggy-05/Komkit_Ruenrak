@@ -110,7 +110,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </div>
                 <?php endif; ?>
 
-                <input type="submit" name="submit" value="เข้าสู่ระบบ Admin Panel">
+                <input type="submit" name="submit" value="เข้าสู่ระบบ">
             </form>
         </div>
     </div>

@@ -183,7 +183,7 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                             <line x1="3" y1="18" x2="21" y2="18"></line>
                         </svg>
                     </button>
-                    <span class="top-bar-title">Admin Panel</span>
+                    <span class="top-bar-title">แผงควบคุมผู้ดูแลระบบ</span>
                 </div>
                 
                 <div class="top-right">
@@ -228,7 +228,7 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
 
                 <!-- Content Header Controls -->
                 <div class="content-header">
-                    <h2 class="page-title">จัดการคำร้องถอนการระงับโพสต์ (Appeals)</h2>
+                    <h2 class="page-title">จัดการคำร้อง</h2>
                     <div class="header-actions">
                         <!-- Filters -->
                         <div style="display: flex; gap: 8px;">

@@ -21,22 +21,30 @@ require_once "layout/check_user.php";
 
 $userId = getCurrentUserId();
 
-// --- ส่วนที่ 2: ประมวลผลคำขอกู้คืน Snippet กลับจากถังขยะ (Restore Action) ---
+// --- ส่วนที่ 2: ดึงรายการภาษาพร้อมจำนวน Snippet ---
+$languageResult = $control->getAllLanguagesWithSnippetCounts();
+$languages = [];
+if($languageResult){
+    $languages = $languageResult->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// --- ส่วนที่ 3: ประมวลผลคำขอกู้คืน Snippet กลับจากถังขยะ (Restore Action) ---
 if(isset($_GET['restore']) && is_numeric($_GET['restore'])){
     $control->restoreSnippet((int)$_GET['restore'], $userId);
     header('Location:remove.php');
     exit;
 }
 
-// --- ส่วนที่ 3: ประมวลผลคำขอลบ Snippet อย่างถาวร (Hard Delete Action) ---
+// --- ส่วนที่ 4: ประมวลผลคำขอลบ Snippet อย่างถาวร (Hard Delete Action) ---
 if(isset($_GET['delete']) && is_numeric($_GET['delete'])){
     $control->deleteSnippet((int)$_GET['delete'], $userId);
     header('Location:remove.php');
     exit;
 }
 
-// --- ส่วนที่ 4: จัดการคำค้นหาและการตั้งค่าแบ่งหน้า (Pagination) ---
+// --- ส่วนที่ 5: จัดการคำค้นหา, ตัวกรองภาษา และการตั้งค่าแบ่งหน้า (Pagination) ---
 $searchQuery = trim($_GET['q'] ?? '');
+$selectedLanguage = trim($_GET['lang'] ?? '');
 
 // กำหนดจำนวนรายการต่อหน้าที่อนุญาต [10, 15, 20, 25]
 $allowedLimits = [10, 15, 20, 25];
@@ -50,9 +58,9 @@ if(isset($_GET['limit']) && in_array((int)$_GET['limit'], $allowedLimits)){
 }
 $currentPage = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 
-// --- ส่วนที่ 5: ดึงข้อมูล Snippet ที่อยู่ในถังขยะของผู้ใช้จากฐานข้อมูล ---
-$totalSnippets = $control->getTotalDeletedUserSnippetCount($userId, $searchQuery);
-$result = $control->getDeletedUserSnippetsPaginated($userId, $currentPage, $itemsPerPage, $searchQuery);
+// --- ส่วนที่ 6: ดึงข้อมูล Snippet ที่อยู่ในถังขยะของผู้ใช้จากฐานข้อมูล ---
+$totalSnippets = $control->getTotalDeletedUserSnippetCount($userId, $searchQuery, $selectedLanguage);
+$result = $control->getDeletedUserSnippetsPaginated($userId, $currentPage, $itemsPerPage, $searchQuery, $selectedLanguage);
 
 $snippets = [];
 if($result){
@@ -100,9 +108,22 @@ if($totalPages === 0) $totalPages = 1;
         
         <div class="content">
             <div class="toolbar">
-                <form method="GET" class="search-box">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                    <input type="text" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>" placeholder="ค้นหา Snippet ที่ถูกลบ...">
+                <form method="GET" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <div class="search-box">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                        <input type="text" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>" placeholder="ค้นหา Snippet...">
+                    </div>
+                    
+                    <select name="lang" class="select-per-page" onchange="this.form.submit()">
+                        <option value="">ทุกภาษา</option>
+                        <?php foreach($languages as $lang): ?>
+                            <option value="<?php echo htmlspecialchars($lang['language_id']); ?>" 
+                                <?php echo ($selectedLanguage == $lang['language_id']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($lang['language_name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+
                     <?php if($itemsPerPage !== 10 || isset($_GET['limit'])): ?><input type="hidden" name="limit" value="<?php echo $itemsPerPage; ?>"><?php endif; ?>
                 </form>
                 <div class="toolbar-actions">
@@ -205,6 +226,7 @@ if($totalPages === 0) $totalPages = 1;
                 for($i = $startPage; $i <= $endPage; $i++){
                     $pageUrl = 'remove.php?page=' . $i;
                     if($searchQuery !== '') $pageUrl .= '&q=' . urlencode($searchQuery);
+                    if($selectedLanguage !== '') $pageUrl .= '&lang=' . urlencode($selectedLanguage);
                     if($itemsPerPage !== 10 || isset($_GET['limit'])) $pageUrl .= '&limit=' . $itemsPerPage;
                     
                     if($i == $currentPage){
@@ -217,6 +239,7 @@ if($totalPages === 0) $totalPages = 1;
                 if($totalPages > 10 && $currentPage < $totalPages){
                     $nextPageUrl = 'remove.php?page=' . ($currentPage + 1);
                     if($searchQuery !== '') $nextPageUrl .= '&q=' . urlencode($searchQuery);
+                    if($selectedLanguage !== '') $nextPageUrl .= '&lang=' . urlencode($selectedLanguage);
                     if($itemsPerPage !== 10 || isset($_GET['limit'])) $nextPageUrl .= '&limit=' . $itemsPerPage;
                     echo '<a href="' . $nextPageUrl . '" class="next-btn">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

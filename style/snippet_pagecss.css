@@ -54,6 +54,34 @@ a {
     gap: 16px; 
 }
 
+.logo-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: var(--secondary);
+    transition: opacity 0.2s ease;
+}
+
+.logo-brand:hover {
+    opacity: 0.85;
+}
+
+.logo-brand .logo-img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    display: block;
+}
+
+.logo-brand .logo-text,
+.logo-text {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--secondary);
+    letter-spacing: -0.01em;
+}
+
 .btn-outline { 
     border: 1px solid var(--border-color); 
     border-radius: var(--radius-md); 
@@ -615,7 +643,8 @@ a {
     }
 
     .nav-left {
-        flex-direction: column;
+        flex-direction: row;
+        align-items: center;
         width: 100%;
         gap: 10px;
     }
