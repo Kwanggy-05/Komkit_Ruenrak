@@ -1,7 +1,24 @@
 <?php
+/**
+ * ==============================================================================
+ * ไฟล์: createsnippet.php
+ * หน้าที่: หน้าสร้างและแก้ไข Snippet โค้ด (Create / Edit Snippet)
+ * ส่วนประกอบในไฟล์:
+ *   1. โหลดการเชื่อมต่อฐานข้อมูลและการตรวจสอบสิทธิ์เข้าใช้งาน
+ *   2. ดึงข้อมูลภาษาและแท็กทั้งหมดสำหรับแสดงในตัวเลือก ($control->getLanguage(), getAllTags())
+ *   3. จัดการการลบ Snippet ชั่วคราว (Soft Delete via $_GET['delete'])
+ *   4. ดึงข้อมูลเดิมมาแสดงเมื่ออยู่ในโหมดแก้ไข (Edit Mode via $_GET['edit'])
+ *   5. ประมวลผลการบันทึกข้อมูล (POST Submit): อัปโหลดรูปภาพ, ตรวจความยาวโค้ด <= 5,000 ตัว, แท็ก <= 5 แท็ก
+ *   6. ส่วนแสดงผลฟอร์ม HTML (ชื่อเรื่อง, ภาษา, แท็ก, กล่องเขียนโค้ดพร้อมเลขบรรทัด, อัปโหลดรูป, การมองเห็น)
+ *   7. สคริปต์ JavaScript สำหรับ Editor, นับตัวอักษร, ปรับขนาดอัตโนมัติ, ระบบแท็กแนะนำ, และ Preview รูป
+ * ==============================================================================
+ */
+
 require_once "db/connect.php";
 require_once "layout/session.php";
 require_once "layout/check_user.php";
+
+// ดึงรายการภาษาและแท็กทั้งหมดจากฐานข้อมูล
 $result = $control->getLanguage();
 $all_tags = $control->getAllTags();
 
@@ -20,16 +37,19 @@ $error = '';
 
 $userId = getCurrentUserId();
 
+// --- ส่วนที่ 2: จัดการการลบแบบ Soft Delete (ย้ายไปถังขยะ) หากมีพารามิเตอร์ ?delete ---
 if(isset($_GET['delete']) && is_numeric($_GET['delete'])){
     $control->softDeleteSnippet((int)$_GET['delete'], $userId);
     header('Location:remove.php');
     exit;
 }
 
+// --- ส่วนที่ 3: โหมดแก้ไข Snippet (Edit Mode) เมื่อมีพารามิเตอร์ ?edit ---
 if(isset($_GET['edit']) && is_numeric($_GET['edit'])){
     $snippet_id = (int)$_GET['edit'];
     $snippet = $control->getSnippetById($snippet_id, $userId);
     if($snippet){
+        // หากโพสต์ถูกระงับโดยแอดมิน จะไม่อนุญาตให้แก้ไข
         if((int)($snippet['is_suspended'] ?? 0) === 1){
             echo "<script>alert('โพสต์นี้ถูกระงับโดยผู้ดูแลระบบ จึงไม่สามารถแก้ไขได้'); window.location.href='snippet_page.php';</script>";
             exit;
@@ -47,10 +67,11 @@ if(isset($_GET['edit']) && is_numeric($_GET['edit'])){
     }
 }
 
+// --- ส่วนที่ 4: ประมวลผลการส่งฟอร์มบันทึกข้อมูล (POST Submit) ---
 if(isset($_POST["submit"])){
     $snippet_id = isset($_POST['snippet_id']) ? (int)$_POST['snippet_id'] : null;
     $title = $_POST["title"];
-    $language_id = $_POST["language_id"]; // Language ID input
+    $language_id = $_POST["language_id"];
     $tags = trim($_POST["tags"] ?? '');
     $source_code = str_replace(["\r\n", "\r"], "\n", $_POST["source_code"] ?? '');
     $description = $_POST["description"];
@@ -58,15 +79,12 @@ if(isset($_POST["submit"])){
     $current_image_path = $_POST['current_image_path'] ?? '';
     $image_path = $current_image_path;
 
-    // 2. Check if file is uploaded and has no error
+    // จัดการการอัปโหลดไฟล์รูปภาพประกอบ
     if(isset($_FILES["image_path"]) && $_FILES["image_path"]["error"] == 0){
-        
         $upload_dir = "uploads/"; 
-        
         if (!is_dir($upload_dir)) {
             mkdir($upload_dir, 0777, true);
         }
-        
         $file_name = basename($_FILES["image_path"]["name"]);
         $new_file_name = time() . "_" . $file_name; 
         $target_file = $upload_dir . $new_file_name;
@@ -76,12 +94,14 @@ if(isset($_POST["submit"])){
         }
     }
 
+    // ตรวจสอบความถูกต้อง: ความยาวโค้ดไม่เกิน 5,000 ตัวอักษร และแท็กไม่เกิน 5 แท็ก
     $tags_arr = array_filter(array_map('trim', explode(',', $tags)));
     if(mb_strlen($source_code) > 5000){
         $error = "โค้ดต้องมีความยาวไม่เกิน 5,000 ตัวอักษรเท่านั้น (Code cannot exceed 5,000 characters)";
     } else if(count($tags_arr) > 5){
         $error = "คุณสามารถเพิ่มได้สูงสุด 5 tags เท่านั้น";
     } else {
+        // หากมีรหัส $snippet_id จะเป็นการอัปเดต ถ้าไม่มีจะเป็นการเพิ่มใหม่
         if($snippet_id){
             $status = $control->updateSnippet($snippet_id,$title,$source_code,$description,$visibility,$image_path,$language_id,$tags, $userId);
         } else {
@@ -187,7 +207,7 @@ if(isset($_POST["submit"])){
                     <label for="visibility">การมองเห็น</label>
                     <select name="visibility" id="visibility" class="visibility-dropdown">
                         <option value="public" <?php echo ($visibility === 'public') ? 'selected' : ''; ?>>สาธารณะ (Public)</option>
-                        <option value="protected" <?php echo ($visibility === 'protected') ? 'selected' : ''; ?>>เฉพาะสมาชิก (Protected)</option>
+                        <option value="protected" <?php echo ($visibility === 'protected') ? 'selected' : ''; ?>>เฉพาะสมาชิก (Member)</option>
                         <option value="private" <?php echo ($visibility === 'private') ? 'selected' : ''; ?>>ส่วนตัว (Private)</option>
                     </select>
                 </div>
@@ -199,6 +219,7 @@ if(isset($_POST["submit"])){
     </form>
 
     <script>
+        // --- ส่วนที่ 7: สคริปต์ JavaScript ควบคุม Editor และการทำงานในฟอร์ม ---
         const textarea = document.getElementById('source_code');
         const lineNumbers = document.getElementById('line-numbers');
         const charCountEl = document.getElementById('char-count');
@@ -206,7 +227,11 @@ if(isset($_POST["submit"])){
         const charWarningEl = document.getElementById('char-warning');
         const charWarningText = document.getElementById('char-warning-text');
 
-        // Update character count and warning display
+        /**
+         * ฟังก์ชัน: updateCharCount
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: จัดการตัวนับจำนวนตัวอักษร]
+         * หน้าที่: นับจำนวนตัวอักษรของโค้ดใน Textarea และแสดงผล พร้อมแจ้งเตือนเมื่อเกินหรือถึง 5,000 ตัว
+         */
         function updateCharCount() {
             const count = textarea.value.length;
             if (charCountEl) {
@@ -226,9 +251,13 @@ if(isset($_POST["submit"])){
             }
         }
 
-        // Auto-resize textarea height
+        /**
+         * ฟังก์ชัน: autoResizeTextarea
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: ปรับขนาดกล่องโค้ดอัตโนมัติ]
+         * หน้าที่: ขยายความสูงของ Textarea และ Editor Container ให้พอดีกับปริมาณโค้ดโดยไม่ต้องเลื่อนสกอร์บาร์
+         */
         function autoResizeTextarea() {
-            // Prevent scroll position freezing
+            // ป้องกันการค้างของตำแหน่ง scroll
             textarea.scrollTop = 0;
             lineNumbers.scrollTop = 0;
 
@@ -236,8 +265,7 @@ if(isset($_POST["submit"])){
             const scrollHeight = textarea.scrollHeight;
             textarea.style.height = scrollHeight + 'px';
 
-            // Set editor container height to follow code length
-            // Minimum height 280px to avoid CSS cache issues
+            // กำหนดความสูงของคอนเทนเนอร์ให้ตามความยาวโค้ด ขั้นต่ำ 280px
             const finalHeight = Math.max(280, scrollHeight);
             const editorContainer = document.querySelector('.editor-container');
             if (editorContainer) {
@@ -245,13 +273,21 @@ if(isset($_POST["submit"])){
             }
         }
 
-        // Update line numbers
+        /**
+         * ฟังก์ชัน: updateLineNumbers
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: เลขบรรทัดโค้ด (Line Numbers)]
+         * หน้าที่: คำนวณจำนวนบรรทัดของโค้ด และเรนเดอร์ตัวเลข 1, 2, 3... ในฝั่งซ้ายของ Editor
+         */
         function updateLineNumbers() {
             const lines = textarea.value.split('\n').length;
             lineNumbers.innerHTML = Array(lines).fill(0).map((_, i) => i + 1).join('<br>');
         }
 
-        // Update line numbers, textarea height, and character count
+        /**
+         * ฟังก์ชัน: updateEditor
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: อัปเดตสถานะ Editor โดยรวม]
+         * หน้าที่: เรียกทำงานฟังก์ชัน updateLineNumbers, autoResizeTextarea และ updateCharCount พร้อมกัน
+         */
         function updateEditor() {
             updateLineNumbers();
             autoResizeTextarea();
@@ -345,7 +381,11 @@ if(isset($_POST["submit"])){
         const tagsSelector = document.getElementById('tags-selector');
         const allTags = <?php echo json_encode($all_tags); ?> || [];
 
-        // Function to create and render Tag Badges
+        /**
+         * ฟังก์ชัน: renderTagBadges
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: ระบบแนะนำแท็ก (Tag Badges)]
+         * หน้าที่: สร้าง element ป้ายแท็ก (<span class="tag-badge">) ตามรายการแท็กที่มีในฐานข้อมูล
+         */
         function renderTagBadges() {
             tagsSelector.innerHTML = '';
             allTags.forEach(tag => {
@@ -355,7 +395,7 @@ if(isset($_POST["submit"])){
                 badge.dataset.tagName = tag.tag_name;
                 
                 badge.addEventListener('mousedown', (e) => {
-                    // Use mousedown to prevent blur before click activates
+                    // ใช้ mousedown เพื่อป้องกันการ blur หลุดก่อนคลิกทำงาน
                     e.preventDefault();
                     toggleTagSelection(tag.tag_name);
                 });
@@ -365,7 +405,12 @@ if(isset($_POST["submit"])){
             updateBadgeSelectionState();
         }
 
-        // Get current tags from input as array
+        /**
+         * ฟังก์ชัน: getSelectedTagsFromInput
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: ระบบแนะนำแท็ก (Tag Badges)]
+         * หน้าที่: อ่านค่าจากช่องกรอก tags แล้วแยกเป็น Array ของชื่อแท็ก
+         * คืนค่า: Array ของชื่อแท็กที่เลือกอยู่
+         */
         function getSelectedTagsFromInput() {
             return tagsInput.value
                 .split(',')
@@ -373,25 +418,29 @@ if(isset($_POST["submit"])){
                 .filter(t => t.length > 0);
         }
 
-        // Select or toggle tag selection
+        /**
+         * ฟังก์ชัน: toggleTagSelection
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: ระบบแนะนำแท็ก (Tag Badges)]
+         * หน้าที่: สลับการเลือกแท็ก (หากเลือกอยู่แล้วให้เอาออก หากยังไม่เลือกให้ใส่เพิ่ม พร้อมเช็คจำกัดไม่เกิน 5 แท็ก)
+         * พารามิเตอร์: tagName (ชื่อแท็ก)
+         */
         function toggleTagSelection(tagName) {
             let currentTags = getSelectedTagsFromInput();
             const index = currentTags.findIndex(t => t.toLowerCase() === tagName.toLowerCase());
             
             if (index > -1) {
-                // If exists, remove it
+                // หากมีอยู่แล้ว ให้ลบออก
                 currentTags.splice(index, 1);
                 tagsInput.value = currentTags.join(', ');
                 if (tagsInput.value.length > 0 && !tagsInput.value.endsWith(', ')) {
                     tagsInput.value += ', ';
                 }
             } else {
-                // If not, add it
+                // หากยังไม่มี ให้เพิ่มเข้าไป (จำกัดไม่เกิน 5 tags)
                 if (currentTags.length >= 5) {
                     alert('คุณสามารถเพิ่มได้สูงสุด 5 tags เท่านั้น');
                     return;
                 }
-                // Check query before last comma to replace if user is typing
                 const parts = tagsInput.value.split(',');
                 const lastPart = parts[parts.length - 1].trim();
                 if (lastPart.length > 0 && tagName.toLowerCase().startsWith(lastPart.toLowerCase())) {
@@ -402,7 +451,6 @@ if(isset($_POST["submit"])){
                     tagsInput.value = currentTags.join(', ');
                 }
                 
-                // Add comma and space for next tag
                 if (!tagsInput.value.endsWith(', ') && tagsInput.value.length > 0) {
                     tagsInput.value += ', ';
                 }
@@ -413,7 +461,11 @@ if(isset($_POST["submit"])){
             tagsInput.focus();
         }
 
-        // Update Active/Selected status of Badges
+        /**
+         * ฟังก์ชัน: updateBadgeSelectionState
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: ระบบแนะนำแท็ก (Tag Badges)]
+         * หน้าที่: ตรวจสอบและเพิ่ม/ลบ class 'selected' บนป้ายแท็ก เพื่อแสดงสีไฮไลต์ตามแท็กที่พิมพ์ในช่อง
+         */
         function updateBadgeSelectionState() {
             const currentTags = getSelectedTagsFromInput().map(t => t.toLowerCase());
             const badges = tagsSelector.querySelectorAll('.tag-badge');
@@ -427,7 +479,11 @@ if(isset($_POST["submit"])){
             });
         }
 
-        // Filter tag badges based on typed text
+        /**
+         * ฟังก์ชัน: filterTagBadges
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: ระบบแนะนำแท็ก (Tag Badges)]
+         * หน้าที่: กรองป้ายแท็กให้แสดงเฉพาะแท็กที่ตรงกับคำที่ผู้ใช้กำลังพิมพ์อยู่หลังเครื่องหมายจุลภาค (Comma)
+         */
         function filterTagBadges() {
             const parts = tagsInput.value.split(',');
             const currentQuery = parts[parts.length - 1].trim().toLowerCase();

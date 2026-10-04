@@ -1,4 +1,19 @@
 <?php
+/**
+ * ==============================================================================
+ * ไฟล์: viewcode.php
+ * หน้าที่: หน้าแสดงรายละเอียดและเนื้อหาโค้ด Snippet แบบเต็ม (View Snippet Details)
+ * ส่วนประกอบในไฟล์:
+ *   1. โหลดระบบเซสชัน และจัดการเส้นทางปุ่มย้อนกลับ ($backUrl) ตามแหล่งที่มา
+ *   2. ดึงข้อมูล Snippet ตาม ID ($control->getSnippetById())
+ *   3. ตรวจสอบสิทธิ์การเข้าถึง (ระดับ Protected ต้องเข้าสู่ระบบก่อน)
+ *   4. ตรวจสอบสถานะของผู้ใช้ต่อ Snippet นี้ (ถูกใจแล้วหรือไม่, บุ๊กมาร์กแล้วหรือไม่, รายงานแล้วหรือไม่)
+ *   5. ตรวจสอบสถานะการอุทธรณ์กรณี Snippet ถูกระงับ ($control->getLatestAppealBySnippet())
+ *   6. ส่วนแสดงผล HTML (ชื่อ Snippet, เจ้าของ, ปุ่มคัดลอกโค้ด, ปุ่มรายงาน, กล่องแสดงโค้ด, รูปภาพ, ข้อมูลอุทธรณ์)
+ *   7. JavaScript: ปรับขนาดกล่องโค้ด, เลขบรรทัด, คัดลอกโค้ด, Modal รายงานปัญหา, Lightbox รูป, Modal อุทธรณ์
+ * ==============================================================================
+ */
+
 require_once "layout/session.php";
 require_once "db/connect.php";
 
@@ -10,6 +25,7 @@ $likeCount = 0;
 $userId = getCurrentUserId();
 $accessDenied = false;
 
+// --- ส่วนที่ 1: กำหนด URL สำหรับปุ่มย้อนกลับตามหน้าที่ผู้ใช้คลิกเข้ามา ---
 $backUrl = $userId ? 'snippet_page.php' : 'Home.php';
 if(isset($_GET['from_search']) && $_GET['from_search'] === '1'){
     $backUrl = 'result.php';
@@ -25,12 +41,17 @@ if(isset($_GET['from_search']) && $_GET['from_search'] === '1'){
     $backUrl = 'explore.php';
 }
 
+// --- ส่วนที่ 2: ดึงข้อมูล Snippet และตรวจสอบสิทธิ์/สถานะต่างๆ ---
 if(isset($_GET['view']) && is_numeric($_GET['view'])){
     $id = (int)$_GET['view'];
     $snippet = $control->getSnippetById($id, $userId, true);
+    
+    // ตรวจสอบการเข้าถึงกรณีระดับการมองเห็นเป็น Protected (ต้องล็อกอินก่อนเข้าชม)
     if($snippet && strtolower((string)($snippet['visibility'] ?? '')) === 'protected' && !$userId){
         $accessDenied = true;
     }
+    
+    // ตรวจสอบสถานะการบุ๊กมาร์ก การกดไลก์ และการรายงานของผู้ใช้
     if($snippet && $userId){
         $isBookmarked = $control->isBookmarked($userId, $id);
         $isLiked = $control->isLiked($userId, $id);
@@ -40,7 +61,7 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
         $likeCount = $control->getLikeCount($id);
     }
     
-    // Check appeal status for owner
+    // ตรวจสอบสถานะการยื่นอุทธรณ์สำหรับเจ้าของโค้ด (กรณีโค้ดถูกระงับ)
     $latestAppeal = null;
     $isAppealPending = false;
     $isAppealRejected = false;
@@ -53,6 +74,7 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
     }
 }
 
+// ปฏิเสธการเข้าชมกรณี Protected แล้วยังไม่ล็อกอิน
 if($accessDenied){
     ?>
     <script>
@@ -62,7 +84,6 @@ if($accessDenied){
     <?php
     exit;
 }
-
 ?>
 <!DOCTYPE html>
 <html lang="th">
@@ -71,6 +92,7 @@ if($accessDenied){
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title><?php echo htmlspecialchars($snippet['title'] ?? 'ดู Snippet'); ?> - Snippet Box</title>
     <link rel="stylesheet" href="style/fonts.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="style/createsnippetcss.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="style/viewcodecss.css?v=<?php echo time(); ?>">
 </head>
 <body>
@@ -361,6 +383,14 @@ if($accessDenied){
     <div class="toast" id="toast"></div>
 
     <script>
+        // --- ส่วนที่ 7: สคริปต์ JavaScript จัดการการทำงานของหน้าดูรายละเอียด Snippet ---
+
+        /**
+         * ฟังก์ชัน: showToast
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: กล่องแจ้งเตือน]
+         * หน้าที่: แสดงกล่องข้อความ Toast แจ้งเตือนชั่วคราว 2 วินาที
+         * พารามิเตอร์: message
+         */
         function showToast(message) {
             const toast = document.getElementById('toast');
             toast.textContent = message;
@@ -371,7 +401,11 @@ if($accessDenied){
         const textarea = document.getElementById('source_code');
         const lineNumbers = document.getElementById('line-numbers');
 
-        // Auto-resize textarea height
+        /**
+         * ฟังก์ชัน: autoResizeTextarea
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: ปรับขนาดกล่องโค้ด]
+         * หน้าที่: ปรับความสูงของกล่องข้อความโค้ดและคอนเทนเนอร์ให้ตรงตามความยาวโค้ด
+         */
         function autoResizeTextarea() {
             textarea.scrollTop = 0;
             lineNumbers.scrollTop = 0;
@@ -387,7 +421,11 @@ if($accessDenied){
             }
         }
 
-        // Update line numbers
+        /**
+         * ฟังก์ชัน: updateLineNumbers
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: เลขบรรทัดโค้ด]
+         * หน้าที่: นับบรรทัดและสร้างตัวเลขบรรทัด (Line Numbers) ทางด้านซ้ายของกล่องโค้ด
+         */
         function updateLineNumbers() {
             if (textarea) {
                 const lines = textarea.value.split('\n').length;
@@ -395,13 +433,18 @@ if($accessDenied){
             }
         }
 
+        /**
+         * ฟังก์ชัน: updateEditor
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: อัปเดตการแสดงผล Editor]
+         * หน้าที่: เรียกทำงาน updateLineNumbers และ autoResizeTextarea พร้อมกัน
+         */
         function updateEditor() {
             updateLineNumbers();
             autoResizeTextarea();
         }
 
         if (textarea) {
-            // Sync scroll between code and line numbers
+            // ซิงค์ตำแหน่ง Scroll ระหว่างกล่องโค้ดและตัวเลขบรรทัด
             textarea.addEventListener('scroll', () => {
                 lineNumbers.scrollTop = textarea.scrollTop;
             });
@@ -538,6 +581,11 @@ if($accessDenied){
 
         const reportReqAsterisk = document.getElementById('reportReqAsterisk');
 
+        /**
+         * ฟังก์ชัน: closeReportModal
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: จัดการหน้าต่างรายงานปัญหา]
+         * หน้าที่: ปิด Modal รายงานปัญหา และรีเซ็ตค่าในฟอร์มกลับสู่ค่าเริ่มต้น
+         */
         function closeReportModal() {
             reportModal.classList.remove('open');
             reportForm.reset();
@@ -612,6 +660,11 @@ if($accessDenied){
             imageModal?.classList.add('open');
         });
 
+        /**
+         * ฟังก์ชัน: closeImageModal
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: กล่องขยายรูปภาพ Lightbox]
+         * หน้าที่: ปิดหน้าต่าง Modal แสดงรูปภาพขนาดใหญ่
+         */
         function closeImageModal() {
             imageModal?.classList.remove('open');
         }
@@ -633,10 +686,20 @@ if($accessDenied){
         const appealForm = document.getElementById('appealForm');
         const submitAppealBtn = document.getElementById('submitAppealBtn');
 
+        /**
+         * ฟังก์ชัน: openAppealModal
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: จัดการหน้าต่างยื่นอุทธรณ์]
+         * หน้าที่: เปิด Modal ให้เจ้าของ Snippet กรอกคำชี้แจงเพื่อขอยกเลิกการระงับ
+         */
         function openAppealModal() {
             appealModal?.classList.add('open');
         }
 
+        /**
+         * ฟังก์ชัน: closeAppealModal
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: จัดการหน้าต่างยื่นอุทธรณ์]
+         * หน้าที่: ปิด Modal ยื่นอุทธรณ์และล้างข้อความในฟอร์ม
+         */
         function closeAppealModal() {
             appealModal?.classList.remove('open');
             appealForm?.reset();

@@ -1,34 +1,57 @@
 <?php
+/**
+ * ==============================================================================
+ * ไฟล์: Admin/manage_snippets.php
+ * หน้าที่: หน้าจัดการ Snippet ทั้งหมดในระบบสำหรับผู้ดูแลระบบ (Admin Snippet Management)
+ * ส่วนประกอบในไฟล์:
+ *   1. โหลดระบบตรวจสอบสิทธิ์ผู้ดูแลระบบ (check_admin.php)
+ *   2. ประมวลผลคำสั่ง POST จากแอดมิน:
+ *      - action='soft_delete' : สั่งย้าย Snippet ไปยังถังขยะ ($control->softDeleteSnippetAdmin())
+ *      - action='restore'     : สั่งกู้คืน Snippet ออกจากถังขยะ ($control->restoreSnippetAdmin())
+ *      - action='hard_delete' : สั่งลบ Snippet ถาวรพร้อมไฟล์ภาพ ($control->deleteSnippetAdmin())
+ *      - action='suspend'     : สั่งระงับ Snippet พร้อมระบุเหตุผล ($control->suspendSnippetAdmin())
+ *      - action='unsuspend'   : ยกเลิกการระงับ Snippet ($control->unsuspendSnippetAdmin())
+ *   3. ดึงรายการ Snippet ทั้งหมดในระบบ รวมทั้งที่ถูกลบและถูกระงับ ($control->getAllSnippetsAdmin())
+ *   4. ส่วนแสดงผลตารางรายการโค้ด สถานะ ป้ายกำกับ และปุ่มดำเนินการ
+ *   5. สคริปต์ JavaScript: promptSuspend() รับเหตุผลการระงับ
+ * ==============================================================================
+ */
+
+// --- ส่วนที่ 1: ตรวจสอบสิทธิ์ผู้ดูแลระบบ ---
 require_once __DIR__ . '/check_admin.php';
 
 $successMsg = "";
 $errorMsg = "";
 
-// Handle Actions (Soft Delete / Restore / Hard Delete)
+// --- ส่วนที่ 2: ประมวลผลคำสั่ง POST จัดการสถานะของ Snippet ---
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['action'])) {
         $snippetId = (int)($_POST['snippet_id'] ?? 0);
         if ($snippetId <= 0) {
             $errorMsg = "ข้อมูลไม่ถูกต้อง";
         } else {
+            // สั่งย้าย Snippet เข้าถังขยะ (Soft Delete)
             if ($_POST['action'] === 'soft_delete') {
                 if ($control->softDeleteSnippetAdmin($snippetId)) {
                     $successMsg = "ย้าย Snippet ไปยังถังขยะเรียบร้อยแล้ว";
                 } else {
                     $errorMsg = "ไม่สามารถย้าย Snippet ไปยังถังขยะได้";
                 }
+            // สั่งกู้คืน Snippet จากถังขยะกลับมาใช้งาน
             } elseif ($_POST['action'] === 'restore') {
                 if ($control->restoreSnippetAdmin($snippetId)) {
                     $successMsg = "กู้คืน Snippet สำเร็จ";
                 } else {
                     $errorMsg = "ไม่สามารถกู้คืน Snippet ได้";
                 }
+            // สั่งลบ Snippet ทิ้งอย่างถาวร (Hard Delete)
             } elseif ($_POST['action'] === 'hard_delete') {
                 if ($control->deleteSnippetAdmin($snippetId)) {
                     $successMsg = "ลบ Snippet ถาวรเรียบร้อยแล้ว";
                 } else {
                     $errorMsg = "ไม่สามารถลบ Snippet ถาวรได้";
                 }
+            // สั่งระงับการแสดงผล Snippet (Suspend)
             } elseif ($_POST['action'] === 'suspend') {
                 $reason = trim($_POST['reason'] ?? 'ทำผิดข้อกำหนดชุมชน');
                 if ($reason === '') {
@@ -40,6 +63,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 } else {
                     $errorMsg = "ไม่สามารถระงับ Snippet ได้";
                 }
+            // ยกเลิกการระงับ Snippet (Unsuspend)
             } elseif ($_POST['action'] === 'unsuspend') {
                 $adminUsername = $_SESSION['username'] ?? 'Admin';
                 if ($control->unsuspendSnippetAdmin($snippetId, $adminUsername)) {
@@ -52,7 +76,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 
-// Get snippets list
+// --- ส่วนที่ 3: ดึงข้อมูล Snippet ทั้งหมดในระบบสำหรับผู้ดูแลระบบ ---
 $searchQuery = trim($_GET['q'] ?? '');
 $snippets = [];
 $snippetResult = $control->getAllSnippetsAdmin($searchQuery);
@@ -197,7 +221,7 @@ if ($snippetResult) {
                                 <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <circle cx="11" cy="11" r="8"></circle>
                                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                                </div>
+                                </svg>
                                 <input type="text" name="q" class="search-input" placeholder="ค้นหาชื่อเรื่อง, เจ้าของ..." value="<?php echo htmlspecialchars($searchQuery); ?>">
                             </div>
                         </form>
@@ -323,6 +347,13 @@ if ($snippetResult) {
             });
         }
 
+        /**
+         * ฟังก์ชัน: promptSuspend
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: กล่องข้อความกรอกเหตุผลการระงับ]
+         * หน้าที่: แสดงกล่องข้อความ Prompt ให้แอดมินกรอกเหตุผลในการระงับ Snippet ก่อนส่งฟอร์ม
+         * พารามิเตอร์: form (องค์ประกอบของฟอร์ม)
+         * คืนค่า: bool (true เมื่อยืนยัน, false เมื่องดส่ง)
+         */
         function promptSuspend(form) {
             const reason = prompt('กรุณาระบุเหตุผลในการระงับ Snippet นี้:', 'ละเมิดหลักเกณฑ์ของชุมชน');
             if (reason === null) {

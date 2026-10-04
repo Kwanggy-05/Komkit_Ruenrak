@@ -1,10 +1,23 @@
 <?php
+/**
+ * ==============================================================================
+ * ไฟล์: like_action.php
+ * หน้าที่: API Endpoint (AJAX POST) สำหรับกดถูกใจ / ยกเลิกการถูกใจ Snippet (Like System)
+ * ผลลัพธ์: JSON Response ({ "status": "success", "liked": true|false, "like_count": int } หรือ error)
+ * ขั้นตอนการทำงาน:
+ *   1. ตรวจสอบสถานะการเข้าสู่ระบบ
+ *   2. ตรวจสอบ Request Method (POST เท่านั้น)
+ *   3. ตรวจสอบสิทธิ์การเข้าถึง Snippet และสถานะการถูกระงับ
+ *   4. เรียกฟังก์ชัน $control->toggleLike() เพื่ออัปเดตยอดไลก์ในตาราง snippet_like
+ * ==============================================================================
+ */
+
 require_once "layout/session.php";
 require_once "db/connect.php";
 
 header('Content-Type: application/json');
 
-// Check if user is logged in
+// --- ส่วนที่ 1: ตรวจสอบการล็อกอินของผู้ใช้ ---
 if(!isset($_SESSION['user_id'])){
     echo json_encode(['status' => 'error', 'message' => 'กรุณาเข้าสู่ระบบก่อน']);
     exit;
@@ -17,6 +30,7 @@ if(!$user_id){
     exit;
 }
 
+// --- ส่วนที่ 2: ตรวจสอบ Request Method และรับค่ารหัส Snippet ---
 if($_SERVER['REQUEST_METHOD'] === 'POST'){
     $snippet_id = isset($_POST['snippet_id']) ? (int)$_POST['snippet_id'] : 0;
     
@@ -24,7 +38,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
         echo json_encode(['status' => 'error', 'message' => 'รหัส Snippet ไม่ถูกต้อง']);
         exit;
     }
-    // Check snippet access permission (do not allow liking someone else's private snippet)
+
+    // --- ส่วนที่ 3: ตรวจสอบสิทธิ์การเข้าถึงโพสต์และสถานะการระงับ ---
     $snippet = $control->getSnippetById($snippet_id, $user_id);
     if(!$snippet){
         echo json_encode(['status' => 'error', 'message' => 'ไม่พบ Snippet หรือไม่มีสิทธิ์เข้าถึง']);
@@ -36,6 +51,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
         exit;
     }
 
+    // --- ส่วนที่ 4: ประมวลผลการกดไลก์/ยกเลิกไลก์ ผ่านฟังก์ชัน toggleLike ---
     $result = $control->toggleLike($user_id, $snippet_id);
     echo json_encode($result);
 }else{

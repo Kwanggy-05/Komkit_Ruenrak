@@ -1,23 +1,39 @@
 <?php
+/**
+ * ==============================================================================
+ * ไฟล์: Admin/login.php
+ * หน้าที่: หน้าเข้าสู่ระบบสำหรับผู้ดูแลระบบ (Admin Login Portal)
+ * ส่วนประกอบในไฟล์:
+ *   1. กำหนด Working Directory กลับไปยัง Root โฟลเดอร์เพื่อโหลด DB และ Session
+ *   2. ล้างเซสชันเก่าหากมีการล็อกอินค้างอยู่
+ *   3. ประมวลผลการส่งฟอร์มเข้าสู่ระบบ (POST Request)
+ *   4. ตรวจสอบรหัสผ่านผ่าน $user->getUser() และตรวจสิทธิ์ (role === 'admin')
+ *   5. บันทึกข้อมูลเข้า Session แอดมิน และพาไปยังหน้า manage_languages.php
+ *   6. ส่วนแสดงผลแบบฟอร์มล็อกอิน HTML สำหรับผู้ดูแลระบบ
+ * ==============================================================================
+ */
+
 chdir(dirname(__DIR__));
 require_once "layout/session.php";
 require_once "db/connect.php";
 
+// --- ส่วนที่ 1: ตรวจสอบและรีเซ็ตเซสชันเพื่อเริ่มเซสชันใหม่ ---
 if (getCurrentUserId()) {
     startAppSession();
 }
 
 $errorAlert = "";
 
+// --- ส่วนที่ 2: ประมวลผลการเข้าสู่ระบบของผู้ดูแลระบบ (POST Method) ---
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = trim($_POST["username"] ?? "");
     $password = $_POST["password"] ?? "";
     
-    // Authenticate user
+    // เรียกฟังก์ชัน getUser เพื่อตรวจสอบชื่อผู้ใช้และรหัสผ่าน
     $result = $user->getUser($username, $password);
     
     if ($result) {
-        // Check if user has admin role
+        // ตรวจสอบว่าบัญชีนี้มีสิทธิ์เป็น 'admin' หรือไม่
         if ($result['role'] === 'admin') {
             $_SESSION["username"] = $username;
             $_SESSION["user_id"] = $result["user_id"];

@@ -1,27 +1,44 @@
 <?php
+/**
+ * ==============================================================================
+ * ไฟล์: remove.php
+ * หน้าที่: จัดการถังขยะ (Recycle Bin / Trash) ของสมาชิก
+ * รายการส่วนประกอบ:
+ *   1. ตรวจสอบสิทธิ์ผู้ใช้งาน (Auth Middleware)
+ *   2. การกู้คืน Snippet (Restore Action) ผ่าน $control->restoreSnippet()
+ *   3. การลบ Snippet ถาวร (Hard Delete Action) ผ่าน $control->deleteSnippet()
+ *   4. การตั้งค่าแบ่งหน้า (Pagination) และระบบค้นหา Snippet ที่ถูกลบ
+ *   5. ดึงข้อมูล Snippet ในถังขยะจากฐานข้อมูล
+ *   6. การแสดงผล UI (Navbar, Search bar, Grid รายการโค้ด, Pagination Links)
+ *   7. JavaScript: changePerPage() สำหรับปรับจำนวนรายการที่แสดงต่อหน้า
+ * ==============================================================================
+ */
+
+// --- ส่วนที่ 1: โหลดไฟล์ระบบและตรวจสอบการเข้าสู่ระบบของผู้ใช้ ---
 require_once "layout/session.php";
 require_once "db/connect.php";
 require_once "layout/check_user.php";
 
 $userId = getCurrentUserId();
 
-// Restore action
+// --- ส่วนที่ 2: ประมวลผลคำขอกู้คืน Snippet กลับจากถังขยะ (Restore Action) ---
 if(isset($_GET['restore']) && is_numeric($_GET['restore'])){
     $control->restoreSnippet((int)$_GET['restore'], $userId);
     header('Location:remove.php');
     exit;
 }
 
-// Permanent delete action
+// --- ส่วนที่ 3: ประมวลผลคำขอลบ Snippet อย่างถาวร (Hard Delete Action) ---
 if(isset($_GET['delete']) && is_numeric($_GET['delete'])){
     $control->deleteSnippet((int)$_GET['delete'], $userId);
     header('Location:remove.php');
     exit;
 }
 
+// --- ส่วนที่ 4: จัดการคำค้นหาและการตั้งค่าแบ่งหน้า (Pagination) ---
 $searchQuery = trim($_GET['q'] ?? '');
 
-// Pagination settings
+// กำหนดจำนวนรายการต่อหน้าที่อนุญาต [10, 15, 20, 25]
 $allowedLimits = [10, 15, 20, 25];
 if(isset($_GET['limit']) && in_array((int)$_GET['limit'], $allowedLimits)){
     $itemsPerPage = (int)$_GET['limit'];
@@ -33,7 +50,7 @@ if(isset($_GET['limit']) && in_array((int)$_GET['limit'], $allowedLimits)){
 }
 $currentPage = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 
-// Get deleted snippets count & results
+// --- ส่วนที่ 5: ดึงข้อมูล Snippet ที่อยู่ในถังขยะของผู้ใช้จากฐานข้อมูล ---
 $totalSnippets = $control->getTotalDeletedUserSnippetCount($userId, $searchQuery);
 $result = $control->getDeletedUserSnippetsPaginated($userId, $currentPage, $itemsPerPage, $searchQuery);
 
@@ -42,7 +59,7 @@ if($result){
     $snippets = $result->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// Calculate pagination info
+// คำนวณจำนวนหน้าทั้งหมด
 $totalPages = ceil($totalSnippets / $itemsPerPage);
 if($totalPages === 0) $totalPages = 1;
 ?>
@@ -217,6 +234,12 @@ if($totalPages === 0) $totalPages = 1;
     <div class="toast" id="toast"></div>
 
     <script>
+        /**
+         * ฟังก์ชัน: changePerPage
+         * ส่วนที่: JavaScript สำหรับควบคุมการแบ่งหน้า (Client-side Pagination)
+         * หน้าที่: รีโหลดหน้าเว็บพร้อมเปลี่ยนค่าพารามิเตอร์ limit (จำนวนรายการต่อหน้า) และรีเซ็ตกลับหน้า 1
+         * พารามิเตอร์: val (จำนวนที่เลือก เช่น 10, 15, 20, 25)
+         */
         function changePerPage(val) {
             const url = new URL(window.location.href);
             url.searchParams.set('limit', val);

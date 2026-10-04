@@ -1,16 +1,34 @@
 <?php
+/**
+ * ==============================================================================
+ * ไฟล์: Admin/manage_reports.php
+ * หน้าที่: หน้าจัดการรายงานเนื้อหาที่ไม่เหมาะสมสำหรับผู้ดูแลระบบ (Admin Reports Management)
+ * ส่วนประกอบในไฟล์:
+ *   1. โหลดระบบตรวจสอบสิทธิ์ผู้ดูแลระบบ (check_admin.php)
+ *   2. ประมวลผลคำสั่ง POST จากแอดมิน:
+ *      - action='reject'            : ปฏิเสธรายงาน (ยกฟ้อง) ($control->rejectReportAdmin())
+ *      - action='suspend_snippet'   : สั่งระงับ Snippet พร้อมระบุเหตุผล ($control->suspendSnippetAdmin())
+ *      - action='unsuspend_snippet' : ยกเลิกการระงับ Snippet ($control->unsuspendSnippetAdmin())
+ *   3. ตัวกรองสถานะรายงาน (pending, removed, rejected, ALL) และดึงข้อมูล ($control->getAllReportsAdmin())
+ *   4. ส่วนแสดงผลตารางรายการรายงาน และปุ่มตรวจสอบ/ดำเนินการ
+ *   5. สคริปต์ JavaScript: promptSuspend() ถามเหตุผลก่อนสั่งระงับ
+ * ==============================================================================
+ */
+
+// --- ส่วนที่ 1: ตรวจสอบสิทธิ์ผู้ดูแลระบบ ---
 require_once __DIR__ . '/check_admin.php';
 
 $successMsg = "";
 $errorMsg = "";
 
-// Handle POST Actions
+// --- ส่วนที่ 2: ประมวลผลคำสั่ง POST จัดการรายงาน ---
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['action'])) {
         $reportId = (int)($_POST['report_id'] ?? 0);
         $snippetId = (int)($_POST['snippet_id'] ?? 0);
         $adminUsername = $_SESSION['username'] ?? 'Admin';
         
+        // กรณีแอดมินปฏิเสธรายงาน (รายงานไม่เป็นความจริง หรือไม่ผิดกฎ)
         if ($_POST['action'] === 'reject') {
             if ($reportId <= 0) {
                 $errorMsg = "รหัสรายงานไม่ถูกต้อง";
@@ -21,6 +39,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $errorMsg = "ไม่สามารถปฏิเสธรายงานได้";
                 }
             }
+        // กรณีแอดมินสั่งระงับการแสดงผลของ Snippet ตามที่ได้รับรายงาน
         } elseif ($_POST['action'] === 'suspend_snippet') {
             if ($snippetId <= 0) {
                 $errorMsg = "รหัส Snippet ไม่ถูกต้อง";
@@ -35,6 +54,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $errorMsg = "ไม่สามารถระงับ Snippet ได้";
                 }
             }
+        // กรณีแอดมินยกเลิกการระงับ Snippet ให้กลับมาแสดงผลปกติ
         } elseif ($_POST['action'] === 'unsuspend_snippet') {
             if ($snippetId <= 0) {
                 $errorMsg = "รหัส Snippet ไม่ถูกต้อง";
@@ -49,7 +69,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 
-// Get filter status (lowercase matches original enum: 'pending', 'removed', 'rejected')
+// --- ส่วนที่ 3: รับค่าตัวกรองสถานะรายงาน และดึงรายการรายงานจากฐานข้อมูล ---
 $statusFilter = isset($_GET['status']) ? trim($_GET['status']) : 'pending';
 if (!in_array($statusFilter, ['pending', 'removed', 'rejected', 'ALL'])) {
     $statusFilter = 'pending';
@@ -339,6 +359,13 @@ if ($reportsResult) {
             });
         }
 
+        /**
+         * ฟังก์ชัน: promptSuspend
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: กล่องข้อความกรอกเหตุผลการระงับ]
+         * หน้าที่: แสดงกล่องข้อความ Prompt ให้แอดมินพิมพ์เหตุผลในการระงับ Snippet ก่อนส่งฟอร์ม
+         * พารามิเตอร์: form (องค์ประกอบฟอร์มที่ส่ง), defaultReason (เหตุผลเริ่มต้น)
+         * คืนค่า: bool (true เมื่อยืนยันการส่ง, false เมื่อกดยกเลิก)
+         */
         function promptSuspend(form, defaultReason) {
             const reason = prompt('กรุณาระบุเหตุผลในการระงับ Snippet นี้:', defaultReason || 'ละเมิดนโยบาย');
             if (reason === null) {

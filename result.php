@@ -1,4 +1,17 @@
 <?php
+/**
+ * ==============================================================================
+ * ไฟล์: result.php
+ * หน้าที่: หน้าแสดงผลการค้นหา Snippet (Search Results Page)
+ * ส่วนประกอบในไฟล์:
+ *   1. ดึงรายการภาษาพร้อมจำนวน Snippet เพื่อแสดงในกล่องตัวเลือก ($control->getAllLanguagesWithSnippetCounts())
+ *   2. ค้นหา Snippet ตามคำค้นหาและตัวกรองภาษา ($control->searchSnippets())
+ *   3. ดึงยอดไลก์และสถานะการถูกใจของผู้ใช้ปัจจุบัน ($control->getLikedSnippetIds(), getLikeCountsForSnippets())
+ *   4. ส่วนแสดงผล UI ผลลัพธ์การค้นหาในรูปแบบการ์ด (Snippet Cards Grid)
+ *   5. สคริปต์ JavaScript: แสดง Toast แจ้งเตือน และระบบกดถูกใจ (Like) ผ่าน AJAX
+ * ==============================================================================
+ */
+
 require_once "layout/session.php";
 require_once "db/connect.php";
 
@@ -6,14 +19,14 @@ $searchQuery = trim($_GET['q'] ?? '');
 $selectedLanguage = $_GET['lang'] ?? '';
 $snippets = [];
 
-// Get all languages with snippet counts
+// --- ส่วนที่ 1: ดึงข้อมูลภาษาทั้งหมดพร้อมจำนวน Snippet ในแต่ละภาษา ---
 $languageResult = $control->getAllLanguagesWithSnippetCounts();
 $languages = [];
 if($languageResult){
     $languages = $languageResult->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// Search with language filter
+// ค้นหาชื่อภาษาที่เลือกสำหรับแสดงในหัวข้อผลการค้นหา
 $selectedLanguageName = '';
 if($selectedLanguage !== ''){
     foreach($languages as $lang){
@@ -24,12 +37,13 @@ if($selectedLanguage !== ''){
     }
 }
 
-// Always fetch snippets (if q and lang are empty, returns all public & protected snippets)
+// --- ส่วนที่ 2: ดึงรายการ Snippet ที่ตรงตามเงื่อนไขคำค้นหาและตัวกรองภาษา ---
 $result = $control->searchSnippets($searchQuery, $selectedLanguage);
 if($result){
     $snippets = $result->fetchAll(PDO::FETCH_ASSOC);
 }
 
+// --- ส่วนที่ 3: ดึงข้อมูลยอดถูกใจและสถานะไลก์ของผู้ใช้ ---
 $userId = getCurrentUserId();
 $likedIds = [];
 if($userId){
@@ -186,6 +200,14 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
     <div class="toast" id="toast"></div>
 
     <script>
+        // --- ส่วนที่ 5: สคริปต์ JavaScript สำหรับหน้าแสดงผลการค้นหา ---
+
+        /**
+         * ฟังก์ชัน: showToast
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: กล่องข้อความแจ้งเตือน]
+         * หน้าที่: แสดงกล่องข้อความ Toast ชั่วคราว 2 วินาที
+         * พารามิเตอร์: message (ข้อความแจ้งเตือน)
+         */
         function showToast(message) {
             const toast = document.getElementById('toast');
             toast.textContent = message;
@@ -193,7 +215,7 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
             setTimeout(() => toast.classList.remove('show'), 2000);
         }
 
-        // Handle like toggle on each card
+        // จัดการการกดปุ่มถูกใจ (Like Toggle) บนการ์ด Snippet ด้วย AJAX (like_action.php)
         document.querySelectorAll('.like-toggle').forEach(btn => {
             btn.addEventListener('click', async function(e) {
                 e.preventDefault();

@@ -1,10 +1,41 @@
 <?php
+/**
+ * ==============================================================================
+ * ไฟล์: db/control.php
+ * คลาส: Control
+ * หน้าที่: คลาสควบคุมหลัก (Model/Controller) จัดการตารางข้อมูลทั้งหมดของ SnippetBox
+ * 
+ * สารบัญส่วนต่างๆ ในคลาส:
+ *   [ส่วนที่ 1] การจัดการภาษาโปรแกรม (getLanguage, getPublicLanguages, getAllLanguagesWithSnippetCounts)
+ *   [ส่วนที่ 2] การดึงและค้นหา Snippet (getSnippet, getUserSnippets, searchSnippets, getSnippetsByLanguage)
+ *   [ส่วนที่ 3] การสร้าง แก้ไข ลบ Snippet (insert, getSnippetById, updateSnippet, deleteSnippet, softDeleteSnippet, restoreSnippet)
+ *   [ส่วนที่ 4] การแบ่งหน้าและการนับจำนวน (getTotalUserSnippetCount, getUserSnippetsPaginated, getBookmarkedSnippetsPaginated ฯลฯ)
+ *   [ส่วนที่ 5] ระบบแท็ก (Tag, getAllTags, getTagIdByName, createTag, attachTagToSnippet)
+ *   [ส่วนที่ 6] ระบบการกดถูกใจ (toggleLike, isLiked, getLikeCount, getLikedSnippetIds, getLikeCountsForSnippets)
+ *   [ส่วนที่ 7] ระบบบันทึกที่คั่นหน้า (toggleBookmark, isBookmarked, getBookmarkedSnippets, getBookmarkedSnippetIds)
+ *   [ส่วนที่ 8] จัดการภาษาโปรแกรมสำหรับแอดมิน (addLanguage, updateLanguage, deleteLanguage, isLanguageInUse)
+ *   [ส่วนที่ 9] จัดการ Snippet สำหรับแอดมิน (getAllSnippetsAdmin, suspendSnippetAdmin, unsuspendSnippetAdmin ฯลฯ)
+ *   [ส่วนที่ 10] ระบบรายงานเนื้อหาไม่เหมาะสม (createReport, getAllReportsAdmin, rejectReportAdmin, resolveReportsForSnippet ฯลฯ)
+ *   [ส่วนที่ 11] ระบบยื่นอุทธรณ์ Snippet ที่ถูกระงับ (createSnippetAppeal, approveAppealAdmin, rejectAppealAdmin ฯลฯ)
+ * ==============================================================================
+ */
 class Control{
     private $db;
+    /**
+     * ฟังก์ชัน: __construct
+     * ส่วนที่: เมธอดเริ่มต้นคลาส (Constructor)
+     * หน้าที่: รับ PDO Database Connection สำหรับใช้งานในคลาส Control
+     */
     function __construct($con){
         $this->db=$con;
     }
 
+    /**
+     * ฟังก์ชัน: getLanguage
+     * ส่วนที่: [ส่วนที่ 1: การจัดการภาษาโปรแกรม]
+     * หน้าที่: ดึงข้อมูลภาษาโปรแกรมทั้งหมดจากตาราง language
+     * คืนค่า: PDOStatement หรือ false หากเกิดข้อผิดพลาด
+     */
     function getLanguage(){
         try{
             $sql = "SELECT * FROM language";
@@ -16,6 +47,12 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getPublicLanguages
+     * ส่วนที่: [ส่วนที่ 1: การจัดการภาษาโปรแกรม]
+     * หน้าที่: ดึงเฉพาะภาษาที่มีการสร้าง Snippet แบบสาธารณะ (public/protected) และยังไม่ถูกลบหรือระงับ
+     * คืนค่า: PDOStatement ผลลัพธ์ภาษาที่มีโค้ดอยู่จริง
+     */
     function getPublicLanguages(){
         try{
             $sql = "SELECT DISTINCT b.language_id, b.language_name
@@ -33,6 +70,12 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getAllLanguagesWithSnippetCounts
+     * ส่วนที่: [ส่วนที่ 1: การจัดการภาษาโปรแกรม]
+     * หน้าที่: ดึงรายการภาษาทั้งหมดพร้อมนับจำนวน Snippet สาธารณะในแต่ละภาษา (สำหรับแถบเมนูข้าง)
+     * คืนค่า: PDOStatement รายการภาษาและจำนวน snippet_count
+     */
     function getAllLanguagesWithSnippetCounts(){
         try{
             $sql = "SELECT l.language_id, l.language_name,
@@ -52,6 +95,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getSnippet
+     * ส่วนที่: [ส่วนที่ 2: การดึงและค้นหา Snippet]
+     * หน้าที่: ดึงรายการ Snippet ทั้งหมดที่เป็นสาธารณะ หรือเป็นของผู้ใช้ปัจจุบันที่ระบุ พร้อมชื่อภาษาและแท็ก
+     * พารามิเตอร์: $current_user_id (รหัสผู้ใช้ปัจจุบัน, ค่าเริ่มต้น 0)
+     * คืนค่า: PDOStatement
+     */
     function getSnippet($current_user_id = 0){
         try{
             $sql = "SELECT a.*, b.language_name,
@@ -75,6 +125,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getUserSnippets
+     * ส่วนที่: [ส่วนที่ 2: การดึงและค้นหา Snippet]
+     * หน้าที่: ดึงรายการ Snippet ทั้งหมดของสมาชิกคนนั้นๆ (My Snippets) พร้อมรองรับคำค้นหา keyword
+     * พารามิเตอร์: $user_id, $keyword
+     * คืนค่า: PDOStatement
+     */
     function getUserSnippets($user_id, $keyword = ''){
         try{
             $sql = "SELECT a.*, b.language_name,
@@ -115,6 +172,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: searchSnippets
+     * ส่วนที่: [ส่วนที่ 2: การดึงและค้นหา Snippet]
+     * หน้าที่: ค้นหา Snippet จากคำค้นหา (ชื่อ, รายละเอียด, โค้ด, แท็ก) และกรองตามภาษา เรียงตามยอดไลก์
+     * พารามิเตอร์: $keyword, $language_id
+     * คืนค่า: PDOStatement
+     */
     function searchSnippets($keyword, $language_id = null){
         try{
             $sql = "SELECT a.*, b.language_name,
@@ -155,6 +219,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getSnippetsByLanguage
+     * ส่วนที่: [ส่วนที่ 2: การดึงและค้นหา Snippet]
+     * หน้าที่: ดึง Snippet สาธารณะทั้งหมดที่เขียนด้วยภาษาที่ระบุ
+     * พารามิเตอร์: $language_id
+     * คืนค่า: PDOStatement
+     */
     function getSnippetsByLanguage($language_id){
         try{
             $sql = "SELECT a.*, b.language_name,
@@ -179,6 +250,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: insert
+     * ส่วนที่: [ส่วนที่ 3: การสร้างและแก้ไข Snippet]
+     * หน้าที่: สร้าง Snippet ใหม่ลงในฐานข้อมูล จัดการอัปโหลดแท็กและผูกแท็กเข้ากับ Snippet
+     * พารามิเตอร์: $title, $source_code, $description, $visibility, $image_path, $language_id, $tags, $user_id
+     * คืนค่า: int snippet_id หากสำเร็จ หรือ false หากล้มเหลว
+     */
     function insert($title,$source_code,$description,$visibility,$image_path,$language_id,$tags, $user_id){
         try{
             $this->db->beginTransaction();
@@ -226,6 +304,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getSnippetById
+     * ส่วนที่: [ส่วนที่ 3: การสร้างและแก้ไข Snippet]
+     * หน้าที่: ดึงข้อมูล Snippet ตาม ID พร้อมตรวจสอบสิทธิ์การเข้าถึง (เจ้าของ/สาธารณะ/สถานะถูกลบหรือระงับ)
+     * พารามิเตอร์: $snippet_id, $current_user_id, $include_deleted
+     * คืนค่า: array ข้อมูล Snippet หรือ false หากไม่มีสิทธิ์หรือหาไม่พบ
+     */
     function getSnippetById($snippet_id, $current_user_id = 0, $include_deleted = false){
         try{
             $deleted_condition = $include_deleted 
@@ -259,6 +344,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: updateSnippet
+     * ส่วนที่: [ส่วนที่ 3: การสร้างและแก้ไข Snippet]
+     * หน้าที่: ปรับปรุงแก้ไขข้อมูล Snippet และอัปเดตรายการแท็กใหม่
+     * พารามิเตอร์: $snippet_id, $title, $source_code, $description, $visibility, $image_path, $language_id, $tags, $user_id
+     * คืนค่า: bool
+     */
     function updateSnippet($snippet_id, $title, $source_code, $description, $visibility, $image_path, $language_id, $tags, $user_id){
         try{
             $this->db->beginTransaction();
@@ -309,6 +401,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: deleteSnippet
+     * ส่วนที่: [ส่วนที่ 3: การสร้างและแก้ไข Snippet]
+     * หน้าที่: ลบ Snippet อย่างถาวร (Hard Delete) พร้อมลบไฟล์รูปภาพที่แนบไว้ในโฟลเดอร์ uploads
+     * พารามิเตอร์: $snippet_id, $user_id
+     * คืนค่า: bool
+     */
     function deleteSnippet($snippet_id, $user_id){
         try{
             $this->db->beginTransaction();
@@ -358,6 +457,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: softDeleteSnippet
+     * ส่วนที่: [ส่วนที่ 3: การสร้างและแก้ไข Snippet]
+     * หน้าที่: ย้าย Snippet ไปยังถังขยะ (Soft Delete โดยกำหนด deleted = 1)
+     * พารามิเตอร์: $snippet_id, $user_id
+     * คืนค่า: bool
+     */
     function softDeleteSnippet($snippet_id, $user_id){
         try{
             $sql = "UPDATE snippet SET deleted = 1 WHERE snippet_id = :snippet_id AND user_id = :user_id AND (is_suspended = 0 OR is_suspended IS NULL)";
@@ -371,6 +477,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: restoreSnippet
+     * ส่วนที่: [ส่วนที่ 3: การสร้างและแก้ไข Snippet]
+     * หน้าที่: กู้คืน Snippet จากถังขยะกลับมาใช้งานตามปกติ (กำหนด deleted = 0)
+     * พารามิเตอร์: $snippet_id, $user_id
+     * คืนค่า: bool
+     */
     function restoreSnippet($snippet_id, $user_id){
         try{
             $sql = "UPDATE snippet SET deleted = 0 WHERE snippet_id = :snippet_id AND user_id = :user_id AND (is_suspended = 0 OR is_suspended IS NULL)";
@@ -385,6 +498,13 @@ class Control{
 
     // ===== Pagination Methods =====
 
+    /**
+     * ฟังก์ชัน: getTotalUserSnippetCount
+     * ส่วนที่: [ส่วนที่ 4: การแบ่งหน้าและการนับจำนวน]
+     * หน้าที่: นับจำนวน Snippet ทั้งหมดตามเงื่อนไข (ของผู้ใช้/สาธารณะ/คำค้นหา/ภาษา) เพื่อคำนวณจำนวนหน้า
+     * พารามิเตอร์: $user_id, $keyword, $only_own, $language_id
+     * คืนค่า: int จำนวน Snippet ทั้งหมด
+     */
     function getTotalUserSnippetCount($user_id, $keyword = '', $only_own = false, $language_id = ''){
         try{
             $sql = "SELECT COUNT(DISTINCT a.snippet_id) as total FROM snippet a
@@ -433,6 +553,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getTotalBookmarkedSnippetCount
+     * ส่วนที่: [ส่วนที่ 4: การแบ่งหน้าและการนับจำนวน]
+     * หน้าที่: นับจำนวน Snippet ที่ผู้ใช้บุ๊กมาร์กไว้ทั้งหมด
+     * พารามิเตอร์: $user_id
+     * คืนค่า: int จำนวนที่คั่นหน้า
+     */
     function getTotalBookmarkedSnippetCount($user_id){
         try{
             $sql = "SELECT COUNT(*) as total FROM bookmarks bk
@@ -450,6 +577,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getUserSnippetsPaginated
+     * ส่วนที่: [ส่วนที่ 4: การแบ่งหน้าและการนับจำนวน]
+     * หน้าที่: ดึงข้อมูล Snippet แบบแบ่งหน้า (Pagination) พร้อมระบบค้นหาและตัวกรองภาษา
+     * พารามิเตอร์: $user_id, $page, $limit, $keyword, $only_own, $language_id
+     * คืนค่า: PDOStatement
+     */
     function getUserSnippetsPaginated($user_id, $page = 1, $limit = 10, $keyword = '', $only_own = false, $language_id = ''){
         try{
             $page = max(1, (int)$page);
@@ -522,6 +656,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getBookmarkedSnippetsPaginated
+     * ส่วนที่: [ส่วนที่ 4: การแบ่งหน้าและการนับจำนวน]
+     * หน้าที่: ดึงรายการ Snippet ที่ผู้ใช้กดบุ๊กมาร์กไว้แบบแบ่งหน้า (Pagination)
+     * พารามิเตอร์: $user_id, $page, $limit
+     * คืนค่า: PDOStatement
+     */
     function getBookmarkedSnippetsPaginated($user_id, $page = 1, $limit = 10){
         try{
             $page = max(1, (int)$page);
@@ -553,6 +694,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getTotalDeletedUserSnippetCount
+     * ส่วนที่: [ส่วนที่ 4: การแบ่งหน้าและการนับจำนวน]
+     * หน้าที่: นับจำนวน Snippet ในถังขยะ (deleted = 1) ของผู้ใช้ สำหรับคำนวณหน้า
+     * พารามิเตอร์: $user_id, $keyword
+     * คืนค่า: int
+     */
     function getTotalDeletedUserSnippetCount($user_id, $keyword = ''){
         try{
             $sql = "SELECT COUNT(DISTINCT a.snippet_id) as total FROM snippet a
@@ -587,6 +735,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getDeletedUserSnippetsPaginated
+     * ส่วนที่: [ส่วนที่ 4: การแบ่งหน้าและการนับจำนวน]
+     * หน้าที่: ดึงรายการ Snippet ในถังขยะแบบแบ่งหน้า (สำหรับหน้า Remove / Recycle Bin)
+     * พารามิเตอร์: $user_id, $page, $limit, $keyword
+     * คืนค่า: PDOStatement
+     */
     function getDeletedUserSnippetsPaginated($user_id, $page = 1, $limit = 10, $keyword = ''){
         try{
             $page = max(1, (int)$page);
@@ -634,6 +789,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getTagIdByName (Private Helper)
+     * ส่วนที่: [ส่วนที่ 5: ระบบแท็ก - Tag Management]
+     * หน้าที่: ค้นหา tag_id จากชื่อแท็ก
+     * พารามิเตอร์: $tag_name
+     * คืนค่า: int tag_id หรือ false
+     */
     private function getTagIdByName($tag_name){
         $sql = "SELECT tag_id FROM tag WHERE tag_name = :tag_name LIMIT 1";
         $stmt = $this->db->prepare($sql);
@@ -643,6 +805,13 @@ class Control{
         return $row ? $row['tag_id'] : false;
     }
 
+    /**
+     * ฟังก์ชัน: createTag (Private Helper)
+     * ส่วนที่: [ส่วนที่ 5: ระบบแท็ก - Tag Management]
+     * หน้าที่: สร้างแท็กใหม่ในตาราง tag และคืนค่า tag_id ที่สร้างขึ้น
+     * พารามิเตอร์: $tag_name
+     * คืนค่า: int tag_id
+     */
     private function createTag($tag_name){
         $sql = "INSERT INTO tag(tag_name) VALUES (:tag_name)";
         $stmt = $this->db->prepare($sql);
@@ -651,6 +820,12 @@ class Control{
         return $this->db->lastInsertId();
     }
 
+    /**
+     * ฟังก์ชัน: attachTagToSnippet (Private Helper)
+     * ส่วนที่: [ส่วนที่ 5: ระบบแท็ก - Tag Management]
+     * หน้าที่: ผูกความสัมพันธ์ระหว่าง Snippet และ Tag ในตาราง snippet_tag
+     * พารามิเตอร์: $snippet_id, $tag_id
+     */
     private function attachTagToSnippet($snippet_id, $tag_id){
         $sql = "INSERT IGNORE INTO snippet_tag(snippet_id, tag_id) VALUES (:snippet_id, :tag_id)";
         $stmt = $this->db->prepare($sql);
@@ -659,6 +834,12 @@ class Control{
         $stmt->execute();
     }
 
+    /**
+     * ฟังก์ชัน: Tag
+     * ส่วนที่: [ส่วนที่ 5: ระบบแท็ก - Tag Management]
+     * หน้าที่: ดึงแท็กยอดนิยม 20 อันดับแรกที่มีจำนวน Snippet ใช้งานมากที่สุด
+     * คืนค่า: PDOStatement
+     */
     function Tag(){
         try{
             $sql="SELECT 
@@ -681,6 +862,12 @@ class Control{
     
     }
 
+    /**
+     * ฟังก์ชัน: getAllTags
+     * ส่วนที่: [ส่วนที่ 5: ระบบแท็ก - Tag Management]
+     * หน้าที่: ดึงแท็กทั้งหมดที่มีการผูกกับ Snippet ที่เปิดใช้งานอยู่
+     * คืนค่า: PDOStatement
+     */
     function getAllTags(){
         try{
             $sql = "SELECT * FROM tag ORDER BY tag_name ASC";
@@ -695,6 +882,13 @@ class Control{
 
     // ===== Like Methods =====
 
+    /**
+     * ฟังก์ชัน: toggleLike
+     * ส่วนที่: [ส่วนที่ 6: ระบบการกดถูกใจ - Like System]
+     * หน้าที่: สลับสถานะถูกใจ หากเคยกดแล้วจะเป็นการยกเลิกไลก์ หากยังไม่เคยจะเพิ่มไลก์
+     * พารามิเตอร์: $user_id, $snippet_id
+     * คืนค่า: array ['liked' => bool, 'like_count' => int]
+     */
     function toggleLike($user_id, $snippet_id){
         try{
             if($this->isLiked($user_id, $snippet_id)){
@@ -719,6 +913,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: isLiked
+     * ส่วนที่: [ส่วนที่ 6: ระบบการกดถูกใจ - Like System]
+     * หน้าที่: ตรวจสอบว่าผู้ใช้คนนี้เคยกดไลก์ Snippet นี้หรือไม่
+     * พารามิเตอร์: $user_id, $snippet_id
+     * คืนค่า: bool
+     */
     function isLiked($user_id, $snippet_id){
         try{
             $sql = "SELECT COUNT(*) as cnt FROM snippet_like WHERE user_id = :user_id AND snippet_id = :snippet_id";
@@ -733,6 +934,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getLikeCount
+     * ส่วนที่: [ส่วนที่ 6: ระบบการกดถูกใจ - Like System]
+     * หน้าที่: ดึงจำนวนยอดไลก์ทั้งหมดของ Snippet ที่ระบุ
+     * พารามิเตอร์: $snippet_id
+     * คืนค่า: int
+     */
     function getLikeCount($snippet_id){
         try{
             $sql = "SELECT COUNT(*) as cnt FROM snippet_like WHERE snippet_id = :snippet_id";
@@ -746,6 +954,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getLikedSnippetIds
+     * ส่วนที่: [ส่วนที่ 6: ระบบการกดถูกใจ - Like System]
+     * หน้าที่: ดึงรายการ ID ของ Snippet ทั้งหมดที่ผู้ใช้กดไลก์ไว้ เพื่อใช้ตรวจสอบสถานะปุ่มในหน้าเว็บ
+     * พารามิเตอร์: $user_id
+     * คืนค่า: array ของ snippet_id
+     */
     function getLikedSnippetIds($user_id){
         try{
             $sql = "SELECT snippet_id FROM snippet_like WHERE user_id = :user_id";
@@ -762,6 +977,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getLikeCountsForSnippets
+     * ส่วนที่: [ส่วนที่ 6: ระบบการกดถูกใจ - Like System]
+     * หน้าที่: ดึงยอดไลก์ของหลาย Snippet พร้อมกัน (Batch Query) เพื่อลดจำนวน Query
+     * พารามิเตอร์: array $snippetIds
+     * คืนค่า: array [snippet_id => count]
+     */
     function getLikeCountsForSnippets($snippetIds){
         $counts = [];
         if(empty($snippetIds)) return $counts;
@@ -781,6 +1003,13 @@ class Control{
 
     // ===== Bookmark Methods =====
 
+    /**
+     * ฟังก์ชัน: toggleBookmark
+     * ส่วนที่: [ส่วนที่ 7: ระบบบุ๊กมาร์ก - Bookmark System]
+     * หน้าที่: สลับสถานะบุ๊กมาร์ก (บันทึก / ยกเลิกบันทึก Snippet เข้าคอลเลกชันส่วนตัว)
+     * พารามิเตอร์: $user_id, $snippet_id
+     * คืนค่า: array ['bookmarked' => bool]
+     */
     function toggleBookmark($user_id, $snippet_id){
         try{
             if($this->isBookmarked($user_id, $snippet_id)){
@@ -803,6 +1032,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: isBookmarked
+     * ส่วนที่: [ส่วนที่ 7: ระบบบุ๊กมาร์ก - Bookmark System]
+     * หน้าที่: ตรวจสอบว่าผู้ใช้คนนี้ได้บันทึก Snippet นี้เป็นบุ๊กมาร์กไว้หรือไม่
+     * พารามิเตอร์: $user_id, $snippet_id
+     * คืนค่า: bool
+     */
     function isBookmarked($user_id, $snippet_id){
         try{
             $sql = "SELECT COUNT(*) as cnt FROM bookmarks WHERE user_id = :user_id AND snippet_id = :snippet_id";
@@ -817,6 +1053,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getBookmarkedSnippets
+     * ส่วนที่: [ส่วนที่ 7: ระบบบุ๊กมาร์ก - Bookmark System]
+     * หน้าที่: ดึงข้อมูล Snippet ทั้งหมดที่ผู้ใช้คนนี้บุ๊กมาร์กไว้
+     * พารามิเตอร์: $user_id
+     * คืนค่า: PDOStatement
+     */
     function getBookmarkedSnippets($user_id){
         try{
             $sql = "SELECT a.*, b.language_name,
@@ -839,6 +1082,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getBookmarkedSnippetIds
+     * ส่วนที่: [ส่วนที่ 7: ระบบบุ๊กมาร์ก - Bookmark System]
+     * หน้าที่: ดึงรายการ ID ของ Snippet ทั้งหมดที่ผู้ใช้บุ๊กมาร์กไว้
+     * พารามิเตอร์: $user_id
+     * คืนค่า: array ของ snippet_id
+     */
     function getBookmarkedSnippetIds($user_id){
         try{
             $sql = "SELECT snippet_id FROM bookmarks WHERE user_id = :user_id";
@@ -855,6 +1105,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: addLanguage
+     * ส่วนที่: [ส่วนที่ 8: จัดการภาษาโปรแกรมสำหรับผู้ดูแลระบบ]
+     * หน้าที่: เพิ่มภาษาโปรแกรมใหม่เข้าสู่ฐานข้อมูล
+     * พารามิเตอร์: $language_name
+     * คืนค่า: bool
+     */
     function addLanguage($language_name){
         try{
             $sql = "INSERT INTO language(language_name) VALUES (:language_name)";
@@ -866,6 +1123,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: updateLanguage
+     * ส่วนที่: [ส่วนที่ 8: จัดการภาษาโปรแกรมสำหรับผู้ดูแลระบบ]
+     * หน้าที่: อัปเดตแก้ไขชื่อภาษาโปรแกรม
+     * พารามิเตอร์: $language_id, $language_name
+     * คืนค่า: bool
+     */
     function updateLanguage($language_id, $language_name){
         try{
             $sql = "UPDATE language SET language_name = :language_name WHERE language_id = :language_id";
@@ -878,6 +1142,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: deleteLanguage
+     * ส่วนที่: [ส่วนที่ 8: จัดการภาษาโปรแกรมสำหรับผู้ดูแลระบบ]
+     * หน้าที่: ลบภาษาโปรแกรมออกจากฐานข้อมูล
+     * พารามิเตอร์: $language_id
+     * คืนค่า: bool
+     */
     function deleteLanguage($language_id){
         try{
             $sql = "DELETE FROM language WHERE language_id = :language_id";
@@ -889,6 +1160,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: isLanguageInUse
+     * ส่วนที่: [ส่วนที่ 8: จัดการภาษาโปรแกรมสำหรับผู้ดูแลระบบ]
+     * หน้าที่: ตรวจสอบว่ามี Snippet ใดกำลังใช้งานภาษานี้อยู่หรือไม่ ก่อนอนุญาตให้ลบ
+     * พารามิเตอร์: $language_id
+     * คืนค่า: bool
+     */
     function isLanguageInUse($language_id){
         try{
             $sql = "SELECT COUNT(*) as count FROM snippet WHERE language_id = :language_id";
@@ -902,6 +1180,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getAllSnippetsAdmin
+     * ส่วนที่: [ส่วนที่ 9: จัดการ Snippet สำหรับผู้ดูแลระบบ]
+     * หน้าที่: ดึงข้อมูล Snippet ทั้งหมดในระบบสำหรับแอดมิน (รวมทั้งที่ถูกลบและถูกระงับ)
+     * พารามิเตอร์: $keyword
+     * คืนค่า: array
+     */
     function getAllSnippetsAdmin($keyword = ''){
         try{
             $sql = "SELECT s.*, l.language_name, u.username, u.firstname, u.lastname
@@ -927,6 +1212,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getSnippetByIdAdmin
+     * ส่วนที่: [ส่วนที่ 9: จัดการ Snippet สำหรับผู้ดูแลระบบ]
+     * หน้าที่: ดึงข้อมูล Snippet รายการเดี่ยวแบบละเอียดสำหรับแอดมิน
+     * พารามิเตอร์: $snippet_id
+     * คืนค่า: array หรือ false
+     */
     function getSnippetByIdAdmin($snippet_id){
         try{
             $sql = "SELECT s.*, l.language_name, u.username,
@@ -947,6 +1239,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: restoreSnippetAdmin
+     * ส่วนที่: [ส่วนที่ 9: จัดการ Snippet สำหรับผู้ดูแลระบบ]
+     * หน้าที่: แอดมินสั่งกู้คืน Snippet จากถังขยะ (deleted = 0)
+     * พารามิเตอร์: $snippet_id
+     * คืนค่า: bool
+     */
     function restoreSnippetAdmin($snippet_id){
         try{
             $sql = "UPDATE snippet SET deleted = 0 WHERE snippet_id = :snippet_id";
@@ -958,6 +1257,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: softDeleteSnippetAdmin
+     * ส่วนที่: [ส่วนที่ 9: จัดการ Snippet สำหรับผู้ดูแลระบบ]
+     * หน้าที่: แอดมินสั่งย้าย Snippet ไปยังถังขยะ (deleted = 1)
+     * พารามิเตอร์: $snippet_id
+     * คืนค่า: bool
+     */
     function softDeleteSnippetAdmin($snippet_id){
         try{
             $sql = "UPDATE snippet SET deleted = 1 WHERE snippet_id = :snippet_id";
@@ -969,9 +1275,20 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: suspendSnippetAdmin
+     * ส่วนที่: [ส่วนที่ 9: จัดการ Snippet สำหรับผู้ดูแลระบบ]
+     * หน้าที่: แอดมินสั่งระงับการแสดงผลของ Snippet (is_suspended = 1) พร้อมบันทึกเหตุผลใน snippet_suspensions
+     * พารามิเตอร์: $snippet_id, $admin_username, $reason
+     * คืนค่า: bool
+     */
     function suspendSnippetAdmin($snippet_id, $admin_username, $reason){
+        $ownTx = false;
         try{
-            $this->db->beginTransaction();
+            if(!$this->db->inTransaction()){
+                $this->db->beginTransaction();
+                $ownTx = true;
+            }
 
             $sqlSnippet = "UPDATE snippet SET is_suspended = 1 WHERE snippet_id = :snippet_id";
             $stmtSnippet = $this->db->prepare($sqlSnippet);
@@ -992,16 +1309,65 @@ class Control{
             $stmtReports->bindParam(":resolved_by", $admin_username, PDO::PARAM_STR);
             $stmtReports->execute();
 
-            $this->db->commit();
+            // ตรวจสอบเจ้าของ Snippet: หากโพสต์ถูกระงับสะสมมากกว่า 5 ครั้ง (> 5 ครั้ง) ให้แบนบัญชีโดยอัตโนมัติ
+            $stmtOwner = $this->db->prepare("SELECT user_id FROM snippet WHERE snippet_id = :snippet_id");
+            $stmtOwner->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
+            $stmtOwner->execute();
+            $ownerRow = $stmtOwner->fetch(PDO::FETCH_ASSOC);
+
+            if ($ownerRow && !empty($ownerRow['user_id'])) {
+                $ownerUserId = (int)$ownerRow['user_id'];
+
+                // นับจำนวนครั้งที่โพสต์ของผู้ใช้นี้ถูกระงับทั้งหมดจากประวัติตาราง snippet_suspensions
+                $stmtCount = $this->db->prepare(
+                    "SELECT COUNT(*) as total 
+                     FROM snippet_suspensions ss
+                     JOIN snippet s ON ss.snippet_id = s.snippet_id
+                     WHERE s.user_id = :user_id"
+                );
+                $stmtCount->bindParam(":user_id", $ownerUserId, PDO::PARAM_INT);
+                $stmtCount->execute();
+                $totalSuspensions = (int)$stmtCount->fetch(PDO::FETCH_ASSOC)['total'];
+
+                // หากทำผิด (โพสต์ถูกระงับ) มากกว่า 5 ครั้ง (> 5 ครั้ง) ให้แบนบัญชีโดยอัตโนมัติ
+                if ($totalSuspensions > 5) {
+                    $chkBan = $this->db->prepare("SELECT ban_id FROM user_bans WHERE user_id = :user_id AND unbanned_at IS NULL LIMIT 1");
+                    $chkBan->bindParam(':user_id', $ownerUserId, PDO::PARAM_INT);
+                    $chkBan->execute();
+                    if ($chkBan->fetch() === false) {
+                        $autoBanReason = "ถูกแบนบัญชีอัตโนมัติ: โพสต์ถูกระงับสะสม {$totalSuspensions} ครั้ง (มากกว่า 5 ครั้ง)";
+                        $autoAdminText = $admin_username . ' (ระบบอัตโนมัติ)';
+                        $insBan = $this->db->prepare(
+                            "INSERT INTO user_bans (user_id, admin_banned, reason, banned_at)
+                             VALUES (:user_id, :admin_banned, :reason, NOW())"
+                        );
+                        $insBan->bindParam(':user_id', $ownerUserId, PDO::PARAM_INT);
+                        $insBan->bindParam(':admin_banned', $autoAdminText, PDO::PARAM_STR);
+                        $insBan->bindParam(':reason', $autoBanReason, PDO::PARAM_STR);
+                        $insBan->execute();
+                    }
+                }
+            }
+
+            if($ownTx && $this->db->inTransaction()){
+                $this->db->commit();
+            }
             return true;
         }catch(PDOException $e){
-            if($this->db->inTransaction()){
+            if($ownTx && $this->db->inTransaction()){
                 $this->db->rollBack();
             }
             return false;
         }
     }
 
+    /**
+     * ฟังก์ชัน: unsuspendSnippetAdmin
+     * ส่วนที่: [ส่วนที่ 9: จัดการ Snippet สำหรับผู้ดูแลระบบ]
+     * หน้าที่: แอดมินยกเลิกการระงับ Snippet (is_suspended = 0) พร้อมบันทึกผู้ปลดระงับ
+     * พารามิเตอร์: $snippet_id, $admin_username
+     * คืนค่า: bool
+     */
     function unsuspendSnippetAdmin($snippet_id, $admin_username){
         try{
             $this->db->beginTransaction();
@@ -1030,6 +1396,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getSnippetSuspensionHistory
+     * ส่วนที่: [ส่วนที่ 9: จัดการ Snippet สำหรับผู้ดูแลระบบ]
+     * หน้าที่: ดึงประวัติการสั่งระงับและการยกเลิกระงับทั้งหมดของ Snippet รายการนั้น
+     * พารามิเตอร์: $snippet_id
+     * คืนค่า: array
+     */
     function getSnippetSuspensionHistory($snippet_id){
         try{
             $sql = "SELECT * FROM snippet_suspensions 
@@ -1044,6 +1417,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getLatestSnippetSuspension
+     * ส่วนที่: [ส่วนที่ 9: จัดการ Snippet สำหรับผู้ดูแลระบบ]
+     * หน้าที่: ดึงข้อมูลบันทึกการระงับครั้งล่าสุดของ Snippet
+     * พารามิเตอร์: $snippet_id
+     * คืนค่า: array หรือ false
+     */
     function getLatestSnippetSuspension($snippet_id){
         try{
             $sql = "SELECT * FROM snippet_suspensions 
@@ -1058,6 +1438,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: deleteSnippetAdmin
+     * ส่วนที่: [ส่วนที่ 9: จัดการ Snippet สำหรับผู้ดูแลระบบ]
+     * หน้าที่: แอดมินลบ Snippet อย่างถาวร (Hard Delete) พร้อมลบไฟล์รูปภาพ
+     * พารามิเตอร์: $snippet_id
+     * คืนค่า: bool
+     */
     function deleteSnippetAdmin($snippet_id){
         try{
             $this->db->beginTransaction();
@@ -1090,6 +1477,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: createReport
+     * ส่วนที่: [ส่วนที่ 10: ระบบรายงานโค้ดไม่เหมาะสม - Report System]
+     * หน้าที่: บันทึกรายงานจากผู้ใช้ทั่วไปที่พบ Snippet มีเนื้อหาไม่เหมาะสม
+     * พารามิเตอร์: $snippet_id, $user_id, $reason, $details
+     * คืนค่า: bool
+     */
     function createReport($snippet_id, $user_id, $reason, $details){
         try{
             $sql = "INSERT INTO reports (snippet_id, user_id, reason, details, status) 
@@ -1105,6 +1499,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: hasUserReported
+     * ส่วนที่: [ส่วนที่ 10: ระบบรายงานโค้ดไม่เหมาะสม - Report System]
+     * หน้าที่: ตรวจสอบว่าผู้ใช้คนนี้ได้รายงาน Snippet นี้และรายงานยังค้างพิจารณาอยู่หรือไม่
+     * พารามิเตอร์: $user_id, $snippet_id
+     * คืนค่า: bool
+     */
     function hasUserReported($user_id, $snippet_id){
         try{
             $sql = "SELECT COUNT(*) as count FROM reports WHERE user_id = :user_id AND snippet_id = :snippet_id AND status = 'pending'";
@@ -1119,6 +1520,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getAllReportsAdmin
+     * ส่วนที่: [ส่วนที่ 10: ระบบรายงานโค้ดไม่เหมาะสม - Report System]
+     * หน้าที่: ดึงรายการรายงานทั้งหมดในระบบสำหรับหน้าผู้ดูแลระบบ พร้อมตัวกรองสถานะ
+     * พารามิเตอร์: $statusFilter
+     * คืนค่า: array
+     */
     function getAllReportsAdmin($statusFilter = null){
         try{
             $sql = "SELECT r.*, s.title as snippet_title, s.deleted as snippet_deleted, s.is_suspended as snippet_suspended, s.source_code,
@@ -1146,6 +1554,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getReportByIdAdmin
+     * ส่วนที่: [ส่วนที่ 10: ระบบรายงานโค้ดไม่เหมาะสม - Report System]
+     * หน้าที่: ดึงข้อมูลรายละเอียดของรายงานฉบับที่ระบุตาม ID
+     * พารามิเตอร์: $report_id
+     * คืนค่า: array หรือ false
+     */
     function getReportByIdAdmin($report_id){
         try{
             $sql = "SELECT r.*, s.title as snippet_title, s.deleted as snippet_deleted, s.is_suspended as snippet_suspended, s.source_code, s.description as snippet_desc, s.visibility, s.image_path, l.language_name,
@@ -1170,6 +1585,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: rejectReportAdmin
+     * ส่วนที่: [ส่วนที่ 10: ระบบรายงานโค้ดไม่เหมาะสม - Report System]
+     * หน้าที่: แอดมินปฏิเสธรายงาน (ยกฟ้อง รายงานไม่เข้าข่ายความผิด)
+     * พารามิเตอร์: $report_id, $admin_username
+     * คืนค่า: bool
+     */
     function rejectReportAdmin($report_id, $admin_username = 'Admin'){
         try{
             $sql = "UPDATE reports SET status = 'rejected', resolved_by = :resolved_by, resolved_at = NOW() WHERE report_id = :report_id";
@@ -1182,6 +1604,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: resolveReportsForSnippet
+     * ส่วนที่: [ส่วนที่ 10: ระบบรายงานโค้ดไม่เหมาะสม - Report System]
+     * หน้าที่: ปิดรายงานทั้งหมดของ Snippet ที่ระบุ (สถานะ removed) เมื่อแอดมินดำเนินการจัดการแล้ว
+     * พารามิเตอร์: $snippet_id, $admin_username
+     * คืนค่า: bool
+     */
     function resolveReportsForSnippet($snippet_id, $admin_username = 'Admin'){
         try{
             $sql = "UPDATE reports SET status = 'removed', resolved_by = :resolved_by, resolved_at = NOW() WHERE snippet_id = :snippet_id AND status = 'pending'";
@@ -1194,6 +1623,12 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getPendingReportsCountAdmin
+     * ส่วนที่: [ส่วนที่ 10: ระบบรายงานโค้ดไม่เหมาะสม - Report System]
+     * หน้าที่: นับจำนวนรายงานที่ยังรอการตรวจสอบ (status = 'pending')
+     * คืนค่า: int
+     */
     function getPendingReportsCountAdmin(){
         try{
             $sql = "SELECT COUNT(*) as count FROM reports WHERE status = 'pending'";
@@ -1210,6 +1645,13 @@ class Control{
     // SNIPPET APPEALS (ระบบยื่นคำร้องถอนการระงับโพสต์)
     // ==========================================
 
+    /**
+     * ฟังก์ชัน: createSnippetAppeal
+     * ส่วนที่: [ส่วนที่ 11: ระบบยื่นอุทธรณ์ Snippet ที่ถูกระงับ - Appeal System]
+     * หน้าที่: เจ้าของ Snippet ยื่นคำร้องขออุทธรณ์เพื่อขอปลดการระงับโค้ด
+     * พารามิเตอร์: $snippet_id, $user_id, $reason
+     * คืนค่า: bool
+     */
     function createSnippetAppeal($snippet_id, $user_id, $reason){
         try{
             // ป้องกันการส่งซ้ำหากมีคำร้องที่ค้างรอพิจารณาอยู่แล้ว
@@ -1230,6 +1672,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getPendingAppealBySnippet
+     * ส่วนที่: [ส่วนที่ 11: ระบบยื่นอุทธรณ์ Snippet ที่ถูกระงับ - Appeal System]
+     * หน้าที่: ตรวจสอบว่า Snippet นี้มีคำอุทธรณ์ที่รอการตรวจสอบอยู่หรือไม่
+     * พารามิเตอร์: $snippet_id
+     * คืนค่า: array หรือ false
+     */
     function getPendingAppealBySnippet($snippet_id){
         try{
             $sql = "SELECT * FROM snippet_appeals 
@@ -1244,6 +1693,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getLatestAppealBySnippet
+     * ส่วนที่: [ส่วนที่ 11: ระบบยื่นอุทธรณ์ Snippet ที่ถูกระงับ - Appeal System]
+     * หน้าที่: ดึงข้อมูลคำร้องอุทธรณ์รายการล่าสุดของ Snippet
+     * พารามิเตอร์: $snippet_id
+     * คืนค่า: array หรือ false
+     */
     function getLatestAppealBySnippet($snippet_id){
         try{
             $sql = "SELECT * FROM snippet_appeals 
@@ -1258,6 +1714,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getSnippetAppealsHistory
+     * ส่วนที่: [ส่วนที่ 11: ระบบยื่นอุทธรณ์ Snippet ที่ถูกระงับ - Appeal System]
+     * หน้าที่: ดึงประวัติคำร้องอุทธรณ์ทั้งหมดของ Snippet รายการนั้น
+     * พารามิเตอร์: $snippet_id
+     * คืนค่า: array
+     */
     function getSnippetAppealsHistory($snippet_id){
         try{
             $sql = "SELECT a.*, u.username as user_username, u.firstname as user_firstname, u.lastname as user_lastname 
@@ -1274,6 +1737,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getAllAppealsAdmin
+     * ส่วนที่: [ส่วนที่ 11: ระบบยื่นอุทธรณ์ Snippet ที่ถูกระงับ - Appeal System]
+     * หน้าที่: ดึงรายการคำร้องอุทธรณ์ทั้งหมดสำหรับแอดมิน พร้อมตัวกรองสถานะ
+     * พารามิเตอร์: $statusFilter
+     * คืนค่า: array
+     */
     function getAllAppealsAdmin($statusFilter = null){
         try{
             $sql = "SELECT a.*, 
@@ -1302,6 +1772,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getAppealByIdAdmin
+     * ส่วนที่: [ส่วนที่ 11: ระบบยื่นอุทธรณ์ Snippet ที่ถูกระงับ - Appeal System]
+     * หน้าที่: ดึงข้อมูลรายละเอียดของคำร้องอุทธรณ์ตาม ID
+     * พารามิเตอร์: $appeal_id
+     * คืนค่า: array หรือ false
+     */
     function getAppealByIdAdmin($appeal_id){
         try{
             $sql = "SELECT a.*, 
@@ -1327,6 +1804,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: approveAppealAdmin
+     * ส่วนที่: [ส่วนที่ 11: ระบบยื่นอุทธรณ์ Snippet ที่ถูกระงับ - Appeal System]
+     * หน้าที่: แอดมินอนุมัติคำร้องอุทธรณ์ และปลดระงับ Snippet ให้กลับมาแสดงผลปกติ
+     * พารามิเตอร์: $appeal_id, $admin_username, $admin_notes
+     * คืนค่า: bool
+     */
     function approveAppealAdmin($appeal_id, $admin_username, $admin_notes = null){
         try{
             $this->db->beginTransaction();
@@ -1381,6 +1865,13 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: rejectAppealAdmin
+     * ส่วนที่: [ส่วนที่ 11: ระบบยื่นอุทธรณ์ Snippet ที่ถูกระงับ - Appeal System]
+     * หน้าที่: แอดมินปฏิเสธคำร้องอุทธรณ์ พร้อมบันทึกเหตุผล/หมายเหตุ
+     * พารามิเตอร์: $appeal_id, $admin_username, $admin_notes
+     * คืนค่า: bool
+     */
     function rejectAppealAdmin($appeal_id, $admin_username, $admin_notes = null){
         try{
             $sql = "UPDATE snippet_appeals 
@@ -1396,6 +1887,12 @@ class Control{
         }
     }
 
+    /**
+     * ฟังก์ชัน: getPendingAppealsCountAdmin
+     * ส่วนที่: [ส่วนที่ 11: ระบบยื่นอุทธรณ์ Snippet ที่ถูกระงับ - Appeal System]
+     * หน้าที่: นับจำนวนคำร้องอุทธรณ์ที่อยู่ระหว่างรอการตรวจสอบ (status = 'pending')
+     * คืนค่า: int
+     */
     function getPendingAppealsCountAdmin(){
         try{
             $sql = "SELECT COUNT(*) as count FROM snippet_appeals WHERE status = 'pending'";

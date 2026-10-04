@@ -1,17 +1,44 @@
 <?php
+/**
+ * ==============================================================================================
+ * หน้ารายละเอียดการรายงานสำหรับผู้ดูแลระบบ (Admin View Report)
+ * ==============================================================================================
+ * วัตถุประสงค์:
+ *   - ตรวจสอบสิทธิ์ผู้ดูแลระบบ (Admin)
+ *   - ตรวจสอบรายละเอียดการรายงาน (ผู้รายงาน เหตุผล วันที่ คำอธิบาย)
+ *   - ตรวจสอบเนื้อหาของ Snippet ที่ถูกรายงาน (ชื่อเรื่อง ภาษา โค้ด คำอธิบาย Tags รูปภาพ)
+ *   - ตรวจสอบประวัติการระงับ (Suspension History) ย้อนหลังของ Snippet นั้นๆ
+ *   - ดำเนินการตัดสิน: ปฏิเสธรายงาน (Reject Report), ระงับ Snippet (Suspend), หรือยกเลิกการระงับ (Unsuspend)
+ *
+ * โครงสร้างไฟล์:
+ *   1. ส่วนการตรวจสอบสิทธิ์: เรียกใช้ check_admin.php
+ *   2. ส่วนจัดการ POST Actions:
+ *      - `reject`: ปฏิเสธรายงานโดยไม่ระงับ Snippet
+ *      - `suspend_snippet`: ระงับ Snippet พร้อมบันทึกเหตุผล และอัปเดตรายงานที่เกี่ยวข้อง
+ *      - `unsuspend_snippet`: ยกเลิกการระงับ Snippet
+ *   3. ส่วนดึงข้อมูลรายงานและประวัติการระงับ: เรียกใช้ getReportByIdAdmin() และ getSnippetSuspensionHistory()
+ *   4. ส่วน UI การ์ดข้อมูลรายงาน (Report Info Card)
+ *   5. ส่วน UI การ์ดประวัติการระงับ (Suspension History Card)
+ *   6. ส่วน UI แสดงเนื้อหาโค้ดของ Snippet (Code Details Card)
+ *   7. ส่วน JavaScript: จัดการปรับขนาดโค้ด, คัดลอก, Lightbox รูปภาพ, และ prompt ระบุเหตุผลการระงับ
+ * ==============================================================================================
+ */
+
+// ส่วนที่ 1: ตรวจสอบสิทธิ์ Admin
 require_once __DIR__ . '/check_admin.php';
 
 $successMsg = "";
 $errorMsg = "";
 $report = null;
 
-// Handle POST Actions
+// ส่วนที่ 2: จัดการ Actions (POST: reject, suspend_snippet, unsuspend_snippet)
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['action'])) {
         $reportId = (int)($_POST['report_id'] ?? 0);
         $snippetId = (int)($_POST['snippet_id'] ?? 0);
         $adminUsername = $_SESSION['username'] ?? 'Admin';
         
+        // จัดการกรณี: ปฏิเสธรายงาน (Reject Report)
         if ($_POST['action'] === 'reject') {
             if ($reportId <= 0) {
                 $errorMsg = "รหัสรายงานไม่ถูกต้อง";
@@ -22,6 +49,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $errorMsg = "ไม่สามารถปฏิเสธรายงานได้";
                 }
             }
+        // จัดการกรณี: ระงับ Snippet (Suspend Snippet)
         } elseif ($_POST['action'] === 'suspend_snippet') {
             if ($snippetId <= 0) {
                 $errorMsg = "รหัส Snippet ไม่ถูกต้อง";
@@ -36,6 +64,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $errorMsg = "ไม่สามารถระงับ Snippet ได้";
                 }
             }
+        // จัดการกรณี: ยกเลิกการระงับ Snippet (Unsuspend Snippet)
         } elseif ($_POST['action'] === 'unsuspend_snippet') {
             if ($snippetId <= 0) {
                 $errorMsg = "รหัส Snippet ไม่ถูกต้อง";
@@ -52,8 +81,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 $backUrl = 'manage_reports.php';
 
+// ส่วนที่ 3: ดึงข้อมูลรายงานและประวัติการระงับของ Snippet
 $suspensionHistory = [];
-if(isset($_GET['id']) && is_numeric($_GET['id'])){
+if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     $id = (int)$_GET['id'];
     $report = $control->getReportByIdAdmin($id);
     if ($report && !empty($report['snippet_id'])) {
@@ -68,6 +98,7 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>รายละเอียดรายงาน - Admin</title>
     <link rel="stylesheet" href="../style/fonts.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="../style/createsnippetcss.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="../style/viewcodecss.css?v=<?php echo time(); ?>">
 </head>
 <body>
@@ -308,6 +339,16 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
     <div class="toast" id="toast"></div>
 
     <script>
+        // ==============================================================================================
+        // ส่วน JavaScript: ฟังก์ชันควบคุมการแสดงผลและเครื่องมือจัดการรายงาน (Admin View Report)
+        // ==============================================================================================
+
+        /**
+         * ฟังก์ชัน: showToast
+         * ส่วนที่อยู่: Client-side JS - การแจ้งเตือน
+         * หน้าที่: แสดงข้อความแจ้งเตือน Toast สั้นๆ ที่ด้านล่างของหน้าจอ และจางหายไปอัตโนมัติ
+         * พารามิเตอร์: message (string) - ข้อความที่ต้องการแสดง
+         */
         function showToast(message) {
             const toast = document.getElementById('toast');
             if (toast) {
@@ -320,7 +361,11 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
         const textarea = document.getElementById('source_code');
         const lineNumbers = document.getElementById('line-numbers');
 
-        // Auto-resize textarea height
+        /**
+         * ฟังก์ชัน: autoResizeTextarea
+         * ส่วนที่อยู่: Client-side JS - ตัวแสดงโค้ด
+         * หน้าที่: ปรับความสูงของ Textarea และ Editor Container ให้พอดีกับปริมาณบรรทัดของโค้ดโดยอัตโนมัติ
+         */
         function autoResizeTextarea() {
             if (!textarea || !lineNumbers) return;
             textarea.scrollTop = 0;
@@ -337,7 +382,11 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
             }
         }
 
-        // Update line numbers
+        /**
+         * ฟังก์ชัน: updateLineNumbers
+         * ส่วนที่อยู่: Client-side JS - ตัวแสดงเลขบรรทัด
+         * หน้าที่: คำนวณจำนวนบรรทัดของโค้ด และสร้างหมายเลขบรรทัด (1, 2, 3, ...) แสดงในแถบด้านซ้าย
+         */
         function updateLineNumbers() {
             if (textarea && lineNumbers) {
                 const lines = textarea.value.split('\n').length;
@@ -345,20 +394,25 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
             }
         }
 
+        /**
+         * ฟังก์ชัน: updateEditor
+         * ส่วนที่อยู่: Client-side JS - ตัวควบคุม Editor
+         * หน้าที่: เรียกใช้งานอัปเดตเลขบรรทัดและปรับความสูงของกล่องข้อความพร้อมกัน
+         */
         function updateEditor() {
             updateLineNumbers();
             autoResizeTextarea();
         }
 
         if (textarea) {
-            // Sync scroll between code and line numbers
+            // ซิงค์การเลื่อนหน้าจอ (Scroll) ระหว่างโค้ดและเลขบรรทัด
             textarea.addEventListener('scroll', () => {
                 if (lineNumbers) lineNumbers.scrollTop = textarea.scrollTop;
             });
             updateEditor();
         }
 
-        // copy button
+        // จัดการคลิกปุ่มคัดลอกโค้ดลง Clipboard
         const copyBtn = document.getElementById('copyBtn');
         copyBtn?.addEventListener('click', async ()=>{
             const text = textarea.value;
@@ -372,12 +426,15 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
             }
         });
 
-        // Image Lightbox Modal functionality
+        // ==============================================================================================
+        // ส่วน Lightbox Modal สำหรับแสดงรูปภาพขนาดเต็ม
+        // ==============================================================================================
         const imagePreviewEl = document.getElementById('image-preview');
         const imageModal = document.getElementById('imageModal');
         const closeImageModalBtn = document.getElementById('closeImageModalBtn');
         const modalImageDisplay = document.getElementById('modal-image-display');
 
+        // เมื่อคลิกที่รูปภาพตัวอย่าง ให้เปิด Modal แสดงรูปภาพขนาดใหญ่
         imagePreviewEl?.addEventListener('click', function() {
             if (modalImageDisplay) {
                 modalImageDisplay.src = this.src;
@@ -385,19 +442,33 @@ if(isset($_GET['id']) && is_numeric($_GET['id'])){
             imageModal?.classList.add('open');
         });
 
+        /**
+         * ฟังก์ชัน: closeImageModal
+         * ส่วนที่อยู่: Client-side JS - Lightbox Modal รูปภาพ
+         * หน้าที่: ปิดหน้าต่าง Modal แสดงรูปภาพขนาดใหญ่
+         */
         function closeImageModal() {
             imageModal?.classList.remove('open');
         }
 
         closeImageModalBtn?.addEventListener('click', closeImageModal);
 
-        // Close image modal when clicking outside the image
+        // ปิด Modal เมื่อคลิกที่พื้นหลังสีทึบภายนอกรูปภาพ
         imageModal?.addEventListener('click', function(e) {
             if (e.target === imageModal) {
                 closeImageModal();
             }
         });
 
+        /**
+         * ฟังก์ชัน: promptSuspend
+         * ส่วนที่อยู่: Client-side JS - แบบฟอร์มระงับ Snippet
+         * หน้าที่: แสดงกล่องข้อความ (Prompt) ให้ Admin ระบุเหตุผลในการระงับ Snippet ก่อนส่งฟอร์ม POST
+         * พารามิเตอร์: 
+         *   - form (HTMLFormElement): ฟอร์มที่กำลังส่ง
+         *   - defaultReason (string): เหตุผลเริ่มต้นที่ดึงมาจากข้อหาการรายงาน
+         * ส่งกลับ: boolean (true = ดำเนินการส่งฟอร์ม, false = กดยกเลิก)
+         */
         function promptSuspend(form, defaultReason) {
             const reason = prompt('กรุณาระบุเหตุผลในการระงับ Snippet นี้:', defaultReason || 'ละเมิดนโยบาย');
             if (reason === null) {

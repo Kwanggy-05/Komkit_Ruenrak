@@ -1,12 +1,30 @@
 <?php
+/**
+ * ==============================================================================
+ * ไฟล์: Admin/manage_languages.php
+ * หน้าที่: หน้าจัดการภาษาโปรแกรมสำหรับผู้ดูแลระบบ (Admin Language Management)
+ * ส่วนประกอบในไฟล์:
+ *   1. โหลดระบบตรวจสอบสิทธิ์ผู้ดูแลระบบ (check_admin.php)
+ *   2. ประมวลผลคำสั่ง POST:
+ *      - action='add'    : เพิ่มภาษาใหม่ ($control->addLanguage())
+ *      - action='edit'   : แก้ไขชื่อภาษา ($control->updateLanguage())
+ *      - action='delete' : ลบภาษา โดยตรวจเช็กก่อนว่ามีโค้ดใช้อยู่หรือไม่ ($control->isLanguageInUse(), deleteLanguage())
+ *   3. ดึงรายการภาษาทั้งหมดและค้นหา ($control->getLanguage())
+ *   4. ส่วนแสดงผลตารางรายการภาษา และ Modal เพิ่ม/แก้ไข
+ *   5. สคริปต์ JavaScript: openEditModal(), closeModal() และการย่อ-ขยาย Sidebar
+ * ==============================================================================
+ */
+
+// --- ส่วนที่ 1: ตรวจสอบสิทธิ์ผู้ดูแลระบบ ---
 require_once __DIR__ . '/check_admin.php';
 
 $successMsg = "";
 $errorMsg = "";
 
-// Handle POST actions (Add / Edit / Delete)
+// --- ส่วนที่ 2: ประมวลผลคำสั่ง POST (เพิ่ม / แก้ไข / ลบ ภาษาโปรแกรม) ---
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['action'])) {
+        // เพิ่มภาษาโปรแกรมใหม่
         if ($_POST['action'] === 'add') {
             $langName = trim($_POST['language_name'] ?? '');
             if ($langName === '') {
@@ -18,6 +36,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $errorMsg = "ไม่สามารถเพิ่มภาษาได้ (อาจมีภาษานี้อยู่แล้ว)";
                 }
             }
+        // แก้ไขชื่อภาษาโปรแกรมเดิม
         } elseif ($_POST['action'] === 'edit') {
             $langId = (int)($_POST['language_id'] ?? 0);
             $langName = trim($_POST['language_name'] ?? '');
@@ -30,12 +49,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $errorMsg = "ไม่สามารถอัปเดตข้อมูลภาษาได้";
                 }
             }
+        // ลบภาษาโปรแกรม
         } elseif ($_POST['action'] === 'delete') {
             $langId = (int)($_POST['language_id'] ?? 0);
             if ($langId <= 0) {
                 $errorMsg = "ข้อมูลไม่ถูกต้อง";
             } else {
-                // Check if language is in use
+                // ตรวจสอบก่อนว่ามี Snippet ใดใช้งานภาษานี้อยู่หรือไม่
                 if ($control->isLanguageInUse($langId)) {
                     $errorMsg = "ไม่สามารถลบภาษานี้ได้ เนื่องจากมี Snippet ใช้งานภาษานี้อยู่";
                 } else {
@@ -50,7 +70,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 
-// Get languages list
+// --- ส่วนที่ 3: ดึงข้อมูลรายการภาษาโปรแกรมและค้นหา ---
 $searchQuery = trim($_GET['q'] ?? '');
 $languages = [];
 $languageResult = $control->getLanguage();
@@ -204,7 +224,7 @@ if ($languageResult) {
                                 <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <circle cx="11" cy="11" r="8"></circle>
                                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                                </a>
+                                </svg>
                                 <input type="text" name="q" class="search-input" placeholder="ค้นหาภาษา..." value="<?php echo htmlspecialchars($searchQuery); ?>">
                             </div>
                         </form>
@@ -312,7 +332,7 @@ if ($languageResult) {
     </div>
 
     <script>
-        // Modal functionality
+        // --- ส่วนที่ 5: สคริปต์ JavaScript จัดการ Modal และ UI สำหรับหน้าจัดการภาษา ---
         const addModal = document.getElementById('addModal');
         const editModal = document.getElementById('editModal');
         const btnAddLanguage = document.getElementById('btnAddLanguage');
@@ -322,6 +342,12 @@ if ($languageResult) {
             document.getElementById('add_language_name').focus();
         });
 
+        /**
+         * ฟังก์ชัน: openEditModal
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: จัดการหน้าต่าง Modal แก้ไขภาษา]
+         * หน้าที่: ใส่ค่ารหัสภาษาและชื่อภาษาเดิมลงในฟอร์ม แล้วเปิด Modal ขึ้นมา
+         * พารามิเตอร์: id (รหัสภาษา), name (ชื่อภาษาเดิม)
+         */
         function openEditModal(id, name) {
             document.getElementById('edit_language_id').value = id;
             document.getElementById('edit_language_name').value = name;
@@ -329,18 +355,24 @@ if ($languageResult) {
             document.getElementById('edit_language_name').focus();
         }
 
+        /**
+         * ฟังก์ชัน: closeModal
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: จัดการปิดหน้าต่าง Modal]
+         * หน้าที่: ปิดหน้าต่าง Modal ตาม ID ที่ระบุ
+         * พารามิเตอร์: modalId
+         */
         function closeModal(modalId) {
             document.getElementById(modalId).classList.remove('open');
         }
 
-        // Close on clicking overlay background
+        // ปิด Modal เมื่อคลิกที่พื้นหลังสีดำภายนอก
         window.addEventListener('click', (e) => {
             if (e.target.classList.contains('modal-overlay')) {
                 e.target.classList.remove('open');
             }
         });
 
-        // Sidebar Toggle functionality
+        // การควบคุมการย่อ/ขยาย Sidebar เมนูด้านข้าง
         const menuToggle = document.getElementById('menuToggle');
         const sidebar = document.getElementById('sidebar');
         const sidebarOverlay = document.getElementById('sidebarOverlay');

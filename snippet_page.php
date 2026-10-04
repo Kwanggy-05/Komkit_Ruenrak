@@ -1,4 +1,20 @@
 <?php
+/**
+ * ==============================================================================
+ * ไฟล์: snippet_page.php
+ * หน้าที่: หน้าแสดงรายการ Snippet ของฉัน (My Snippets Dashboard)
+ * ส่วนประกอบในไฟล์:
+ *   1. ตรวจสอบการเข้าสู่ระบบของผู้ใช้งาน (Auth Check)
+ *   2. ดึงรายการภาษาพร้อมจำนวน Snippet เพื่อแสดงในตัวกรอง ($control->getAllLanguagesWithSnippetCounts())
+ *   3. จัดการการลบแบบย้ายไปถังขยะ (Soft Delete via $_GET['delete'])
+ *   4. การแบ่งหน้า (Pagination) และการกรองตามเงื่อนไข (บุ๊กมาร์ก, คำค้นหา, ภาษา, เฉพาะของฉัน)
+ *   5. ดึงข้อมูลรายการ Snippet และข้อมูลสถิติ (ยอดไลก์, สถานะบุ๊กมาร์ก)
+ *   6. ส่วนแสดงผล UI หน้าเว็บ (Navbar, Sidebar, Grid แสดงโค้ด, Pagination Links)
+ *   7. สคริปต์ JavaScript สำหรับเปลี่ยนจำนวนต่อหน้า, Toast แจ้งเตือน, และการกดไลก์/บุ๊กมาร์กแบบ AJAX
+ * ==============================================================================
+ */
+
+// --- ส่วนที่ 1: ตรวจสอบสิทธิ์การเข้าใช้งาน ---
 require_once "layout/session.php";
 require_once "db/connect.php";
 require_once "layout/check_user.php";
@@ -9,21 +25,21 @@ $showBookmarks = isset($_GET['bookmarks']) && $_GET['bookmarks'] === '1';
 $onlyOwn = empty($_GET) || (isset($_GET['only_own']) && $_GET['only_own'] === '1');
 $userId = getCurrentUserId();
 
-// Get all languages with snippet counts
+// --- ส่วนที่ 2: ดึงรายการภาษาพร้อมจำนวน Snippet ในแต่ละภาษา ---
 $languageResult = $control->getAllLanguagesWithSnippetCounts();
 $languages = [];
 if($languageResult){
     $languages = $languageResult->fetchAll(PDO::FETCH_ASSOC);
 }
 
-
+// --- ส่วนที่ 3: จัดการการลบ Snippet ชั่วคราว (ย้ายไปถังขยะ) ---
 if(isset($_GET['delete']) && is_numeric($_GET['delete'])){
     $control->softDeleteSnippet((int)$_GET['delete'], $userId);
     header('Location:remove.php');
     exit;
 }
 
-// Pagination settings
+// --- ส่วนที่ 4: กำหนดค่าการแบ่งหน้า (Pagination Settings) ---
 $allowedLimits = [10, 25, 50];
 if(isset($_GET['limit']) && in_array((int)$_GET['limit'], $allowedLimits)){
     $itemsPerPage = (int)$_GET['limit'];
@@ -35,7 +51,7 @@ if(isset($_GET['limit']) && in_array((int)$_GET['limit'], $allowedLimits)){
 }
 $currentPage = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 
-// Get total count
+// --- ส่วนที่ 5: ดึงข้อมูล Snippet ตามเงื่อนไข (บุ๊กมาร์ก / ค้นหา / ภาษา / Snippet ของฉัน) ---
 if($showBookmarks && $userId){
     $totalSnippets = $control->getTotalBookmarkedSnippetCount($userId);
     $result = $control->getBookmarkedSnippetsPaginated($userId, $currentPage, $itemsPerPage);
@@ -52,17 +68,16 @@ if($result){
     $snippets = $result->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// Calculate pagination info
+// คำนวณจำนวนหน้าทั้งหมด
 $totalPages = ceil($totalSnippets / $itemsPerPage);
 if($totalPages === 0) $totalPages = 1;
 
-// Fetch list of bookmarked snippet IDs
+// --- ส่วนที่ 6: ดึงข้อมูล ID บุ๊กมาร์ก และยอดไลก์ของแต่ละ Snippet ---
 $bookmarkedIds = [];
 if($userId){
     $bookmarkedIds = $control->getBookmarkedSnippetIds($userId);
 }
 
-// Fetch list of liked snippet IDs and like count for each snippet
 $likedIds = [];
 $likeCounts = [];
 if($userId){
@@ -71,7 +86,7 @@ if($userId){
 $snippetIds = array_column($snippets, 'snippet_id');
 $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
 
-// Build Bookmark toggle URL
+// สร้าง URL สำหรับปุ่มเปิด-ปิดการแสดงเฉพาะบุ๊กมาร์ก
 $bookmarkParams = [];
 if(!$showBookmarks){
     $bookmarkParams['bookmarks'] = '1';
@@ -375,6 +390,14 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
     <div class="toast" id="toast"></div>
 
     <script>
+        // --- ส่วนที่ 8: สคริปต์ JavaScript จัดการการทำงานฝั่ง Client ในหน้า Snippet ของฉัน ---
+
+        /**
+         * ฟังก์ชัน: changePerPage
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: จัดการการแบ่งหน้า]
+         * หน้าที่: เปลี่ยนจำนวนรายการที่แสดงต่อหน้า (10, 25, 50) และรีเฟรชกลับหน้า 1
+         * พารามิเตอร์: val
+         */
         function changePerPage(val) {
             const url = new URL(window.location.href);
             url.searchParams.set('limit', val);
@@ -382,6 +405,12 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
             window.location.href = url.toString();
         }
 
+        /**
+         * ฟังก์ชัน: showToast
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: กล่องข้อความแจ้งเตือน]
+         * หน้าที่: แสดงกล่องข้อความ Toast ชั่วคราว 2 วินาที
+         * พารามิเตอร์: message
+         */
         function showToast(message) {
             const toast = document.getElementById('toast');
             toast.textContent = message;
@@ -389,7 +418,7 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
             setTimeout(() => toast.classList.remove('show'), 2000);
         }
 
-        // Handle like toggle on each card
+        // จัดการการกดปุ่มถูกใจ (Like Toggle) บนการ์ด Snippet ด้วย AJAX (like_action.php)
         document.querySelectorAll('.like-toggle').forEach(btn => {
             btn.addEventListener('click', async function(e) {
                 e.preventDefault();
@@ -411,12 +440,10 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                         this.classList.add('liked');
                         this.title = 'ยกเลิกถูกใจ';
                         countEl.textContent = data.count;
-                        // showToast('👍 Liked!');
                     } else if(data.status === 'removed') {
                         this.classList.remove('liked');
                         this.title = 'ถูกใจ';
                         countEl.textContent = data.count;
-                        // showToast('👎 Like removed');
                         showToast('⚠ ' + (data.message || 'เกิดข้อผิดพลาด'));
                     }
                 } catch(err) {
@@ -425,7 +452,7 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
             });
         });
 
-        // Handle bookmark toggle on each card
+        // จัดการการกดปุ่มบุ๊กมาร์ก (Bookmark Toggle) บนการ์ด Snippet ด้วย AJAX (bookmark_action.php)
         document.querySelectorAll('.bookmark-toggle').forEach(btn => {
             btn.addEventListener('click', async function(e) {
                 e.preventDefault();
@@ -451,7 +478,7 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                         this.title = 'เพิ่มบุ๊กมาร์ก';
                         showToast('✗ ลบบุ๊กมาร์กแล้ว');
                         
-                        // If on the bookmarks filter view, reload the page
+                        // หากกำลังเปิดตัวกรองดูเฉพาะบุ๊กมาร์ก ให้โหลดหน้าใหม่เพื่อตัดรายการออก
                         const urlParams = new URLSearchParams(window.location.search);
                         if(urlParams.get('bookmarks') === '1') {
                             setTimeout(() => window.location.reload(), 500);

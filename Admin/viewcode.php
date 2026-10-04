@@ -1,14 +1,36 @@
 <?php
+/**
+ * ==============================================================================================
+ * หน้าดูโค้ด Snippet สำหรับผู้ดูแลระบบ (Admin View Snippet)
+ * ==============================================================================================
+ * วัตถุประสงค์:
+ *   - ตรวจสอบสิทธิ์ผู้ดูแลระบบ (Admin)
+ *   - ดึงและแสดงรายละเอียดของ Snippet โดยไม่มีการจำกัดสิทธิ์การมองเห็น (Visibility Bypass)
+ *     เพื่อให้ Admin สามารถตรวจสอบเนื้อหา โค้ด คำอธิบาย และรูปภาพได้ทั้งหมด
+ *   - รองรับการย้อนกลับไปยังหน้าที่เรียกมา (จัดการ Snippet หรือ จัดการคำร้องอุทธรณ์)
+ *
+ * โครงสร้างไฟล์:
+ *   1. ส่วนการตรวจสอบสิทธิ์: เรียกใช้ check_admin.php
+ *   2. ส่วนประมวลผล URL ย้อนกลับ: ตรวจสอบพารามิเตอร์ `from` หรือ HTTP Referer
+ *   3. ส่วนดึงข้อมูล Snippet: เรียกใช้เมธอด getSnippetByIdAdmin() จาก Control
+ *   4. ส่วน UI แสดงผล (Readonly): ข้อมูลผู้สร้าง, ชื่อเรื่อง, ภาษา, โค้ด, คำอธิบาย, Tags, การมองเห็น, รูปภาพ
+ *   5. ส่วน JavaScript: จัดการนับบรรทัดโค้ด, ขยาย Textarea อัตโนมัติ, คัดลอกโค้ด, และ Lightbox ดูรูปขยาย
+ * ==============================================================================================
+ */
+
+// ส่วนที่ 1: ตรวจสอบสิทธิ์ Admin
 require_once __DIR__ . '/check_admin.php';
 
 $snippet = null;
 
+// ส่วนที่ 2: ตรวจสอบ URL ย้อนกลับ (Back URL)
 $backUrl = 'manage_snippets.php';
 if ((isset($_GET['from']) && $_GET['from'] === 'appeals') || (isset($_SERVER['HTTP_REFERER']) && strpos($_SERVER['HTTP_REFERER'], 'manage_appeals.php') !== false)) {
     $backUrl = 'manage_appeals.php';
 }
 
-if(isset($_GET['view']) && is_numeric($_GET['view'])){
+// ส่วนที่ 3: ดึงข้อมูล Snippet จากฐานข้อมูล (Admin View)
+if (isset($_GET['view']) && is_numeric($_GET['view'])) {
     $id = (int)$_GET['view'];
     $snippet = $control->getSnippetByIdAdmin($id);
 }
@@ -21,6 +43,7 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title><?php echo htmlspecialchars($snippet['title'] ?? 'ดู Snippet - Admin'); ?></title>
     <link rel="stylesheet" href="../style/fonts.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="../style/createsnippetcss.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="../style/viewcodecss.css?v=<?php echo time(); ?>">
 </head>
 <body>
@@ -119,6 +142,16 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
     <div class="toast" id="toast"></div>
 
     <script>
+        // ==============================================================================================
+        // ส่วน JavaScript: ฟังก์ชันควบคุมการแสดงผลและเครื่องมือดูโค้ด (Admin Code Viewer)
+        // ==============================================================================================
+
+        /**
+         * ฟังก์ชัน: showToast
+         * ส่วนที่อยู่: Client-side JS - การแจ้งเตือน
+         * หน้าที่: แสดงข้อความแจ้งเตือน Toast สั้นๆ ที่ด้านล่างของหน้าจอ และจางหายไปอัตโนมัติ
+         * พารามิเตอร์: message (string) - ข้อความที่ต้องการแสดง
+         */
         function showToast(message) {
             const toast = document.getElementById('toast');
             toast.textContent = message;
@@ -129,7 +162,11 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
         const textarea = document.getElementById('source_code');
         const lineNumbers = document.getElementById('line-numbers');
 
-        // Auto-resize textarea height
+        /**
+         * ฟังก์ชัน: autoResizeTextarea
+         * ส่วนที่อยู่: Client-side JS - ตัวแสดงโค้ด
+         * หน้าที่: ปรับความสูงของ Textarea และ Editor Container ให้พอดีกับปริมาณบรรทัดของโค้ดโดยอัตโนมัติ
+         */
         function autoResizeTextarea() {
             if (!textarea || !lineNumbers) return;
             textarea.scrollTop = 0;
@@ -146,7 +183,11 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
             }
         }
 
-        // Update line numbers
+        /**
+         * ฟังก์ชัน: updateLineNumbers
+         * ส่วนที่อยู่: Client-side JS - ตัวแสดงเลขบรรทัด
+         * หน้าที่: คำนวณจำนวนบรรทัดของโค้ด และสร้างหมายเลขบรรทัด (1, 2, 3, ...) แสดงในแถบด้านซ้าย
+         */
         function updateLineNumbers() {
             if (textarea && lineNumbers) {
                 const lines = textarea.value.split('\n').length;
@@ -154,20 +195,25 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
             }
         }
 
+        /**
+         * ฟังก์ชัน: updateEditor
+         * ส่วนที่อยู่: Client-side JS - ตัวควบคุม Editor
+         * หน้าที่: เรียกใช้งานอัปเดตเลขบรรทัดและปรับความสูงของกล่องข้อความพร้อมกัน
+         */
         function updateEditor() {
             updateLineNumbers();
             autoResizeTextarea();
         }
 
         if (textarea) {
-            // Sync scroll between code and line numbers
+            // ซิงค์การเลื่อนหน้าจอ (Scroll) ระหว่างโค้ดและเลขบรรทัด
             textarea.addEventListener('scroll', () => {
                 if (lineNumbers) lineNumbers.scrollTop = textarea.scrollTop;
             });
             updateEditor();
         }
 
-        // copy button
+        // จัดการคลิกปุ่มคัดลอกโค้ดลง Clipboard
         const copyBtn = document.getElementById('copyBtn');
         copyBtn?.addEventListener('click', async ()=>{
             const text = textarea.value;
@@ -181,12 +227,15 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
             }
         });
 
-        // Image Lightbox Modal functionality
+        // ==============================================================================================
+        // ส่วน Lightbox Modal สำหรับแสดงรูปภาพขนาดเต็ม
+        // ==============================================================================================
         const imagePreviewEl = document.getElementById('image-preview');
         const imageModal = document.getElementById('imageModal');
         const closeImageModalBtn = document.getElementById('closeImageModalBtn');
         const modalImageDisplay = document.getElementById('modal-image-display');
 
+        // เมื่อคลิกที่รูปภาพตัวอย่าง ให้เปิด Modal แสดงรูปภาพขนาดใหญ่
         imagePreviewEl?.addEventListener('click', function() {
             if (modalImageDisplay) {
                 modalImageDisplay.src = this.src;
@@ -194,13 +243,18 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
             imageModal?.classList.add('open');
         });
 
+        /**
+         * ฟังก์ชัน: closeImageModal
+         * ส่วนที่อยู่: Client-side JS - Lightbox Modal รูปภาพ
+         * หน้าที่: ปิดหน้าต่าง Modal แสดงรูปภาพขนาดใหญ่
+         */
         function closeImageModal() {
             imageModal?.classList.remove('open');
         }
 
         closeImageModalBtn?.addEventListener('click', closeImageModal);
 
-        // Close image modal when clicking outside the image
+        // ปิด Modal เมื่อคลิกที่พื้นหลังสีทึบภายนอกรูปภาพ
         imageModal?.addEventListener('click', function(e) {
             if (e.target === imageModal) {
                 closeImageModal();

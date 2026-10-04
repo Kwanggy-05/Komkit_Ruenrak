@@ -1,18 +1,31 @@
 <?php
+/**
+ * ==============================================================================
+ * ไฟล์: Home.php
+ * หน้าที่: หน้าหลัก (Landing Page) สำหรับผู้เยี่ยมชมทั่วไป
+ * ส่วนประกอบในไฟล์:
+ *   1. โหลดการเชื่อมต่อฐานข้อมูล
+ *   2. ดึงข้อมูลภาษาทั้งหมดพร้อมจำนวน Snippet เพื่อแสดงใน Dropdown ($control->getAllLanguagesWithSnippetCounts())
+ *   3. ค้นหา Snippet เบื้องต้นหากมีคำค้นหา ($control->searchSnippets())
+ *   4. ส่วนแสดงผล UI (Navbar, ช่องค้นหา, ตัวเลือกภาษา, Hero Banner แนะนำระบบ)
+ *   5. สคริปต์ JavaScript จัดการ Event การเลือกภาษาและซิงค์กับช่องค้นหา
+ * ==============================================================================
+ */
+
 require_once "db/connect.php";
 
 $searchQuery = trim($_GET['q'] ?? '');
 $selectedLanguage = $_GET['lang'] ?? '';
 $snippets = [];
 
-// Get all languages with snippet counts
+// --- ส่วนที่ 1: ดึงรายชื่อภาษาทั้งหมดพร้อมจำนวน Snippet ในแต่ละภาษา ---
 $languageResult = $control->getAllLanguagesWithSnippetCounts();
 $languages = [];
 if($languageResult){
     $languages = $languageResult->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// Search with language filter
+// --- ส่วนที่ 2: ค้นหา Snippet เมื่อมีการส่งคำค้นหาและตัวกรองภาษา ---
 if($searchQuery !== ''){
     $result = $control->searchSnippets($searchQuery, $selectedLanguage);
     if($result){
@@ -107,6 +120,7 @@ if($searchQuery !== ''){
     </main>
 
     <script>
+        // --- ส่วนที่ 5: สคริปต์ JavaScript จัดการการทำงานของตัวกรองภาษาและฟอร์มค้นหา ---
         const langFilter = document.getElementById('language-filter');
         const searchLang = document.getElementById('searchLang');
 
@@ -115,8 +129,8 @@ if($searchQuery !== ''){
             langFilter.addEventListener('mousedown', () => {
                 clickCount++;
             });
+            // หากผู้ใช้คลิกเลือก "ทุกภาษา" ซ้ำ จะทำการส่งฟอร์มเพื่อรีเซ็ตตัวกรองทันที
             langFilter.addEventListener('click', function() {
-                // If user opened dropdown and clicked "All Languages" again on Home page
                 if (clickCount >= 2 && this.value === '') {
                     this.form.submit();
                 }
@@ -129,6 +143,7 @@ if($searchQuery !== ''){
                     this.form.submit();
                 }
             });
+            // อัปเดตค่าภาษาลงใน hidden input ของฟอร์มค้นหาคำหลัก
             langFilter.addEventListener('change', function() {
                 if (searchLang) searchLang.value = this.value;
             });

@@ -1,6 +1,31 @@
 /* Import fonts and createsnippetcss.css */
 @import url('fonts.css');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400;1,700&display=swap');
 @import url('createsnippetcss.css');
+
+/* Universal Font Enforcement */
+* {
+    box-sizing: border-box;
+    font-family: 'Noto Sans Thai', 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+    background-color: var(--neutral-bg);
+    font-family: 'Noto Sans Thai', 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--text-color);
+}
+
+button, input, select, textarea {
+    font-family: 'Noto Sans Thai', 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.back-btn, .btn {
+    font-family: 'Noto Sans Thai', 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+textarea[name="source_code"], .line-numbers {
+    font-family: 'JetBrains Mono', 'Noto Sans Thai', monospace !important;
+}
 
 /* Custom tweaks for viewcode.php page */
 
@@ -10,13 +35,18 @@ input[readonly], textarea[readonly], select[disabled] {
     box-shadow: none !important;
     background-color: var(--neutral-bg) !important;
     resize: none;
+    font-family: 'Noto Sans Thai', 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+textarea[name="source_code"][readonly] {
+    font-family: 'JetBrains Mono', 'Noto Sans Thai', monospace !important;
 }
 
 .description-view {
     border: 1px solid var(--input-border, var(--border-color));
     border-radius: var(--radius-md);
     padding: 10px 14px;
-    font-family: 'Noto Sans Thai', 'Lato', sans-serif;
+    font-family: 'Noto Sans Thai', 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
     font-size: 14px;
     background-color: var(--neutral-bg) !important;
     color: var(--text-color, #333333);

@@ -1,4 +1,17 @@
 <?php
+/**
+ * ==============================================================================
+ * ไฟล์: forget_password.php
+ * หน้าที่: หน้ารีเซ็ตรหัสผ่านกรณีลืมรหัสผ่าน (Forgot Password Reset)
+ * ส่วนประกอบในไฟล์:
+ *   1. โหลดระบบเซสชันและการเชื่อมต่อฐานข้อมูล
+ *   2. ประมวลผลคำขอรีเซ็ตรหัสผ่าน (POST Request)
+ *   3. ตรวจสอบข้อมูลและการยืนยันรหัสผ่านใหม่
+ *   4. ตรวจสอบคำตอบความปลอดภัยและเปลี่ยนรหัสผ่านผ่าน $user->resetPasswordWithSecurityAnswer()
+ *   5. ส่วนแสดงผลแบบฟอร์ม HTML รีเซ็ตรหัสผ่าน
+ * ==============================================================================
+ */
+
 require_once "layout/session.php";
 require_once "db/connect.php";
 
@@ -7,17 +20,21 @@ $success = "";
 $username = "";
 $answer = "";
 
+// --- ส่วนที่ 1: ประมวลผลการส่งฟอร์มรีเซ็ตรหัสผ่าน (POST Method) ---
 if($_SERVER["REQUEST_METHOD"] == "POST"){
     $username = trim($_POST["username"] ?? "");
     $answer = trim($_POST["answer"] ?? "");
     $new_password = $_POST["new_password"] ?? "";
     $confirm_new_password = $_POST["confirm_new_password"] ?? "";
 
+    // ตรวจสอบความครบถ้วนของข้อมูล
     if($username === "" || $answer === "" || $new_password === "" || $confirm_new_password === ""){
         $error = "กรุณากรอกข้อมูลให้ครบทุกช่อง";
     } elseif($new_password !== $confirm_new_password){
+        // ตรวจสอบความตรงกันของรหัสผ่านใหม่
         $error = "รหัสผ่านใหม่และยืนยันรหัสผ่านใหม่ไม่ตรงกัน";
     } else {
+        // เรียกฟังก์ชัน resetPasswordWithSecurityAnswer จากคลาส User
         $result = $user->resetPasswordWithSecurityAnswer($username, $answer, $new_password);
         if($result["success"]){
             $success = $result["message"] . " กำลังนำคุณไปยังหน้าเข้าสู่ระบบ...";

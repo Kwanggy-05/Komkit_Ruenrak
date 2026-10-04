@@ -1,32 +1,54 @@
 <?php
+/**
+ * ==============================================================================
+ * ไฟล์: login.php
+ * หน้าที่: หน้าเข้าสู่ระบบสำหรับสมาชิก (User Login)
+ * ส่วนประกอบในไฟล์:
+ *   1. ตรวจสอบและเริ่มต้นเซสชัน (Session Initialization)
+ *   2. ตรวจสอบการแจ้งเตือนกรณีบัญชีถูกแบน (?banned=1)
+ *   3. ตรวจสอบจำนวนผู้ใช้งานในระบบ ($user->countUsers())
+ *   4. ประมวลผลการส่งฟอร์มล็อกอิน (POST Authentication) ตรวจสอบสิทธิ์ และสถานะแบน
+ *   5. ส่วนแสดงผลแบบฟอร์ม HTML (Username, Password, ลิงก์ลืมรหัสผ่าน)
+ *   6. สคริปต์ JavaScript ดักจับการกดแป้น Enter เพื่อสลับช่องพิมพ์
+ * ==============================================================================
+ */
+
 require_once "layout/session.php";
 require_once "db/connect.php";
 
+// --- ส่วนที่ 1: ตรวจสอบเซสชันเดิม หากมีอยู่แล้วให้เริ่มเซสชันใหม่ ---
 if(getCurrentUserId()){
     startAppSession();
 }
 
+// --- ส่วนที่ 2: ตรวจสอบและแสดงข้อความแจ้งเตือนกรณีถูกแบน ---
 $errorAlert = "";
 if (isset($_GET['banned'])) {
     $errorAlert = "บัญชีของคุณถูกระงับการใช้งานอย่างถาวร\nหากเชื่อว่าเป็นข้อผิดพลาด กรุณาติดต่อผู้ดูแลระบบ";
 }
 
+// ตรวจสอบว่าในระบบมีผู้ใช้งานแล้วหรือไม่
 $hasAnyUser = $user->countUsers();
 if($hasAnyUser === 0){
     $errorAlert = "กรุณาสมัครสมาชิกก่อนเข้าใช้งาน";
 }
 
+// --- ส่วนที่ 3: ประมวลผลการส่งฟอร์มเข้าสู่ระบบ (POST Request) ---
 if($_SERVER["REQUEST_METHOD"]=="POST"){
     $username = $_POST["username"];
     $password = $_POST["password"];
+    
+    // เรียกฟังก์ชัน getUser จากคลาส User เพื่อตรวจรหัสผ่านและสถานะการถูกแบน
     $result=$user->getUser($username,$password);
 
     if($result){
+        // ป้องกันไม่ให้ Admin ใช้หน้าล็อกอินของผู้ใช้ทั่วไป
         if (isset($result['role']) && $result['role'] === 'admin') {
             $errorAlert = "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
         } elseif (!empty($result['is_banned'])) {
             $errorAlert = "บัญชีของคุณถูกระงับการใช้งานอย่างถาวร\nหากเชื่อว่าเป็นข้อผิดพลาด กรุณาติดต่อผู้ดูแลระบบ";
         } else {
+            // บันทึกข้อมูลเข้า Session เมื่อล็อกอินสำเร็จ
             $_SESSION["username"] = $username;
             $_SESSION["user_id"] = $result["user_id"];
             $_SESSION["userid"] = $result["user_id"];
@@ -88,10 +110,12 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
     </div>
 
     <script>
+        // --- ส่วนที่ 6: สคริปต์ JavaScript จัดการการทำงานของฟอร์มเข้าสู่ระบบ ---
         document.addEventListener("DOMContentLoaded", function() {
             const usernameInput = document.getElementById("username");
             const passwordInput = document.getElementById("password");
 
+            // ดักจับการกดปุ่ม Enter ในช่องชื่อผู้ใช้ เพื่อเลื่อนเคอร์เซอร์ไปยังช่องรหัสผ่านทันที
             if (usernameInput && passwordInput) {
                 usernameInput.addEventListener("keydown", function(e) {
                     if (e.key === "Enter") {

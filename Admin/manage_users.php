@@ -1,18 +1,53 @@
 <?php
+/**
+ * ==============================================================================================
+ * หน้าจัดการผู้ใช้ในระบบ (User Management - Admin Panel)
+ * ==============================================================================================
+ * วัตถุประสงค์:
+ *   - ตรวจสอบสิทธิ์ผู้ดูแลระบบ (Admin)
+ *   - จัดการระงับบัญชีผู้ใช้ (Ban User) และปลดระงับ (Unban User)
+ *   - ค้นหา กรองตามบทบาท (Role) และสถานะ (Active/Banned) พร้อมแบ่งหน้า (Pagination)
+ *   - แสดงสถิติภาพรวมของผู้ใช้ (สถิติรวม ผู้ดูแลระบบ สมาชิก ผู้ถูกแบน)
+ *   - ให้บริการ AJAX API เพื่อดึงประวัติการแบนเฉพาะรายบุคคล และประวัติการแบนทั้งหมดในระบบ
+ *
+ * โครงสร้างไฟล์:
+ *   1. ส่วนการตรวจสอบสิทธิ์: เรียกใช้ check_admin.php
+ *   2. ส่วน AJAX API Endpoint: ส่งข้อมูล JSON ประวัติการแบน (user_history, all_history)
+ *   3. ส่วนจัดการ Action การแบนผู้ใช้ (POST action = ban_user)
+ *   4. ส่วนจัดการ Action การปลดแบนผู้ใช้ (POST action = unban_user)
+ *   5. ส่วนคัดกรองและแบ่งหน้า (Filters & Pagination): คำนวณหน้าและดึงข้อมูลจาก DB
+ *   6. ส่วน UI Card สถิติผู้ใช้ (Stats Cards)
+ *   7. ส่วน UI ตารางรายชื่อผู้ใช้และการจัดการ (User Table & Action Buttons)
+ *   8. ส่วน Modals: ยืนยันการแบน, ยืนยันการปลดแบน, ดูประวัติการแบนรายบุคคล, และประวัติการแบนทั้งหมด
+ *   9. ส่วน JavaScript: จัดการเปิด/ปิด Modal, ตรวจสอบฟอร์ม, และดึงข้อมูลประวัติผ่าน AJAX Fetch
+ * ==============================================================================================
+ */
+
+// ส่วนที่ 1: ตรวจสอบสิทธิ์ Admin
 require_once __DIR__ . '/check_admin.php';
 
-// Handle AJAX requests for ban history
+// ส่วนที่ 2: จัดการคำขอ AJAX สำหรับประวัติการแบนและการทำผิด (AJAX Endpoints)
 if (isset($_GET['ajax'])) {
     header('Content-Type: application/json; charset=utf-8');
+    // ดึงประวัติการแบนของผู้ใช้เฉพาะคน
     if ($_GET['ajax'] === 'user_history') {
         $targetUserId = (int)($_GET['user_id'] ?? 0);
         $history = $user->getUserBanHistory($targetUserId);
         echo json_encode(['success' => true, 'data' => $history]);
         exit;
     }
+    // ดึงประวัติการแบนทั้งหมดในระบบ
     if ($_GET['ajax'] === 'all_history') {
         $history = $user->getAllBanHistory();
         echo json_encode(['success' => true, 'data' => $history]);
+        exit;
+    }
+    // ดึงประวัติโพสต์ที่ถูกระงับของผู้ใช้เฉพาะคน
+    if ($_GET['ajax'] === 'user_suspensions') {
+        $targetUserId = (int)($_GET['user_id'] ?? 0);
+        $suspensions = $user->getUserSuspensions($targetUserId);
+        $count = $user->getUserSuspensionCount($targetUserId);
+        echo json_encode(['success' => true, 'data' => $suspensions, 'count' => $count]);
         exit;
     }
 }
@@ -20,7 +55,7 @@ if (isset($_GET['ajax'])) {
 $successMsg = "";
 $errorMsg = "";
 
-// Handle POST actions (Ban User)
+// ส่วนที่ 3: จัดการ Action ระงับบัญชีผู้ใช้ (POST: Ban User)
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['action'] === 'ban_user') {
     $targetUserId = (int)($_POST['user_id'] ?? 0);
     $reasonPreset = trim($_POST['reason_preset'] ?? '');
@@ -38,6 +73,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
             $reason = $details !== '' ? $reasonPreset . " - " . $details : $reasonPreset;
         }
 
+        // ดำเนินการแบนผ่านคลาส User
         $banResult = $user->banUser($targetUserId, $adminId, $reason);
         if ($banResult['success']) {
             $successMsg = $banResult['message'];
@@ -47,11 +83,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
     }
 }
 
-// Handle POST actions (Unban User)
+// ส่วนที่ 4: จัดการ Action ปลดระงับบัญชีผู้ใช้ (POST: Unban User)
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['action'] === 'unban_user') {
     $targetUserId = (int)($_POST['user_id'] ?? 0);
     $adminId = (int)$userId;
 
+    // ดำเนินการยกเลิกการแบนผ่านคลาส User
     $unbanResult = $user->unbanUser($targetUserId, $adminId);
     if ($unbanResult['success']) {
         $successMsg = $unbanResult['message'];
@@ -60,12 +97,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
     }
 }
 
-// Get filter inputs
+// ส่วนที่ 5: รับค่าตัวกรองการค้นหา (Filters)
 $searchQuery = trim($_GET['q'] ?? '');
 $selectedRole = trim($_GET['role'] ?? '');
 $selectedStatus = trim($_GET['status'] ?? '');
 
-// Pagination settings
+// กำหนดการแบ่งหน้า (Pagination)
 $allowedLimits = [10, 15, 20, 25];
 if (isset($_GET['limit']) && in_array((int)$_GET['limit'], $allowedLimits)) {
     $itemsPerPage = (int)$_GET['limit'];
@@ -74,14 +111,14 @@ if (isset($_GET['limit']) && in_array((int)$_GET['limit'], $allowedLimits)) {
 }
 $currentPage = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 
-// Get users data
+// ดึงข้อมูลรายการผู้ใช้และจำนวนทั้งหมดตามเงื่อนไข
 $totalUsers = $user->getTotalUsersCount($searchQuery, $selectedRole, $selectedStatus);
 $users = $user->getUsersPaginated($currentPage, $itemsPerPage, $searchQuery, $selectedRole, $selectedStatus);
 
 $totalPages = ceil($totalUsers / $itemsPerPage);
 if ($totalPages === 0) $totalPages = 1;
 
-// Get stats
+// ดึงสถิติภาพรวมของผู้ใช้ในระบบ
 $stats = $user->getUserStats();
 ?>
 <!DOCTYPE html>
@@ -163,6 +200,47 @@ $stats = $user->getUserStats();
         .filter-item {
             flex-grow: 1;
             min-width: 200px;
+        }
+
+        /* Suspension System Styles */
+        .badge-suspension-clean {
+            background-color: rgba(108, 117, 125, 0.1);
+            color: var(--text-muted);
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: var(--rounded-sm);
+            display: inline-block;
+        }
+        .badge-suspension-warn {
+            background-color: rgba(255, 193, 7, 0.18);
+            color: #b45309;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: var(--rounded-sm);
+            display: inline-block;
+            cursor: pointer;
+            transition: transform 0.15s ease;
+        }
+        .badge-suspension-warn:hover {
+            transform: scale(1.05);
+        }
+        .badge-suspension-alert {
+            background-color: rgba(253, 126, 20, 0.2);
+            color: #d9480f;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: var(--rounded-sm);
+            display: inline-block;
+            cursor: pointer;
+        }
+        .badge-suspension-banned {
+            background-color: rgba(220, 53, 69, 0.18);
+            color: var(--danger);
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: var(--rounded-sm);
+            display: inline-block;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -366,7 +444,10 @@ $stats = $user->getUserStats();
 
                         <select name="status" class="select-per-page" onchange="this.form.submit()" style="height: 38px; border-radius: var(--rounded-md); font-weight: 600; padding: 0 12px; border: 1px solid var(--border-color); background: white;">
                             <option value="">สถานะทั้งหมด</option>
+                            <option value="active" <?php echo $selectedStatus === 'active' ? 'selected' : ''; ?>>ปกติ (ไม่ถูกแบน)</option>
                             <option value="banned" <?php echo $selectedStatus === 'banned' ? 'selected' : ''; ?>>ผู้ใช้ที่ถูกแบน</option>
+                            <option value="warning" <?php echo $selectedStatus === 'warning' ? 'selected' : ''; ?>>โพสต์เคยถูกระงับ (1-5 ครั้ง)</option>
+                            <option value="over_limit" <?php echo $selectedStatus === 'over_limit' ? 'selected' : ''; ?>>ถูกระงับเกิน 5 ครั้ง (แบนอัตโนมัติ)</option>
                         </select>
                         
                         <?php if ($itemsPerPage !== 10): ?>
@@ -389,14 +470,15 @@ $stats = $user->getUserStats();
                                 <th>ชื่อ-นามสกุล</th>
                                 <th>ชื่อผู้ใช้</th>
                                 <th style="width: 100px;">บทบาท</th>
-                                <th style="width: 170px;">วันที่สมัคร</th>
-                                <th style="width: 200px; text-align: center;">จัดการ</th>
+                                <th style="width: 160px; text-align: center;">โพสต์ที่ถูกระงับ (เกณฑ์ 5 ครั้ง)</th>
+                                <th style="width: 160px;">วันที่สมัคร</th>
+                                <th style="width: 230px; text-align: center;">จัดการ</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($users)): ?>
                                 <tr>
-                                    <td colspan="6" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                                    <td colspan="7" style="text-align: center; padding: 32px; color: var(--text-muted);">
                                         ไม่พบข้อมูลผู้ใช้
                                     </td>
                                 </tr>
@@ -405,42 +487,78 @@ $stats = $user->getUserStats();
                                     <?php 
                                         $roleClass = $row['role'] === 'admin' ? 'badge-admin' : 'badge-user';
                                         $isBanned = !empty($row['is_banned']);
+                                        $suspensionCount = (int)($row['suspension_count'] ?? 0);
                                     ?>
                                     <tr>
                                         <td class="col-id"><?php echo htmlspecialchars($row['user_id']); ?></td>
                                         <td style="font-weight: 600;"><?php echo htmlspecialchars($row['firstname'] . ' ' . $row['lastname']); ?></td>
                                         <td><?php echo htmlspecialchars($row['username']); ?></td>
                                         <td><span class="badge <?php echo $roleClass; ?>"><?php echo $row['role'] === 'admin' ? 'ผู้ดูแลระบบ' : 'ผู้ใช้ทั่วไป'; ?></span></td>
+                                        <td style="text-align: center;">
+                                            <?php if ($row['role'] === 'admin'): ?>
+                                                <span style="color: var(--text-muted);">-</span>
+                                            <?php else: ?>
+                                                <?php if ($suspensionCount === 0): ?>
+                                                    <span class="badge badge-suspension-clean">0 / 5 ครั้ง</span>
+                                                <?php elseif ($suspensionCount < 5): ?>
+                                                    <span class="badge badge-suspension-warn" onclick="openSuspensionHistoryModal(<?php echo (int)$row['user_id']; ?>, '<?php echo htmlspecialchars(addslashes($row['username']), ENT_QUOTES); ?>')" title="คลิกดูประวัติโพสต์ที่ถูกระงับ">
+                                                        <?php echo $suspensionCount; ?> / 5 ครั้ง
+                                                    </span>
+                                                <?php elseif ($suspensionCount === 5): ?>
+                                                    <span class="badge badge-suspension-alert" onclick="openSuspensionHistoryModal(<?php echo (int)$row['user_id']; ?>, '<?php echo htmlspecialchars(addslashes($row['username']), ENT_QUOTES); ?>')" title="ถูกระงับโพสต์ 5 ครั้งแล้ว หากมีโพสต์ถูกระงับอีกครั้งจะถูกแบนบัญชี">
+                                                        5 / 5 (เตือนครั้งสุดท้าย)
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="badge badge-suspension-banned" onclick="openSuspensionHistoryModal(<?php echo (int)$row['user_id']; ?>, '<?php echo htmlspecialchars(addslashes($row['username']), ENT_QUOTES); ?>')" title="ถูกระงับโพสต์เกิน 5 ครั้ง บัญชีถูกแบนอัตโนมัติ">
+                                                        <?php echo $suspensionCount; ?> ครั้ง (เกินเกณฑ์ - แบน)
+                                                    </span>
+                                                <?php endif; ?>
+                                            <?php endif; ?>
+                                        </td>
                                         <td style="font-size: 0.9rem; color: var(--text-muted);">
                                             <?php echo !empty($row['created_at']) ? date('d/m/Y H:i:s', strtotime($row['created_at'])) : '-'; ?>
                                         </td>
                                         <td style="text-align: center;">
                                             <?php if ($row['role'] === 'admin'): ?>
                                                 <span style="color: var(--text-muted); font-size: 1.1rem; font-weight: 600;">-</span>
-                                            <?php elseif (!$isBanned): ?>
-                                                <button type="button" class="btn-ban" onclick="openBanModal(<?php echo (int)$row['user_id']; ?>, '<?php echo htmlspecialchars(addslashes($row['username']), ENT_QUOTES); ?>')">
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <circle cx="12" cy="12" r="10"></circle>
-                                                        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
-                                                    </svg>
-                                                    แบนบัญชี
-                                                </button>
                                             <?php else: ?>
-                                                 <div style="display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
-                                                    <button type="button" class="btn-unban" onclick="openUnbanModal(<?php echo (int)$row['user_id']; ?>, '<?php echo htmlspecialchars(addslashes($row['username']), ENT_QUOTES); ?>')">
-                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                                            <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
-                                                        </svg>
-                                                        ยกเลิกการแบน
-                                                    </button>
-                                                    <button type="button" class="btn-history" onclick="openUserHistoryModal(<?php echo (int)$row['user_id']; ?>, '<?php echo htmlspecialchars(addslashes($row['username']), ENT_QUOTES); ?>')">
-                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                            <circle cx="12" cy="12" r="10"></circle>
-                                                            <polyline points="12 6 12 12 16 14"></polyline>
-                                                        </svg>
-                                                        ดูประวัติ
-                                                    </button>
+                                                <div style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap;">
+                                                    <?php if ($suspensionCount > 0): ?>
+                                                        <!-- ปุ่มดูประวัติโพสต์ที่ถูกระงับ -->
+                                                        <button type="button" class="btn-history" onclick="openSuspensionHistoryModal(<?php echo (int)$row['user_id']; ?>, '<?php echo htmlspecialchars(addslashes($row['username']), ENT_QUOTES); ?>')" title="ดูประวัติโพสต์ที่ถูกระงับ">
+                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                                            </svg>
+                                                            ประวัติถูกระงับ
+                                                        </button>
+                                                    <?php endif; ?>
+
+                                                    <?php if (!$isBanned): ?>
+                                                        <button type="button" class="btn-ban" onclick="openBanModal(<?php echo (int)$row['user_id']; ?>, '<?php echo htmlspecialchars(addslashes($row['username']), ENT_QUOTES); ?>')">
+                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                <circle cx="12" cy="12" r="10"></circle>
+                                                                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                                                            </svg>
+                                                            แบนบัญชี
+                                                        </button>
+                                                    <?php else: ?>
+                                                        <button type="button" class="btn-unban" onclick="openUnbanModal(<?php echo (int)$row['user_id']; ?>, '<?php echo htmlspecialchars(addslashes($row['username']), ENT_QUOTES); ?>')">
+                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                                <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                                                            </svg>
+                                                            ยกเลิกการแบน
+                                                        </button>
+                                                        <button type="button" class="btn-history" onclick="openUserHistoryModal(<?php echo (int)$row['user_id']; ?>, '<?php echo htmlspecialchars(addslashes($row['username']), ENT_QUOTES); ?>')">
+                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                <circle cx="12" cy="12" r="10"></circle>
+                                                                <polyline points="12 6 12 12 16 14"></polyline>
+                                                            </svg>
+                                                            ประวัติการแบน
+                                                        </button>
+                                                    <?php endif; ?>
                                                 </div>
                                             <?php endif; ?>
                                         </td>
@@ -664,6 +782,53 @@ $stats = $user->getUserStats();
         </div>
     </div>
 
+    <!-- Modal: User Suspension History Modal -->
+    <div class="modal-overlay" id="suspensionHistoryModalOverlay">
+        <div class="modal-card modal-card-lg">
+            <div class="modal-header">
+                <h3 class="modal-title">ประวัติโพสต์ที่ถูกระงับ: <span id="suspensionHistoryUsername" style="color: var(--primary);"></span></h3>
+                <button type="button" class="modal-close" onclick="closeSuspensionHistoryModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <span style="font-weight: 600; color: var(--secondary);">ยอดสะสม: </span>
+                        <span id="suspensionSummaryBadge" class="badge"></span>
+                    </div>
+                    <span style="font-size: 0.85rem; color: var(--text-muted);">
+                        * หากโพสต์ถูกระงับสะสมมากกว่า 5 ครั้ง (> 5 ครั้ง) ระบบจะทำการแบนบัญชีโดยอัตโนมัติ
+                    </span>
+                </div>
+                <div id="suspensionHistoryLoading" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                    กำลังโหลดข้อมูล...
+                </div>
+                <div id="suspensionHistoryContent" style="display: none; max-height: 400px; overflow-y: auto;">
+                    <table class="history-table" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px; padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">#</th>
+                                <th style="padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">Snippet ที่ถูกระงับ</th>
+                                <th style="width: 130px; padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">ผู้สั่งระงับ</th>
+                                <th style="padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">เหตุผลที่ระงับ</th>
+                                <th style="width: 160px; padding: 10px 14px; background: var(--neutral); text-align: left; border-bottom: 1px solid var(--border-color);">วันที่ระงับ</th>
+                                <th style="width: 110px; padding: 10px 14px; background: var(--neutral); text-align: center; border-bottom: 1px solid var(--border-color);">สถานะโพสต์</th>
+                            </tr>
+                        </thead>
+                        <tbody id="suspensionHistoryTableBody">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="suspensionHistoryEmpty" style="text-align: center; padding: 24px; color: var(--text-muted); display: none;">
+                    ไม่พบประวัติโพสต์ที่ถูกระงับสำหรับผู้ใช้นี้
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeSuspensionHistoryModal()">ปิด</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Sidebar Toggle functionality
         const menuToggle = document.getElementById('menuToggle');
@@ -690,6 +855,16 @@ $stats = $user->getUserStats();
             });
         }
 
+        // ==============================================================================================
+        // ส่วน JavaScript: ฟังก์ชันควบคุม UI และการจัดการ Modal ต่างๆ
+        // ==============================================================================================
+
+        /**
+         * ฟังก์ชัน: handleReasonPresetChange
+         * ส่วนที่อยู่: Client-side JS - Modal แบนผู้ใช้
+         * หน้าที่: ควบคุมการแสดงผลช่องกรอกรายละเอียดเพิ่มเติม เมื่อผู้ใช้เลือกเหตุผลแบบ 'อื่นๆ' (Other)
+         * พารามิเตอร์: radio (HTMLInputElement) - ตัวเลือก radio button ที่ถูกคลิก
+         */
         function handleReasonPresetChange(radio) {
             const reqSpan = document.getElementById('banDetailsRequired');
             const detailsTextarea = document.getElementById('banDetails');
@@ -706,12 +881,19 @@ $stats = $user->getUserStats();
             }
         }
 
-        // Modal 1: Ban Confirmation Modal Controls
+        /**
+         * ฟังก์ชัน: openBanModal
+         * ส่วนที่อยู่: Client-side JS - Modal แบนผู้ใช้
+         * หน้าที่: เปิด Modal ยืนยันการแบน พร้อมผูก ID และ Username ของผู้ใช้เป้าหมาย และรีเซ็ตฟอร์ม
+         * พารามิเตอร์: 
+         *   - userId (number|string): รหัสผู้ใช้ที่ต้องการแบน
+         *   - username (string): ชื่อผู้ใช้
+         */
         function openBanModal(userId, username) {
             document.getElementById('banUserId').value = userId;
             document.getElementById('banUsernameDisplay').textContent = username;
             
-            // Reset reason radio buttons and details
+            // รีเซ็ตค่าตัวเลือกเหตุผลและช่องกรอกรายละเอียด
             document.querySelectorAll('input[name="reason_preset"]').forEach(r => r.checked = false);
             document.getElementById('banDetails').value = '';
             document.getElementById('banDetailsRequired').style.display = 'none';
@@ -721,10 +903,21 @@ $stats = $user->getUserStats();
             document.getElementById('banModalOverlay').classList.add('open');
         }
 
+        /**
+         * ฟังก์ชัน: closeBanModal
+         * ส่วนที่อยู่: Client-side JS - Modal แบนผู้ใช้
+         * หน้าที่: ปิด Modal แบนผู้ใช้
+         */
         function closeBanModal() {
             document.getElementById('banModalOverlay').classList.remove('open');
         }
 
+        /**
+         * ฟังก์ชัน: validateBanForm
+         * ส่วนที่อยู่: Client-side JS - Modal แบนผู้ใช้
+         * หน้าที่: ตรวจสอบความถูกต้องของข้อมูลในฟอร์มแบนก่อน Submit (ต้องเลือกเหตุผล หากเป็น Other ต้องกรอกรายละเอียด)
+         * ส่งกลับ: boolean (true = ส่งฟอร์มได้, false = ข้อมูลไม่ครบถ้วน)
+         */
         function validateBanForm() {
             const selectedPreset = document.querySelector('input[name="reason_preset"]:checked');
             const details = document.getElementById('banDetails').value.trim();
@@ -747,18 +940,37 @@ $stats = $user->getUserStats();
             return confirm('คุณแน่ใจหรือไม่ว่าต้องการแบนผู้ใช้นี้?');
         }
 
-        // Modal: Unban Confirmation Modal Controls
+        /**
+         * ฟังก์ชัน: openUnbanModal
+         * ส่วนที่อยู่: Client-side JS - Modal ปลดแบนผู้ใช้
+         * หน้าที่: เปิด Modal ยืนยันการปลดระงับบัญชีผู้ใช้
+         * พารามิเตอร์:
+         *   - userId (number|string): รหัสผู้ใช้
+         *   - username (string): ชื่อผู้ใช้
+         */
         function openUnbanModal(userId, username) {
             document.getElementById('unbanUserId').value = userId;
             document.getElementById('unbanUsernameDisplay').textContent = username;
             document.getElementById('unbanModalOverlay').classList.add('open');
         }
 
+        /**
+         * ฟังก์ชัน: closeUnbanModal
+         * ส่วนที่อยู่: Client-side JS - Modal ปลดแบนผู้ใช้
+         * หน้าที่: ปิด Modal ยืนยันการปลดระงับบัญชีผู้ใช้
+         */
         function closeUnbanModal() {
             document.getElementById('unbanModalOverlay').classList.remove('open');
         }
 
-        // Modal 2: User Ban History Modal Controls
+        /**
+         * ฟังก์ชัน: openUserHistoryModal
+         * ส่วนที่อยู่: Client-side JS - Modal ดูประวัติการแบนเฉพาะรายบุคคล
+         * หน้าที่: เปิด Modal และดึงข้อมูลประวัติการแบนของผู้ใช้เป้าหมายผ่าน AJAX Fetch API
+         * พารามิเตอร์:
+         *   - userId (number|string): รหัสผู้ใช้
+         *   - username (string): ชื่อผู้ใช้
+         */
         function openUserHistoryModal(userId, username) {
             document.getElementById('userHistoryUsername').textContent = username;
             document.getElementById('userHistoryLoading').style.display = 'block';
@@ -800,11 +1012,20 @@ $stats = $user->getUserStats();
                 });
         }
 
+        /**
+         * ฟังก์ชัน: closeUserHistoryModal
+         * ส่วนที่อยู่: Client-side JS - Modal ดูประวัติการแบนเฉพาะรายบุคคล
+         * หน้าที่: ปิด Modal ประวัติการแบนของผู้ใช้
+         */
         function closeUserHistoryModal() {
             document.getElementById('userHistoryModalOverlay').classList.remove('open');
         }
 
-        // Modal 3: All Ban History Modal Controls
+        /**
+         * ฟังก์ชัน: openAllHistoryModal
+         * ส่วนที่อยู่: Client-side JS - Modal ดูประวัติการแบนทั้งหมด
+         * หน้าที่: เปิด Modal และดึงประวัติการแบนทั้งหมดในระบบผ่าน AJAX Fetch API
+         */
         function openAllHistoryModal() {
             document.getElementById('allHistoryLoading').style.display = 'block';
             document.getElementById('allHistoryContent').style.display = 'none';
@@ -846,21 +1067,114 @@ $stats = $user->getUserStats();
                 });
         }
 
+        /**
+         * ฟังก์ชัน: closeAllHistoryModal
+         * ส่วนที่อยู่: Client-side JS - Modal ดูประวัติการแบนทั้งหมด
+         * หน้าที่: ปิด Modal ดูประวัติการแบนทั้งหมด
+         */
         function closeAllHistoryModal() {
             document.getElementById('allHistoryModalOverlay').classList.remove('open');
         }
 
-        // Close modal on Escape key press or overlay click
+        // ==============================================================================================
+        // ส่วน JavaScript: ฟังก์ชันสำหรับดูประวัติโพสต์ที่ถูกระงับของผู้ใช้ (Snippet Suspensions)
+        // ==============================================================================================
+
+        /**
+         * ฟังก์ชัน: openSuspensionHistoryModal
+         * ส่วนที่อยู่: Client-side JS - Modal ดูประวัติโพสต์ที่ถูกระงับ
+         * หน้าที่: เปิด Modal และดึงประวัติโพสต์ที่ถูกระงับของผู้ใช้ผ่าน AJAX
+         * พารามิเตอร์:
+         *   - userId (number|string): รหัสผู้ใช้
+         *   - username (string): ชื่อผู้ใช้
+         */
+        function openSuspensionHistoryModal(userId, username) {
+            document.getElementById('suspensionHistoryUsername').textContent = username;
+            document.getElementById('suspensionHistoryLoading').style.display = 'block';
+            document.getElementById('suspensionHistoryContent').style.display = 'none';
+            document.getElementById('suspensionHistoryEmpty').style.display = 'none';
+            document.getElementById('suspensionSummaryBadge').textContent = 'กำลังโหลด...';
+            document.getElementById('suspensionHistoryModalOverlay').classList.add('open');
+
+            fetch('manage_users.php?ajax=user_suspensions&user_id=' + encodeURIComponent(userId))
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('suspensionHistoryLoading').style.display = 'none';
+                    const tbody = document.getElementById('suspensionHistoryTableBody');
+                    tbody.innerHTML = '';
+
+                    const totalCount = data.count || 0;
+                    const badgeElem = document.getElementById('suspensionSummaryBadge');
+                    if (totalCount > 5) {
+                        badgeElem.className = 'badge badge-suspension-banned';
+                        badgeElem.textContent = `${totalCount} ครั้ง (เกิน 5 ครั้ง - แบนอัตโนมัติ)`;
+                    } else if (totalCount === 5) {
+                        badgeElem.className = 'badge badge-suspension-alert';
+                        badgeElem.textContent = `5 / 5 ครั้ง (เตือนครั้งสุดท้าย)`;
+                    } else if (totalCount > 0) {
+                        badgeElem.className = 'badge badge-suspension-warn';
+                        badgeElem.textContent = `${totalCount} / 5 ครั้ง`;
+                    } else {
+                        badgeElem.className = 'badge badge-suspension-clean';
+                        badgeElem.textContent = `0 / 5 ครั้ง`;
+                    }
+
+                    if (data.success && data.data && data.data.length > 0) {
+                        data.data.forEach((item, index) => {
+                            const tr = document.createElement('tr');
+                            const statusBadge = item.unsuspended_at 
+                                ? `<span style="color: var(--surface); font-weight: 600; font-size: 0.85rem;">ปลดระงับแล้ว</span>` 
+                                : `<span style="color: var(--danger); font-weight: 600; font-size: 0.85rem;">ยังถูกระงับ</span>`;
+                            const snippetTitle = item.snippet_title ? escapeHtml(item.snippet_title) : `Snippet #${escapeHtml(item.snippet_id)}`;
+
+                            tr.innerHTML = `
+                                <td style="padding: 10px 14px; border-bottom: 1px solid var(--border-color);">${index + 1}</td>
+                                <td style="padding: 10px 14px; font-weight: 600; border-bottom: 1px solid var(--border-color);">${snippetTitle}</td>
+                                <td style="padding: 10px 14px; border-bottom: 1px solid var(--border-color);">${escapeHtml(item.admin_suspended || '-')}</td>
+                                <td style="padding: 10px 14px; border-bottom: 1px solid var(--border-color);">${escapeHtml(item.reason || '-')}</td>
+                                <td style="padding: 10px 14px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">${escapeHtml(item.suspended_at || '-')}</td>
+                                <td style="padding: 10px 14px; text-align: center; border-bottom: 1px solid var(--border-color);">${statusBadge}</td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                        document.getElementById('suspensionHistoryContent').style.display = 'block';
+                    } else {
+                        document.getElementById('suspensionHistoryEmpty').style.display = 'block';
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('suspensionHistoryLoading').textContent = 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
+                });
+        }
+
+        /**
+         * ฟังก์ชัน: closeSuspensionHistoryModal
+         * ส่วนที่อยู่: Client-side JS - Modal ดูประวัติโพสต์ที่ถูกระงับ
+         * หน้าที่: ปิด Modal ดูประวัติโพสต์ที่ถูกระงับ
+         */
+        function closeSuspensionHistoryModal() {
+            document.getElementById('suspensionHistoryModalOverlay').classList.remove('open');
+        }
+
+        // ปิด Modal ทั้งหมดเมื่อกดปุ่ม Escape (Esc)
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 closeBanModal();
                 closeUnbanModal();
                 closeUserHistoryModal();
                 closeAllHistoryModal();
+                closeSuspensionHistoryModal();
             }
         });
 
-        [document.getElementById('banModalOverlay'), document.getElementById('unbanModalOverlay'), document.getElementById('userHistoryModalOverlay'), document.getElementById('allHistoryModalOverlay')].forEach(overlay => {
+        // ปิด Modal เมื่อคลิกที่พื้นหลังสีทึบภายนอกกล่อง Modal (Overlay Click)
+        [
+            document.getElementById('banModalOverlay'), 
+            document.getElementById('unbanModalOverlay'), 
+            document.getElementById('userHistoryModalOverlay'), 
+            document.getElementById('allHistoryModalOverlay'),
+            document.getElementById('suspensionHistoryModalOverlay')
+        ].forEach(overlay => {
             if (overlay) {
                 overlay.addEventListener('click', (e) => {
                     if (e.target === overlay) {
@@ -870,6 +1184,13 @@ $stats = $user->getUserStats();
             }
         });
 
+        /**
+         * ฟังก์ชัน: escapeHtml
+         * ส่วนที่อยู่: Client-side JS - เครื่องมือ Helper
+         * หน้าที่: เข้ารหัสอักขระพิเศษเพื่อป้องกันการโจมตีแบบ XSS (Cross-Site Scripting) เมื่อนำข้อความไปเรนเดอร์ใน HTML
+         * พารามิเตอร์: text (string) - ข้อความที่ต้องการ Escape
+         * ส่งกลับ: string - ข้อความที่ผ่านการแปลง HTML entities แล้ว
+         */
         function escapeHtml(text) {
             if (!text) return '';
             return String(text)

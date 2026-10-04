@@ -1,10 +1,27 @@
 <?php
+/**
+ * ==============================================================================
+ * ไฟล์: Admin/manage_appeals.php
+ * หน้าที่: หน้าจัดการคำร้องอุทธรณ์ Snippet ที่ถูกระงับ (Admin Appeals Management)
+ * ส่วนประกอบในไฟล์:
+ *   1. โหลดระบบตรวจสอบสิทธิ์ผู้ดูแลระบบ (check_admin.php)
+ *   2. ประมวลผลคำสั่ง POST พิจารณาคำร้อง:
+ *      - action='approve' : อนุมัติคำร้อง พร้อมปลดการระงับ Snippet ($control->approveAppealAdmin())
+ *      - action='reject'  : ปฏิเสธคำร้อง และคงการระงับไว้ ($control->rejectAppealAdmin())
+ *   3. ตัวกรองสถานะคำร้อง (pending, approved, rejected, ALL) และดึงรายการ ($control->getAllAppealsAdmin())
+ *   4. ดึงจำนวนคำร้องที่รอการตรวจสอบ ($control->getPendingAppealsCountAdmin())
+ *   5. ส่วนแสดงผลตารางรายการคำร้อง และ Modal เปิดดูรายละเอียด/เขียนหมายเหตุแอดมิน
+ *   6. สคริปต์ JavaScript: closeReview() ปิด Modal และจัดการปุ่มอนุมัติ/ปฏิเสธ
+ * ==============================================================================
+ */
+
+// --- ส่วนที่ 1: ตรวจสอบสิทธิ์ผู้ดูแลระบบ ---
 require_once __DIR__ . '/check_admin.php';
 
 $successMsg = "";
 $errorMsg = "";
 
-// Handle Actions (Approve / Reject)
+// --- ส่วนที่ 2: ประมวลผลคำสั่ง POST พิจารณาคำร้องอุทธรณ์ ---
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if (isset($_POST['action'])) {
         $appealId = (int)($_POST['appeal_id'] ?? 0);
@@ -14,12 +31,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if ($appealId <= 0) {
             $errorMsg = "รหัสคำร้องไม่ถูกต้อง";
         } else {
+            // อนุมัติคำร้อง: ปลดระงับ Snippet ให้กลับมาใช้งานได้ตามปกติ
             if ($_POST['action'] === 'approve') {
                 if ($control->approveAppealAdmin($appealId, $adminUsername, $adminNotes)) {
                     $successMsg = "อนุมัติคำร้องเรียบร้อยแล้ว Snippet ได้รับการยกเลิกการระงับ";
                 } else {
                     $errorMsg = "ไม่สามารถอนุมัติคำร้องได้";
                 }
+            // ปฏิเสธคำร้อง: ไม่ปลดระงับ Snippet
             } elseif ($_POST['action'] === 'reject') {
                 if ($control->rejectAppealAdmin($appealId, $adminUsername, $adminNotes)) {
                     $successMsg = "ปฏิเสธคำร้องเรียบร้อยแล้ว Snippet ยังคงถูกระงับ";
@@ -31,7 +50,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 }
 
-// Get filter status
+// --- ส่วนที่ 3: รับค่าตัวกรองสถานะ และดึงรายการคำร้องจากฐานข้อมูล ---
 $statusFilter = isset($_GET['status']) ? trim($_GET['status']) : 'pending';
 if (!in_array($statusFilter, ['pending', 'approved', 'rejected', 'ALL'])) {
     $statusFilter = 'pending';
@@ -426,6 +445,11 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
         const btnApproveAppeal = document.getElementById('btnApproveAppeal');
         const btnRejectAppeal = document.getElementById('btnRejectAppeal');
 
+        /**
+         * ฟังก์ชัน: closeReview
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: จัดการปิดหน้าต่าง Modal ตรวจสอบคำอุทธรณ์]
+         * หน้าที่: ปิดหน้าต่าง Modal พิจารณาคำร้อง และล้างข้อมูลฟอร์ม
+         */
         function closeReview() {
             reviewModal?.classList.remove('open');
             reviewForm?.reset();

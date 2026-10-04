@@ -1,20 +1,37 @@
 <?php
+/**
+ * ==============================================================================
+ * ไฟล์: explore.php
+ * หน้าที่: หน้าสำรวจ Snippet สาธารณะของชุมชน (Explore Public Snippets)
+ * ส่วนประกอบในไฟล์:
+ *   1. โหลดระบบเซสชัน ฐานข้อมูล และการยืนยันตัวตนสมาชิก
+ *   2. จัดการการลบ Snippet ชั่วคราว (Soft Delete)
+ *   3. การแบ่งหน้า (Pagination) และสลับดูรายการที่คั่นหน้า (?bookmarks=1)
+ *   4. ดึงข้อมูล Snippet สาธารณะจากฐานข้อมูลแบบแบ่งหน้า
+ *   5. ดึงข้อมูลยอดไลก์และสถานะบุ๊กมาร์กสำหรับแสดงบนการ์ดแต่ละใบ
+ *   6. ส่วนแสดงผล UI (Navbar, Sidebar, Toolbar, Snippet Cards, Pagination)
+ *   7. สคริปต์ JavaScript สำหรับเปลี่ยนจำนวนต่อหน้า, Toast แจ้งเตือน, และกดไลก์/บุ๊กมาร์กแบบ AJAX
+ * ==============================================================================
+ */
+
+// --- ส่วนที่ 1: ตรวจสอบสิทธิ์และการเข้าสู่ระบบ ---
 require_once "layout/session.php";
 require_once "db/connect.php";
 require_once "layout/check_user.php";
 
 $searchQuery = trim($_GET['q'] ?? '');
 $showBookmarks = isset($_GET['bookmarks']) && $_GET['bookmarks'] === '1';
-$onlyOwn = false;
+$onlyOwn = false; // false = แสดงของทุกคนในระบบ (Explore Mode)
 $userId = getCurrentUserId();
 
+// --- ส่วนที่ 2: จัดการการลบ Snippet ชั่วคราว (ย้ายไปถังขยะ) ---
 if(isset($_GET['delete']) && is_numeric($_GET['delete'])){
     $control->softDeleteSnippet((int)$_GET['delete'], $userId);
     header('Location:remove.php');
     exit;
 }
 
-// Pagination settings
+// --- ส่วนที่ 3: กำหนดค่าการแบ่งหน้า (Pagination Settings) ---
 $allowedLimits = [10, 15, 20, 25];
 if(isset($_GET['limit']) && in_array((int)$_GET['limit'], $allowedLimits)){
     $itemsPerPage = (int)$_GET['limit'];
@@ -26,7 +43,7 @@ if(isset($_GET['limit']) && in_array((int)$_GET['limit'], $allowedLimits)){
 }
 $currentPage = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 
-// Get total count
+// --- ส่วนที่ 4: ดึงข้อมูล Snippet ตามเงื่อนไข (บุ๊กมาร์ก หรือ ค้นหา หรือ โค้ดสาธารณะทั้งหมด) ---
 if($showBookmarks && $userId){
     $totalSnippets = $control->getTotalBookmarkedSnippetCount($userId);
     $result = $control->getBookmarkedSnippetsPaginated($userId, $currentPage, $itemsPerPage);
@@ -43,17 +60,16 @@ if($result){
     $snippets = $result->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// Calculate pagination info
+// คำนวณจำนวนหน้าทั้งหมด
 $totalPages = ceil($totalSnippets / $itemsPerPage);
 if($totalPages === 0) $totalPages = 1;
 
-// Fetch list of bookmarked snippet IDs
+// --- ส่วนที่ 5: ดึงรายการ ID บุ๊กมาร์ก และคำนวณยอดไลก์ของ Snippet ที่แสดงผล ---
 $bookmarkedIds = [];
 if($userId){
     $bookmarkedIds = $control->getBookmarkedSnippetIds($userId);
 }
 
-// Fetch list of liked snippet IDs and like count for each snippet
 $likedIds = [];
 $likeCounts = [];
 if($userId){
@@ -62,7 +78,7 @@ if($userId){
 $snippetIds = array_column($snippets, 'snippet_id');
 $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
 
-// Build Bookmark toggle URL
+// สร้าง URL สำหรับปุ่มสลับดูบุ๊กมาร์ก
 $bookmarkParams = [];
 if(!$showBookmarks){
     $bookmarkParams['bookmarks'] = '1';
@@ -310,6 +326,14 @@ $bookmarkUrl = 'explore.php' . (!empty($bookmarkParams) ? '?' . http_build_query
     <div class="toast" id="toast"></div>
 
     <script>
+        // --- ส่วนที่ 7: สคริปต์ JavaScript จัดการการทำงานฝั่ง Client ในหน้าสำรวจ ---
+
+        /**
+         * ฟังก์ชัน: changePerPage
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: จัดการการแบ่งหน้า]
+         * หน้าที่: เปลี่ยนจำนวนรายการที่แสดงต่อหน้า โดยอัปเดต query string 'limit' และรีเซ็ตกลับหน้า 1
+         * พารามิเตอร์: val (จำนวนที่เลือก 10, 15, 20, 25)
+         */
         function changePerPage(val) {
             const url = new URL(window.location.href);
             url.searchParams.set('limit', val);
@@ -317,6 +341,12 @@ $bookmarkUrl = 'explore.php' . (!empty($bookmarkParams) ? '?' . http_build_query
             window.location.href = url.toString();
         }
 
+        /**
+         * ฟังก์ชัน: showToast
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: กล่องข้อความแจ้งเตือน]
+         * หน้าที่: แสดงกล่องข้อความ Toast ชั่วคราว 2 วินาที
+         * พารามิเตอร์: message (ข้อความที่ต้องการแจ้งเตือน)
+         */
         function showToast(message) {
             const toast = document.getElementById('toast');
             toast.textContent = message;
@@ -324,7 +354,7 @@ $bookmarkUrl = 'explore.php' . (!empty($bookmarkParams) ? '?' . http_build_query
             setTimeout(() => toast.classList.remove('show'), 2000);
         }
 
-        // Handle like toggle on each card
+        // จัดการการกดปุ่มถูกใจ (Like Toggle) บนการ์ด Snippet ด้วย AJAX (like_action.php)
         document.querySelectorAll('.like-toggle').forEach(btn => {
             btn.addEventListener('click', async function(e) {
                 e.preventDefault();
@@ -359,7 +389,7 @@ $bookmarkUrl = 'explore.php' . (!empty($bookmarkParams) ? '?' . http_build_query
             });
         });
 
-        // Handle bookmark toggle on each card
+        // จัดการการกดปุ่มบุ๊กมาร์ก (Bookmark Toggle) บนการ์ด Snippet ด้วย AJAX (bookmark_action.php)
         document.querySelectorAll('.bookmark-toggle').forEach(btn => {
             btn.addEventListener('click', async function(e) {
                 e.preventDefault();
