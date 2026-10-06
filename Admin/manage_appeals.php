@@ -51,13 +51,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 }
 
 // --- ส่วนที่ 3: รับค่าตัวกรองสถานะ และดึงรายการคำร้องจากฐานข้อมูล ---
-$statusFilter = isset($_GET['status']) ? trim($_GET['status']) : 'pending';
-if (!in_array($statusFilter, ['pending', 'approved', 'rejected', 'ALL'])) {
-    $statusFilter = 'pending';
-}
+$rawStatus = isset($_GET['status']) ? trim($_GET['status']) : 'pending';
+
+$statusParamMap = [
+    'pending' => 'รอดำเนินการ',
+    'approved' => 'อนุมัติ',
+    'rejected' => 'ถูกปฏิเสธ',
+    'รอดำเนินการ' => 'รอดำเนินการ',
+    'อนุมัติ' => 'อนุมัติ',
+    'ถูกปฏิเสธ' => 'ถูกปฏิเสธ',
+    'ALL' => 'ALL'
+];
+
+$dbStatus = $statusParamMap[$rawStatus] ?? 'รอดำเนินการ';
+$statusFilter = ($dbStatus === 'รอดำเนินการ') ? 'pending' : (($dbStatus === 'อนุมัติ') ? 'approved' : (($dbStatus === 'ถูกปฏิเสธ') ? 'rejected' : 'ALL'));
 
 $appeals = [];
-$appealsResult = $control->getAllAppealsAdmin($statusFilter === 'ALL' ? null : $statusFilter);
+$appealsResult = $control->getAllAppealsAdmin($dbStatus === 'ALL' ? null : $dbStatus);
 if ($appealsResult) {
     $appeals = $appealsResult->fetchAll(PDO::FETCH_ASSOC);
 }
@@ -293,9 +303,9 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                                             <?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($app['created_at']))); ?>
                                         </td>
                                         <td style="text-align: center;">
-                                            <?php if ($app['status'] === 'pending'): ?>
+                                            <?php if ($app['status'] === 'รอดำเนินการ' || $app['status'] === 'pending'): ?>
                                                 <span class="badge badge-pending">รอดำเนินการ</span>
-                                            <?php elseif ($app['status'] === 'approved'): ?>
+                                            <?php elseif ($app['status'] === 'อนุมัติ' || $app['status'] === 'approved'): ?>
                                                 <span class="badge badge-approved">อนุมัติแล้ว</span>
                                             <?php else: ?>
                                                 <span class="badge badge-rejected">ปฏิเสธแล้ว</span>
@@ -307,9 +317,9 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                                                 <a href="viewcode.php?view=<?php echo $app['snippet_id']; ?>&from=appeals" class="btn-action btn-view">
                                                     ดูโค้ด
                                                 </a>
-                                                <button type="button" class="btn-action <?php echo $app['status'] === 'pending' ? 'btn-review-pending' : 'btn-review-done'; ?> btn-open-review" 
+                                                <button type="button" class="btn-action <?php echo ($app['status'] === 'รอดำเนินการ' || $app['status'] === 'pending') ? 'btn-review-pending' : 'btn-review-done'; ?> btn-open-review" 
                                                     data-appeal='<?php echo htmlspecialchars(json_encode($app), ENT_QUOTES, 'UTF-8'); ?>'>
-                                                    <?php echo $app['status'] === 'pending' ? 'พิจารณาคำร้อง' : 'ดูรายละเอียด'; ?>
+                                                    <?php echo ($app['status'] === 'รอดำเนินการ' || $app['status'] === 'pending') ? 'พิจารณาคำร้อง' : 'ดูรายละเอียด'; ?>
                                                 </button>
                                             </div>
                                         </td>
@@ -474,7 +484,7 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                 modalAppealReason.textContent = appeal.reason;
                 modalSubmittedTime.textContent = 'ยื่นเมื่อ: ' + appeal.created_at;
 
-                if (appeal.status === 'pending') {
+                if (appeal.status === 'รอดำเนินการ' || appeal.status === 'pending') {
                     reviewedInfoBox.style.display = 'none';
                     adminNotesGroup.style.display = 'block';
                     adminNotesInput.removeAttribute('readonly');
@@ -482,7 +492,7 @@ $pendingCount = $control->getPendingAppealsCountAdmin();
                     pendingActionButtons.style.display = 'flex';
                 } else {
                     reviewedInfoBox.style.display = 'block';
-                    let statusLabel = appeal.status === 'approved' ? '<span style="color:#16a34a; font-weight:700;">อนุมัติแล้ว (APPROVED)</span>' : '<span style="color:#dc2626; font-weight:700;">ปฏิเสธแล้ว (REJECTED)</span>';
+                    let statusLabel = (appeal.status === 'อนุมัติ' || appeal.status === 'approved') ? '<span style="color:#16a34a; font-weight:700;">อนุมัติแล้ว (APPROVED)</span>' : '<span style="color:#dc2626; font-weight:700;">ปฏิเสธแล้ว (REJECTED)</span>';
                     modalReviewDetails.innerHTML = '<strong>สถานะ:</strong> ' + statusLabel + '<br>' +
                                                    '<strong>พิจารณาโดย:</strong> ' + (appeal.reviewed_by || 'Admin') + '<br>' +
                                                    '<strong>วันที่พิจารณา:</strong> ' + (appeal.reviewed_at || '-') + '<br>' +

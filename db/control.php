@@ -1319,7 +1319,7 @@ class Control{
             $stmtSuspension->bindParam(":reason", $reason, PDO::PARAM_STR);
             $stmtSuspension->execute();
 
-            $sqlReports = "UPDATE reports SET status = 'removed', resolved_by = :resolved_by, resolved_at = NOW() WHERE snippet_id = :snippet_id AND status = 'pending'";
+            $sqlReports = "UPDATE reports SET status = 'ถูกระงับ', resolved_by = :resolved_by, resolved_at = NOW() WHERE snippet_id = :snippet_id AND (status = 'รอดำเนินการ' OR status = 'pending')";
             $stmtReports = $this->db->prepare($sqlReports);
             $stmtReports->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
             $stmtReports->bindParam(":resolved_by", $admin_username, PDO::PARAM_STR);
@@ -1503,7 +1503,7 @@ class Control{
     function createReport($snippet_id, $user_id, $reason, $details){
         try{
             $sql = "INSERT INTO reports (snippet_id, user_id, reason, details, status) 
-                    VALUES (:snippet_id, :user_id, :reason, :details, 'pending')";
+                    VALUES (:snippet_id, :user_id, :reason, :details, 'รอดำเนินการ')";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
             $stmt->bindParam(":user_id", $user_id, PDO::PARAM_INT);
@@ -1524,7 +1524,7 @@ class Control{
      */
     function hasUserReported($user_id, $snippet_id){
         try{
-            $sql = "SELECT COUNT(*) as count FROM reports WHERE user_id = :user_id AND snippet_id = :snippet_id AND status = 'pending'";
+            $sql = "SELECT COUNT(*) as count FROM reports WHERE user_id = :user_id AND snippet_id = :snippet_id AND (status = 'รอดำเนินการ' OR status = 'pending')";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(":user_id", $user_id, PDO::PARAM_INT);
             $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
@@ -1610,7 +1610,7 @@ class Control{
      */
     function rejectReportAdmin($report_id, $admin_username = 'Admin'){
         try{
-            $sql = "UPDATE reports SET status = 'rejected', resolved_by = :resolved_by, resolved_at = NOW() WHERE report_id = :report_id";
+            $sql = "UPDATE reports SET status = 'ถูกปฏิเสธ', resolved_by = :resolved_by, resolved_at = NOW() WHERE report_id = :report_id";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(":report_id", $report_id, PDO::PARAM_INT);
             $stmt->bindParam(":resolved_by", $admin_username, PDO::PARAM_STR);
@@ -1623,13 +1623,13 @@ class Control{
     /**
      * ฟังก์ชัน: resolveReportsForSnippet
      * ส่วนที่: [ส่วนที่ 10: ระบบรายงานโค้ดไม่เหมาะสม - Report System]
-     * หน้าที่: ปิดรายงานทั้งหมดของ Snippet ที่ระบุ (สถานะ removed) เมื่อแอดมินดำเนินการจัดการแล้ว
+     * หน้าที่: ปิดรายงานทั้งหมดของ Snippet ที่ระบุ (สถานะ ถูกระงับ) เมื่อแอดมินดำเนินการจัดการแล้ว
      * พารามิเตอร์: $snippet_id, $admin_username
      * คืนค่า: bool
      */
     function resolveReportsForSnippet($snippet_id, $admin_username = 'Admin'){
         try{
-            $sql = "UPDATE reports SET status = 'removed', resolved_by = :resolved_by, resolved_at = NOW() WHERE snippet_id = :snippet_id AND status = 'pending'";
+            $sql = "UPDATE reports SET status = 'ถูกระงับ', resolved_by = :resolved_by, resolved_at = NOW() WHERE snippet_id = :snippet_id AND (status = 'รอดำเนินการ' OR status = 'pending')";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
             $stmt->bindParam(":resolved_by", $admin_username, PDO::PARAM_STR);
@@ -1642,12 +1642,12 @@ class Control{
     /**
      * ฟังก์ชัน: getPendingReportsCountAdmin
      * ส่วนที่: [ส่วนที่ 10: ระบบรายงานโค้ดไม่เหมาะสม - Report System]
-     * หน้าที่: นับจำนวนรายงานที่ยังรอการตรวจสอบ (status = 'pending')
+     * หน้าที่: นับจำนวนรายงานที่ยังรอการตรวจสอบ (status = 'รอดำเนินการ')
      * คืนค่า: int
      */
     function getPendingReportsCountAdmin(){
         try{
-            $sql = "SELECT COUNT(*) as count FROM reports WHERE status = 'pending'";
+            $sql = "SELECT COUNT(*) as count FROM reports WHERE status = 'รอดำเนินการ' OR status = 'pending'";
             $stmt = $this->db->query($sql);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             return (int)($row['count'] ?? 0);
@@ -1677,7 +1677,7 @@ class Control{
             }
 
             $sql = "INSERT INTO snippet_appeals (snippet_id, user_id, reason, status, created_at)
-                    VALUES (:snippet_id, :user_id, :reason, 'pending', NOW())";
+                    VALUES (:snippet_id, :user_id, :reason, 'รอดำเนินการ', NOW())";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
             $stmt->bindParam(":user_id", $user_id, PDO::PARAM_INT);
@@ -1698,7 +1698,7 @@ class Control{
     function getPendingAppealBySnippet($snippet_id){
         try{
             $sql = "SELECT * FROM snippet_appeals 
-                    WHERE snippet_id = :snippet_id AND status = 'pending' 
+                    WHERE snippet_id = :snippet_id AND (status = 'รอดำเนินการ' OR status = 'pending') 
                     ORDER BY appeal_id DESC LIMIT 1";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
@@ -1832,7 +1832,7 @@ class Control{
             $this->db->beginTransaction();
 
             // ดึง snippet_id จาก appeal
-            $sqlCheck = "SELECT snippet_id FROM snippet_appeals WHERE appeal_id = :appeal_id AND status = 'pending'";
+            $sqlCheck = "SELECT snippet_id FROM snippet_appeals WHERE appeal_id = :appeal_id AND (status = 'รอดำเนินการ' OR status = 'pending')";
             $stmtCheck = $this->db->prepare($sqlCheck);
             $stmtCheck->bindParam(":appeal_id", $appeal_id, PDO::PARAM_INT);
             $stmtCheck->execute();
@@ -1845,9 +1845,9 @@ class Control{
 
             $snippet_id = (int)$appeal['snippet_id'];
 
-            // 1. อัปเดตสถานะ Appeal เป็น approved
+            // 1. อัปเดตสถานะ Appeal เป็น อนุมัติ
             $sqlAppeal = "UPDATE snippet_appeals 
-                          SET status = 'approved', reviewed_by = :reviewed_by, admin_notes = :admin_notes, reviewed_at = NOW() 
+                          SET status = 'อนุมัติ', reviewed_by = :reviewed_by, admin_notes = :admin_notes, reviewed_at = NOW() 
                           WHERE appeal_id = :appeal_id";
             $stmtAppeal = $this->db->prepare($sqlAppeal);
             $stmtAppeal->bindParam(":reviewed_by", $admin_username, PDO::PARAM_STR);
@@ -1891,8 +1891,8 @@ class Control{
     function rejectAppealAdmin($appeal_id, $admin_username, $admin_notes = null){
         try{
             $sql = "UPDATE snippet_appeals 
-                    SET status = 'rejected', reviewed_by = :reviewed_by, admin_notes = :admin_notes, reviewed_at = NOW() 
-                    WHERE appeal_id = :appeal_id AND status = 'pending'";
+                    SET status = 'ถูกปฏิเสธ', reviewed_by = :reviewed_by, admin_notes = :admin_notes, reviewed_at = NOW() 
+                    WHERE appeal_id = :appeal_id AND (status = 'รอดำเนินการ' OR status = 'pending')";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(":reviewed_by", $admin_username, PDO::PARAM_STR);
             $stmt->bindParam(":admin_notes", $admin_notes, PDO::PARAM_STR);
@@ -1906,12 +1906,12 @@ class Control{
     /**
      * ฟังก์ชัน: getPendingAppealsCountAdmin
      * ส่วนที่: [ส่วนที่ 11: ระบบยื่นอุทธรณ์ Snippet ที่ถูกระงับ - Appeal System]
-     * หน้าที่: นับจำนวนคำร้องอุทธรณ์ที่อยู่ระหว่างรอการตรวจสอบ (status = 'pending')
+     * หน้าที่: นับจำนวนคำร้องอุทธรณ์ที่อยู่ระหว่างรอการตรวจสอบ (status = 'รอดำเนินการ')
      * คืนค่า: int
      */
     function getPendingAppealsCountAdmin(){
         try{
-            $sql = "SELECT COUNT(*) as count FROM snippet_appeals WHERE status = 'pending'";
+            $sql = "SELECT COUNT(*) as count FROM snippet_appeals WHERE status = 'รอดำเนินการ' OR status = 'pending'";
             $stmt = $this->db->query($sql);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             return (int)($row['count'] ?? 0);

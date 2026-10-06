@@ -41,14 +41,26 @@ if ($snippetId <= 0) {
 }
 
 // ตรวจสอบค่าเหตุผลว่าอยู่ในรายการที่ระบบกำหนดไว้หรือไม่
-$allowedReasons = ['spam', 'inappropriate', 'malicious_code', 'other'];
+$allowedReasons = ['สแปม', 'เนื้อหาไม่เหมาะสม', 'โค้ดอันตราย', 'อื่นๆ'];
+
+// แปลงค่าภาษาอังกฤษเป็นภาษาไทย (เพื่อรองรับความเข้ากันได้)
+$reasonMap = [
+    'spam' => 'สแปม',
+    'inappropriate' => 'เนื้อหาไม่เหมาะสม',
+    'malicious_code' => 'โค้ดอันตราย',
+    'other' => 'อื่นๆ'
+];
+if (isset($reasonMap[$reason])) {
+    $reason = $reasonMap[$reason];
+}
+
 if (!in_array($reason, $allowedReasons)) {
     echo json_encode(["status" => "error", "message" => "เหตุผลในการรายงานไม่ถูกต้อง"]);
     exit;
 }
 
 // หากเลือก "อื่นๆ" จะต้องกรอกรายละเอียดเพิ่มเติมด้วย
-if ($reason === 'other' && empty($details)) {
+if ($reason === 'อื่นๆ' && empty($details)) {
     echo json_encode(["status" => "error", "message" => "กรุณาระบุรายละเอียดสำหรับตัวเลือก 'อื่นๆ'"]);
     exit;
 }

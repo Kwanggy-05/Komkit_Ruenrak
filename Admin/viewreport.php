@@ -147,6 +147,16 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
                         <strong>วันที่รายงาน:</strong> 
                         <span><?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($report['created_at']))); ?></span>
                     </div>
+                    <div>
+                        <strong>สถานะรายงาน:</strong> 
+                        <?php if ($report['status'] === 'รอดำเนินการ' || $report['status'] === 'pending'): ?>
+                            <span style="font-weight: bold; color: #856404; padding: 2px 8px; background: #ffeeba; border-radius: 4px; font-size: 0.85rem;">รอดำเนินการ</span>
+                        <?php elseif ($report['status'] === 'ถูกระงับ' || $report['status'] === 'removed'): ?>
+                            <span style="font-weight: bold; color: #155724; padding: 2px 8px; background: #d4edda; border-radius: 4px; font-size: 0.85rem;">ถูกระงับ (จัดการแล้ว)</span>
+                        <?php else: ?>
+                            <span style="font-weight: bold; color: #dc2626; padding: 2px 8px; background: #fee2e2; border-radius: 4px; font-size: 0.85rem;">ถูกปฏิเสธ</span>
+                        <?php endif; ?>
+                    </div>
                     <?php if (!empty($report['resolved_by'])): ?>
                     <div>
                         <strong>จัดการโดย:</strong> 
@@ -177,7 +187,7 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
                         <?php endif; ?>
                     </div>
                     <div style="display: flex; gap: 12px; align-items: center;">
-                        <?php if ($report['status'] === 'pending'): ?>
+                        <?php if ($report['status'] === 'รอดำเนินการ' || $report['status'] === 'pending'): ?>
                             <!-- Reject / Dismiss Report Form -->
                             <form method="POST" style="margin: 0;">
                                 <input type="hidden" name="action" value="reject">

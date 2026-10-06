@@ -68,8 +68,8 @@ if(isset($_GET['view']) && is_numeric($_GET['view'])){
     if($snippet && $userId && (int)$snippet['user_id'] === (int)$userId){
         $latestAppeal = $control->getLatestAppealBySnippet($id);
         if($latestAppeal){
-            $isAppealPending = ($latestAppeal['status'] === 'pending');
-            $isAppealRejected = ($latestAppeal['status'] === 'rejected');
+            $isAppealPending = ($latestAppeal['status'] === 'รอดำเนินการ' || $latestAppeal['status'] === 'pending');
+            $isAppealRejected = ($latestAppeal['status'] === 'ถูกปฏิเสธ' || $latestAppeal['status'] === 'rejected');
         }
     }
 }
@@ -296,19 +296,19 @@ if($accessDenied){
                     <?php endif; ?>
                     
                         <label class="report-option-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem;">
-                            <input type="radio" name="reason" value="spam" required>
+                            <input type="radio" name="reason" value="สแปม" required>
                             <span>สแปม / ข้อมูลเท็จหรือหลอกลวง</span>
                         </label>
                         <label class="report-option-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem;">
-                            <input type="radio" name="reason" value="inappropriate">
+                            <input type="radio" name="reason" value="เนื้อหาไม่เหมาะสม">
                             <span>เนื้อหาไม่เหมาะสม / รุนแรง / คุกคาม</span>
                         </label>
                         <label class="report-option-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem;">
-                            <input type="radio" name="reason" value="malicious_code">
+                            <input type="radio" name="reason" value="โค้ดอันตราย">
                             <span>โค้ดอันตราย / มัลแวร์</span>
                         </label>
                         <label class="report-option-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem;">
-                            <input type="radio" name="reason" value="other">
+                            <input type="radio" name="reason" value="อื่นๆ">
                             <span>อื่นๆ</span>
                         </label>
 
@@ -604,10 +604,10 @@ if($accessDenied){
             }
         });
 
-        // Toggle required state when selecting 'other'
+        // Toggle required state when selecting 'อื่นๆ'
         reasonRadios.forEach(radio => {
             radio.addEventListener('change', function() {
-                if (this.value === 'other') {
+                if (this.value === 'อื่นๆ' || this.value === 'other') {
                     reportDetails.setAttribute('required', 'required');
                     reportDetails.placeholder = "กรุณาระบุรายละเอียดเพื่อให้ตรวจสอบ (จำเป็น)...";
                     if (reportReqAsterisk) reportReqAsterisk.style.display = 'inline';

@@ -70,13 +70,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 }
 
 // --- ส่วนที่ 3: รับค่าตัวกรองสถานะรายงาน และดึงรายการรายงานจากฐานข้อมูล ---
-$statusFilter = isset($_GET['status']) ? trim($_GET['status']) : 'pending';
-if (!in_array($statusFilter, ['pending', 'removed', 'rejected', 'ALL'])) {
-    $statusFilter = 'pending';
-}
+$rawStatus = isset($_GET['status']) ? trim($_GET['status']) : 'pending';
+
+$statusParamMap = [
+    'pending' => 'รอดำเนินการ',
+    'removed' => 'ถูกระงับ',
+    'rejected' => 'ถูกปฏิเสธ',
+    'รอดำเนินการ' => 'รอดำเนินการ',
+    'ถูกระงับ' => 'ถูกระงับ',
+    'ถูกปฏิเสธ' => 'ถูกปฏิเสธ',
+    'ALL' => 'ALL'
+];
+
+$dbStatus = $statusParamMap[$rawStatus] ?? 'รอดำเนินการ';
+$statusFilter = ($dbStatus === 'รอดำเนินการ') ? 'pending' : (($dbStatus === 'ถูกระงับ') ? 'removed' : (($dbStatus === 'ถูกปฏิเสธ') ? 'rejected' : 'ALL'));
 
 $reports = [];
-$reportsResult = $control->getAllReportsAdmin($statusFilter === 'ALL' ? null : $statusFilter);
+$reportsResult = $control->getAllReportsAdmin($dbStatus === 'ALL' ? null : $dbStatus);
 if ($reportsResult) {
     $reports = $reportsResult->fetchAll(PDO::FETCH_ASSOC);
 }
@@ -275,9 +285,9 @@ if ($reportsResult) {
                                             <?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($rep['created_at']))); ?>
                                         </td>
                                         <td style="text-align: center;">
-                                            <?php if ($rep['status'] === 'pending'): ?>
+                                            <?php if ($rep['status'] === 'รอดำเนินการ' || $rep['status'] === 'pending'): ?>
                                                 <span class="badge badge-active" style="background-color: #ffeeba; color: #856404; border-color: #ffeeba;">รอดำเนินการ</span>
-                                            <?php elseif ($rep['status'] === 'removed'): ?>
+                                            <?php elseif ($rep['status'] === 'ถูกระงับ' || $rep['status'] === 'removed'): ?>
                                                 <span class="badge badge-active" style="background-color: #d4edda; color: #155724; border-color: #d4edda;">จัดการแล้ว</span>
                                                 <?php if (!empty($rep['resolved_by'])): ?>
                                                     <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 3px;">โดย <?php echo htmlspecialchars($rep['resolved_by']); ?></div>
@@ -296,7 +306,7 @@ if ($reportsResult) {
                                                     รายละเอียด
                                                 </a>
                                                 
-                                                <?php if ($rep['status'] === 'pending'): ?>
+                                                <?php if ($rep['status'] === 'รอดำเนินการ' || $rep['status'] === 'pending'): ?>
                                                     <!-- Reject / Dismiss Report Action -->
                                                     <form method="POST" style="display:inline;" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการปฏิเสธรายงานนี้?');">
                                                         <input type="hidden" name="action" value="reject">
