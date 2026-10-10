@@ -1,7 +1,7 @@
 <?php
 /**
  * ==============================================================================
- * ไฟล์: Home.php
+ * ไฟล์: index.php
  * หน้าที่: หน้าหลัก (Landing Page) สำหรับผู้เยี่ยมชมทั่วไป
  * ส่วนประกอบในไฟล์:
  *   1. โหลดการเชื่อมต่อฐานข้อมูล
@@ -47,7 +47,7 @@ if($searchQuery !== ''){
     <header>
         <div class="header-left">
             <div class="logo-icon">
-                <a href="Home.php"><img src="logo/Logo_snippetBox.png" alt="Logo" width=32px height=32px></a>
+                <a href="index.php"><img src="logo/Logo_snippetBox.png" alt="Logo" width=32px height=32px></a>
                 <!-- <img src="logo/Logo_snippetBox.png" alt="Logo" width=32px height=32px> -->
             </div>
             <div class="logo-text">Snippet Box</div>

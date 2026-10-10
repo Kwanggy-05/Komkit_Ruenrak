@@ -66,7 +66,7 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
 </head>
 <body>
     <div class="container">
-        <a href="Home.php"><button class="back-btn" type="button">กลับหน้าหลัก</button></a>
+        <a href="index.php"><button class="back-btn" type="button">กลับหน้าหลัก</button></a>
         
 
         <div class="card">

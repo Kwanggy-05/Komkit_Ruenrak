@@ -68,7 +68,7 @@ $likeCounts = $control->getLikeCountsForSnippets($snippetIds);
     <header>
         <div class="header-left">
             <div class="logo-icon">
-                <a href="Home.php"><img src="logo/Logo_snippetBox.png" alt="Logo" width=32px height=32px></a>
+                <a href="index.php"><img src="logo/Logo_snippetBox.png" alt="Logo" width=32px height=32px></a>
             </div>
             <div class="logo-text">Snippet Box</div>
         </div>

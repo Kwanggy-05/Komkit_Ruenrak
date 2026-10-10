@@ -381,12 +381,20 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
             textarea.scrollTop = 0;
             lineNumbers.scrollTop = 0;
 
-            textarea.style.height = 'auto';
-            const scrollHeight = textarea.scrollHeight;
-            textarea.style.height = scrollHeight + 'px';
-
-            const finalHeight = Math.max(280, scrollHeight);
             const editorContainer = document.querySelector('.editor-container');
+            if (editorContainer) {
+                editorContainer.style.height = 'auto';
+            }
+            textarea.style.height = 'auto';
+
+            const hasHorizontalScroll = textarea.scrollWidth > textarea.clientWidth;
+            const scrollbarHeight = hasHorizontalScroll ? 16 : 0;
+            const scrollHeight = textarea.scrollHeight + scrollbarHeight;
+
+            const minHeight = 100;
+            const finalHeight = Math.max(minHeight, scrollHeight);
+
+            textarea.style.height = finalHeight + 'px';
             if (editorContainer) {
                 editorContainer.style.height = finalHeight + 'px';
             }

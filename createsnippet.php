@@ -179,10 +179,31 @@ if(isset($_POST["submit"])){
             <textarea name="description" id="description"><?php echo htmlspecialchars($description); ?></textarea>
         </div>
 
-        <div class="form-group">
-            <label for="tags">Tags</label>
-            <input type="text" name="tags" id="tags" placeholder="เช่น JavaScript, ajax, DOM" autocomplete="off" value="<?php echo htmlspecialchars($tags); ?>">
-            <div class="tags-selector" id="tags-selector"></div>
+        <div class="form-group tag-form-group">
+            <div class="tags-label-wrapper">
+                <label for="tag_text_input">Tags</label>
+                <span class="tags-count-info" id="tags-count-info"><span id="tags-count">0</span> / 5</span>
+            </div>
+            
+            <input type="hidden" name="tags" id="tags" value="<?php echo htmlspecialchars($tags); ?>">
+
+            <div class="tags-control-container">
+                <div class="tags-input-box" id="tags-input-box">
+                    <div class="tag-pills-list" id="tag-pills-list"></div>
+                    <input type="text" id="tag_text_input" class="tag-text-input" placeholder="พิมพ์เพื่อค้นหาหรือเพิ่มแท็ก (เช่น JavaScript, regex...)" autocomplete="off">
+                </div>
+
+                <div class="tags-autocomplete-dropdown" id="tags-autocomplete-dropdown"></div>
+            </div>
+
+            <div id="tags-limit-msg" class="tags-limit-msg" style="display: none;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px; flex-shrink: 0;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>เลือกครบ 5 แท็กแล้ว</span>
+            </div>
         </div>
 
         <div class="action-row">
@@ -254,23 +275,49 @@ if(isset($_POST["submit"])){
         /**
          * ฟังก์ชัน: autoResizeTextarea
          * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: ปรับขนาดกล่องโค้ดอัตโนมัติ]
-         * หน้าที่: ขยายความสูงของ Textarea และ Editor Container ให้พอดีกับปริมาณโค้ดโดยไม่ต้องเลื่อนสกอร์บาร์
+         * หน้าที่: ปรับความสูงของ Textarea และ Editor Container ให้ยืดและหดตามปริมาณโค้ด
          */
         function autoResizeTextarea() {
+            if (!textarea || !lineNumbers) return;
             // ป้องกันการค้างของตำแหน่ง scroll
             textarea.scrollTop = 0;
             lineNumbers.scrollTop = 0;
 
-            textarea.style.height = 'auto';
-            const scrollHeight = textarea.scrollHeight;
-            textarea.style.height = scrollHeight + 'px';
-
-            // กำหนดความสูงของคอนเทนเนอร์ให้ตามความยาวโค้ด ขั้นต่ำ 280px
-            const finalHeight = Math.max(280, scrollHeight);
             const editorContainer = document.querySelector('.editor-container');
+            if (editorContainer) {
+                editorContainer.style.height = 'auto';
+            }
+            textarea.style.height = 'auto';
+
+            // ตรวจสอบแถบเลื่อนแนวนอนเพื่อไม่ให้บังบรรทัดสุดท้าย
+            const hasHorizontalScroll = textarea.scrollWidth > textarea.clientWidth;
+            const scrollbarHeight = hasHorizontalScroll ? 16 : 0;
+            const scrollHeight = textarea.scrollHeight + scrollbarHeight;
+
+            // กำหนดความสูงของคอนเทนเนอร์ให้ตามความยาวโค้ด ขั้นต่ำ 100px และยืดหดตามจริง
+            const minHeight = 100;
+            const finalHeight = Math.max(minHeight, scrollHeight);
+
+            textarea.style.height = finalHeight + 'px';
             if (editorContainer) {
                 editorContainer.style.height = finalHeight + 'px';
             }
+        }
+
+        const descTextarea = document.getElementById('description');
+
+        /**
+         * ฟังก์ชัน: autoResizeDescription
+         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: ปรับขนาดกล่องคำอธิบายอัตโนมัติ]
+         * หน้าที่: ขยายและหดความสูงของกล่องคำอธิบายตามความยาวตัวอักษร
+         */
+        function autoResizeDescription() {
+            if (!descTextarea) return;
+            descTextarea.style.height = 'auto';
+            const minDescHeight = 60;
+            const borderOffset = descTextarea.offsetHeight - descTextarea.clientHeight;
+            const scrollHeight = descTextarea.scrollHeight + borderOffset;
+            descTextarea.style.height = Math.max(minDescHeight, scrollHeight) + 'px';
         }
 
         /**
@@ -294,10 +341,15 @@ if(isset($_POST["submit"])){
             updateCharCount();
         }
 
-        // Detect typing or pasting code
+        // เมื่อมีการแก้ไขให้ใช้ updateditor
         textarea.addEventListener('input', updateEditor);
 
-        // Detect paste action exceeding 5000 characters
+        // ให้ขนาดช่องคำอธิบายขยายตามความยาวข้อความ
+        if (descTextarea) {
+            descTextarea.addEventListener('input', autoResizeDescription);
+        }
+
+        // ตรวจจับการวางที่เกิน 5000ตัวอักษรแล้วจะตัดไป
         textarea.addEventListener('paste', function(e) {
             const pasteData = (e.clipboardData || window.clipboardData)?.getData('text') || '';
             const currentLen = this.value.length;
@@ -312,12 +364,12 @@ if(isset($_POST["submit"])){
             }
         });
 
-        // Sync scroll between code and line numbers
+        // ให้เลขตรงกับบรรทัดเวลาเลือนในช่องใส่โค้ด
         textarea.addEventListener('scroll', () => {
             lineNumbers.scrollTop = textarea.scrollTop;
         });
 
-        // Enable Tab key support in code textarea with 5000 character check
+        // เป็นการเช็คปุ่มแท็กให้เลือนไป 4 ช่องว่าง ถ้าคลุมดำก็จะลบและเคอร์เซอร์ขยับไป 4 ช่องว่าง
         textarea.addEventListener('keydown', function(e) {
             if (e.key == 'Tab') {
                 e.preventDefault();
@@ -341,17 +393,18 @@ if(isset($_POST["submit"])){
             }
         });
 
-        // Initialize line numbers and height
+        // กำหนดค่าเริ่มต้นสำหรับหมายเลขบรรทัดและความสูง
         updateEditor();
+        autoResizeDescription();
 
         // ----------------------------------------------------
-        // Image Preview Script
+        // สคริปต์แสดงตัวอย่างรูปภาพ
         // ----------------------------------------------------
         const imageInput = document.getElementById('image_input');
         const imagePreview = document.getElementById('image-preview');
         const uploadBtnText = document.getElementById('upload-btn-text');
         const currentImagePath = <?php echo json_encode($current_image_path); ?>;
-
+        //เป็นแสดงรูปภาพ
         imageInput.addEventListener('change', function(event) {
             const file = event.target.files[0]; // Get the first selected file
             
@@ -375,143 +428,314 @@ if(isset($_POST["submit"])){
         });
 
         // ----------------------------------------------------
-        // Suggest Tags from database
+        // การกำหนดแท็กต่างๆ
         // ----------------------------------------------------
-        const tagsInput = document.getElementById('tags');
-        const tagsSelector = document.getElementById('tags-selector');
+        const tagsHiddenInput = document.getElementById('tags');
+        const tagTextInput = document.getElementById('tag_text_input');
+        const tagsInputBox = document.getElementById('tags-input-box');
+        const tagPillsList = document.getElementById('tag-pills-list');
+        const autocompleteDropdown = document.getElementById('tags-autocomplete-dropdown');
+        const tagsLimitMsg = document.getElementById('tags-limit-msg');
+        const tagsCountEl = document.getElementById('tags-count');
+        const tagsCountInfo = document.getElementById('tags-count-info');
         const allTags = <?php echo json_encode($all_tags); ?> || [];
 
+        let selectedTags = [];
+        let activeSuggestionIndex = -1;
+
         /**
-         * ฟังก์ชัน: renderTagBadges
-         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: ระบบแนะนำแท็ก (Tag Badges)]
-         * หน้าที่: สร้าง element ป้ายแท็ก (<span class="tag-badge">) ตามรายการแท็กที่มีในฐานข้อมูล
+         * ฟังก์ชัน: escapeHtml
+         * หน้าที่: ป้องกัน XSS เมื่อแสดงผลชื่อแท็กใน Dropdown
          */
-        function renderTagBadges() {
-            tagsSelector.innerHTML = '';
-            allTags.forEach(tag => {
-                const badge = document.createElement('span');
-                badge.className = 'tag-badge';
-                badge.textContent = tag.tag_name;
-                badge.dataset.tagName = tag.tag_name;
-                
-                badge.addEventListener('mousedown', (e) => {
-                    // ใช้ mousedown เพื่อป้องกันการ blur หลุดก่อนคลิกทำงาน
-                    e.preventDefault();
-                    toggleTagSelection(tag.tag_name);
-                });
-                
-                tagsSelector.appendChild(badge);
-            });
-            updateBadgeSelectionState();
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         /**
-         * ฟังก์ชัน: getSelectedTagsFromInput
-         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: ระบบแนะนำแท็ก (Tag Badges)]
-         * หน้าที่: อ่านค่าจากช่องกรอก tags แล้วแยกเป็น Array ของชื่อแท็ก
-         * คืนค่า: Array ของชื่อแท็กที่เลือกอยู่
+         * ฟังก์ชัน: syncTagsState
+         * หน้าที่: ซิงค์ข้อมูลแท็กที่เลือกลง Hidden Input สำหรับส่งฟอร์ม และจัดการสถานะ Disable/แจ้งเตือนเมื่อครบ 5 แท็ก
          */
-        function getSelectedTagsFromInput() {
-            return tagsInput.value
-                .split(',')
-                .map(t => t.trim())
-                .filter(t => t.length > 0);
-        }
-
-        /**
-         * ฟังก์ชัน: toggleTagSelection
-         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: ระบบแนะนำแท็ก (Tag Badges)]
-         * หน้าที่: สลับการเลือกแท็ก (หากเลือกอยู่แล้วให้เอาออก หากยังไม่เลือกให้ใส่เพิ่ม พร้อมเช็คจำกัดไม่เกิน 5 แท็ก)
-         * พารามิเตอร์: tagName (ชื่อแท็ก)
-         */
-        function toggleTagSelection(tagName) {
-            let currentTags = getSelectedTagsFromInput();
-            const index = currentTags.findIndex(t => t.toLowerCase() === tagName.toLowerCase());
-            
-            if (index > -1) {
-                // หากมีอยู่แล้ว ให้ลบออก
-                currentTags.splice(index, 1);
-                tagsInput.value = currentTags.join(', ');
-                if (tagsInput.value.length > 0 && !tagsInput.value.endsWith(', ')) {
-                    tagsInput.value += ', ';
-                }
-            } else {
-                // หากยังไม่มี ให้เพิ่มเข้าไป (จำกัดไม่เกิน 5 tags)
-                if (currentTags.length >= 5) {
-                    alert('คุณสามารถเพิ่มได้สูงสุด 5 tags เท่านั้น');
-                    return;
-                }
-                const parts = tagsInput.value.split(',');
-                const lastPart = parts[parts.length - 1].trim();
-                if (lastPart.length > 0 && tagName.toLowerCase().startsWith(lastPart.toLowerCase())) {
-                    parts[parts.length - 1] = ' ' + tagName;
-                    tagsInput.value = parts.join(',').trim();
-                } else {
-                    currentTags.push(tagName);
-                    tagsInput.value = currentTags.join(', ');
-                }
-                
-                if (!tagsInput.value.endsWith(', ') && tagsInput.value.length > 0) {
-                    tagsInput.value += ', ';
-                }
+        function syncTagsState() {
+            if (tagsHiddenInput) {
+                tagsHiddenInput.value = selectedTags.join(', ');
             }
-            
-            updateBadgeSelectionState();
-            filterTagBadges();
-            tagsInput.focus();
+            if (tagsCountEl) {
+                tagsCountEl.textContent = selectedTags.length;
+            }
+
+            if (selectedTags.length >= 5) {
+                if (tagTextInput) {
+                    tagTextInput.disabled = true;
+                    tagTextInput.placeholder = 'เลือกครบ 5 แท็กแล้ว';
+                    tagTextInput.value = '';
+                }
+                if (tagsInputBox) tagsInputBox.classList.add('disabled');
+                if (tagsLimitMsg) tagsLimitMsg.style.display = 'inline-flex';
+                if (tagsCountInfo) tagsCountInfo.classList.add('limit-reached');
+                hideDropdown();
+            } else {
+                if (tagTextInput) {
+                    tagTextInput.disabled = false;
+                    tagTextInput.placeholder = selectedTags.length === 0 ? 'พิมพ์เพื่อค้นหาหรือเพิ่มแท็ก (เช่น JavaScript, regex...)' : 'พิมพ์แท็กเพิ่ม...';
+                }
+                if (tagsInputBox) tagsInputBox.classList.remove('disabled');
+                if (tagsLimitMsg) tagsLimitMsg.style.display = 'none';
+                if (tagsCountInfo) tagsCountInfo.classList.remove('limit-reached');
+            }
         }
 
         /**
-         * ฟังก์ชัน: updateBadgeSelectionState
-         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: ระบบแนะนำแท็ก (Tag Badges)]
-         * หน้าที่: ตรวจสอบและเพิ่ม/ลบ class 'selected' บนป้ายแท็ก เพื่อแสดงสีไฮไลต์ตามแท็กที่พิมพ์ในช่อง
+         * ฟังก์ชัน: renderTagPills
+         * หน้าที่: เรนเดอร์ป้ายแท็ก (Tag Pills) พร้อมปุ่มลบ (x) ในช่องกรอก
          */
-        function updateBadgeSelectionState() {
-            const currentTags = getSelectedTagsFromInput().map(t => t.toLowerCase());
-            const badges = tagsSelector.querySelectorAll('.tag-badge');
-            badges.forEach(badge => {
-                const name = badge.dataset.tagName.toLowerCase();
-                if (currentTags.includes(name)) {
-                    badge.classList.add('selected');
+        function renderTagPills() {
+            if (!tagPillsList) return;
+            tagPillsList.innerHTML = '';
+
+            selectedTags.forEach((tagName, index) => {
+                const pill = document.createElement('span');
+                pill.className = 'tag-pill';
+
+                const label = document.createElement('span');
+                label.textContent = tagName;
+                pill.appendChild(label);
+
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'tag-pill-remove';
+                removeBtn.innerHTML = '&times;';
+                removeBtn.title = 'ลบแท็ก ' + tagName;
+                removeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removeTag(index);
+                });
+
+                pill.appendChild(removeBtn);
+                tagPillsList.appendChild(pill);
+            });
+
+            syncTagsState();
+        }
+
+        /**
+         * ฟังก์ชัน: addTag
+         * หน้าที่: เพิ่มแท็กใหม่เข้าสู่รายการ (จำกัดไม่เกิน 5 แท็ก และไม่ซ้ำ)
+         */
+        function addTag(tagName) {
+            tagName = (tagName || '').trim();
+            if (!tagName) return;
+
+            if (selectedTags.length >= 5) {
+                syncTagsState();
+                return;
+            }
+
+            // ตรวจสอบไม่ให้ใส่แท็กซ้ำ (Case-insensitive)
+            const exists = selectedTags.some(t => t.toLowerCase() === tagName.toLowerCase());
+            if (!exists) {
+                selectedTags.push(tagName);
+                renderTagPills();
+            }
+
+            if (tagTextInput) {
+                tagTextInput.value = '';
+            }
+            hideDropdown();
+
+            if (selectedTags.length < 5 && tagTextInput) {
+                tagTextInput.focus();
+            }
+        }
+
+        /**
+         * ฟังก์ชัน: removeTag
+         * หน้าที่: ลบแท็กออกจากรายการตาม Index
+         */
+        function removeTag(index) {
+            selectedTags.splice(index, 1);
+            renderTagPills();
+            if (tagTextInput && !tagTextInput.disabled) {
+                tagTextInput.focus();
+            }
+        }
+
+        /**
+         * ฟังก์ชัน: hideDropdown
+         * หน้าที่: ซ่อน Dropdown แนะนำแท็ก
+         */
+        function hideDropdown() {
+            if (autocompleteDropdown) {
+                autocompleteDropdown.classList.remove('show');
+                autocompleteDropdown.innerHTML = '';
+            }
+            activeSuggestionIndex = -1;
+        }
+
+        /**
+         * ฟังก์ชัน: filterAndShowSuggestions
+         * หน้าที่: ค้นหาแท็กในฐานข้อมูลตามที่ผู้ใช้เริ่มพิมพ์ และแสดงเป็น Dropdown Autocomplete
+         */
+        function filterAndShowSuggestions(query) {
+            query = (query || '').trim().toLowerCase();
+            activeSuggestionIndex = -1;
+
+            // หากไม่มีข้อความพิมพ์ หรือเลือกครบ 5 แท็กแล้ว ให้ซ่อน Dropdown ทันที
+            if (!query || selectedTags.length >= 5) {
+                hideDropdown();
+                return;
+            }
+
+            const currentLowerTags = selectedTags.map(t => t.toLowerCase());
+
+            // กรองแท็กจากฐานข้อมูลที่มีตัวอักษรตรงกับคำค้นหา และยังไม่ได้ถูกเลือก
+            const matches = allTags.filter(tag => {
+                const name = (tag.tag_name || '').toLowerCase();
+                return name.includes(query) && !currentLowerTags.includes(name);
+            });
+
+            const exactMatch = allTags.some(tag => (tag.tag_name || '').toLowerCase() === query);
+
+            autocompleteDropdown.innerHTML = '';
+
+            // แสดงรายการแท็กแนะนำ
+            matches.forEach((tag, idx) => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+                item.dataset.index = idx;
+                item.dataset.tagName = tag.tag_name;
+
+                const tagName = tag.tag_name;
+                const lowerName = tagName.toLowerCase();
+                const matchPos = lowerName.indexOf(query);
+
+                if (matchPos >= 0) {
+                    const before = tagName.slice(0, matchPos);
+                    const match = tagName.slice(matchPos, matchPos + query.length);
+                    const after = tagName.slice(matchPos + query.length);
+                    item.innerHTML = `<span>${escapeHtml(before)}<span class="match-highlight">${escapeHtml(match)}</span>${escapeHtml(after)}</span>`;
                 } else {
-                    badge.classList.remove('selected');
+                    item.textContent = tagName;
+                }
+
+                item.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    addTag(tag.tag_name);
+                });
+
+                autocompleteDropdown.appendChild(item);
+            });
+
+            // หากสิ่งที่พิมพ์ยังไม่มีในฐานข้อมูล ให้มีตัวเลือกเพิ่มเป็นแท็กใหม่ได้
+            if (!exactMatch && query.length > 0 && !currentLowerTags.includes(query)) {
+                const newItem = document.createElement('div');
+                newItem.className = 'autocomplete-item autocomplete-item-new';
+                newItem.dataset.tagName = query;
+                newItem.innerHTML = `<span>+ เพิ่มแท็ก "<strong>${escapeHtml(query)}</strong>" (แท็กใหม่)</span>`;
+                newItem.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    addTag(query);
+                });
+                autocompleteDropdown.appendChild(newItem);
+            }
+
+            if (autocompleteDropdown.children.length > 0) {
+                autocompleteDropdown.classList.add('show');
+            } else {
+                hideDropdown();
+            }
+        }
+
+        /**
+         * ฟังก์ชัน: updateActiveSuggestion
+         * หน้าที่: เลื่อนไฮไลต์ในรายการ Dropdown ด้วยปุ่มลูกศรขึ้น/ลง
+         */
+        function updateActiveSuggestion(items) {
+            items.forEach((item, idx) => {
+                if (idx === activeSuggestionIndex) {
+                    item.classList.add('active');
+                    item.scrollIntoView({ block: 'nearest' });
+                } else {
+                    item.classList.remove('active');
                 }
             });
         }
 
-        /**
-         * ฟังก์ชัน: filterTagBadges
-         * ส่วนที่: [ฟังก์ชันในหน้าเว็บ: ระบบแนะนำแท็ก (Tag Badges)]
-         * หน้าที่: กรองป้ายแท็กให้แสดงเฉพาะแท็กที่ตรงกับคำที่ผู้ใช้กำลังพิมพ์อยู่หลังเครื่องหมายจุลภาค (Comma)
-         */
-        function filterTagBadges() {
-            const parts = tagsInput.value.split(',');
-            const currentQuery = parts[parts.length - 1].trim().toLowerCase();
-            const badges = tagsSelector.querySelectorAll('.tag-badge');
-            
-            badges.forEach(badge => {
-                const name = badge.dataset.tagName.toLowerCase();
-                if (currentQuery.length === 0 || name.includes(currentQuery)) {
-                    badge.style.display = 'inline-flex';
-                } else {
-                    badge.style.display = 'none';
+        // --- Event Listeners สำหรับ Tag Input ---
+        if (tagTextInput) {
+            // ดักจับการพิมพ์เพื่อค้นหา
+            tagTextInput.addEventListener('input', () => {
+                // หากผู้ใช้ Paste หรือพิมพ์จุลภาค (Comma) ให้แยกเป็นแท็กทันที
+                if (tagTextInput.value.includes(',')) {
+                    const parts = tagTextInput.value.split(',');
+                    for (let i = 0; i < parts.length - 1; i++) {
+                        if (parts[i].trim() && selectedTags.length < 5) {
+                            addTag(parts[i].trim());
+                        }
+                    }
+                    tagTextInput.value = parts[parts.length - 1].trim();
+                }
+                filterAndShowSuggestions(tagTextInput.value);
+            });
+
+            // ดักจับการกดปุ่มคีย์บอร์ด (Enter, ArrowUp, ArrowDown, Backspace, Escape)
+            tagTextInput.addEventListener('keydown', (e) => {
+                const items = autocompleteDropdown.querySelectorAll('.autocomplete-item');
+
+                if (e.key === 'ArrowDown') {
+                    if (items.length > 0) {
+                        e.preventDefault();
+                        activeSuggestionIndex = (activeSuggestionIndex + 1) % items.length;
+                        updateActiveSuggestion(items);
+                    }
+                } else if (e.key === 'ArrowUp') {
+                    if (items.length > 0) {
+                        e.preventDefault();
+                        activeSuggestionIndex = (activeSuggestionIndex - 1 + items.length) % items.length;
+                        updateActiveSuggestion(items);
+                    }
+                } else if (e.key === 'Enter') {
+                    e.preventDefault(); // ป้องกันการ Submit Form ทันที
+                    if (activeSuggestionIndex >= 0 && items[activeSuggestionIndex]) {
+                        const chosen = items[activeSuggestionIndex].dataset.tagName;
+                        if (chosen) addTag(chosen);
+                    } else if (tagTextInput.value.trim().length > 0) {
+                        addTag(tagTextInput.value.trim());
+                    }
+                } else if (e.key === ',' || e.key === 'Comma') {
+                    e.preventDefault();
+                    if (tagTextInput.value.trim().length > 0) {
+                        addTag(tagTextInput.value.trim());
+                    }
+                } else if (e.key === 'Backspace') {
+                    // หากช่องพิมพ์ว่างอยู่และกด Backspace ให้ลบแท็กล่าสุดออก
+                    if (tagTextInput.value === '' && selectedTags.length > 0) {
+                        removeTag(selectedTags.length - 1);
+                    }
+                } else if (e.key === 'Escape') {
+                    hideDropdown();
                 }
             });
         }
 
-        // Manage Event Listeners
-        tagsInput.addEventListener('focus', () => {
-            tagsSelector.classList.add('active');
-            updateBadgeSelectionState();
-            filterTagBadges();
+        // เมื่อคลิกที่กล่อง Input Wrapper ให้โฟกัสที่ช่อง Input
+        if (tagsInputBox) {
+            tagsInputBox.addEventListener('click', () => {
+                if (tagTextInput && !tagTextInput.disabled) {
+                    tagTextInput.focus();
+                }
+            });
+        }
+
+        // ปิด Dropdown เมื่อคลิกนอกขอบเขต
+        document.addEventListener('click', (e) => {
+            if (tagsInputBox && !tagsInputBox.contains(e.target) && autocompleteDropdown && !autocompleteDropdown.contains(e.target)) {
+                hideDropdown();
+            }
         });
 
-        tagsInput.addEventListener('input', () => {
-            updateBadgeSelectionState();
-            filterTagBadges();
-        });
-
-        // Check on form submission to prevent exceeding code limit and tags limit
+        // ดักจับการส่งฟอร์มเพื่อตรวจสอบความถูกต้อง
         document.querySelector('.form-container').addEventListener('submit', function(e) {
             if (textarea.value.length > 5000) {
                 e.preventDefault();
@@ -519,23 +743,23 @@ if(isset($_POST["submit"])){
                 textarea.focus();
                 return;
             }
-            const currentTags = getSelectedTagsFromInput();
-            if (currentTags.length > 5) {
+            if (selectedTags.length > 5) {
                 e.preventDefault();
                 alert('คุณสามารถเพิ่มได้สูงสุด 5 tags เท่านั้น');
-                tagsInput.focus();
+                if (tagTextInput && !tagTextInput.disabled) tagTextInput.focus();
+                return;
             }
         });
 
-        // Hide tags on outside click
-        document.addEventListener('click', (e) => {
-            if (!tagsInput.contains(e.target) && !tagsSelector.contains(e.target)) {
-                tagsSelector.classList.remove('active');
-            }
-        });
-
-        // Initialize badges
-        renderTagBadges();
+        // กำหนดค่าเริ่มต้นของแท็กจากฐานข้อมูล (รองรับโหมดแก้ไข Snippet)
+        if (tagsHiddenInput && tagsHiddenInput.value.trim()) {
+            selectedTags = tagsHiddenInput.value
+                .split(',')
+                .map(t => t.trim())
+                .filter(t => t.length > 0)
+                .slice(0, 5);
+        }
+        renderTagPills();
     </script>
 </body>
 </html>

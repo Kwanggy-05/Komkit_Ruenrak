@@ -47,7 +47,7 @@ $searchQuery = trim($_GET['q'] ?? '');
 $selectedLanguage = trim($_GET['lang'] ?? '');
 
 // กำหนดจำนวนรายการต่อหน้าที่อนุญาต [10, 15, 20, 25]
-$allowedLimits = [10, 15, 20, 25];
+$allowedLimits = [10, 25, 50];
 if(isset($_GET['limit']) && in_array((int)$_GET['limit'], $allowedLimits)){
     $itemsPerPage = (int)$_GET['limit'];
     $_SESSION['items_per_page'] = $itemsPerPage;

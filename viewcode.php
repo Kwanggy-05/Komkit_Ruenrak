@@ -26,7 +26,7 @@ $userId = getCurrentUserId();
 $accessDenied = false;
 
 // --- ส่วนที่ 1: กำหนด URL สำหรับปุ่มย้อนกลับตามหน้าที่ผู้ใช้คลิกเข้ามา ---
-$backUrl = $userId ? 'snippet_page.php' : 'Home.php';
+$backUrl = $userId ? 'snippet_page.php' : 'index.php';
 if(isset($_GET['from_search']) && $_GET['from_search'] === '1'){
     $backUrl = 'result.php';
     $backParams = [];
@@ -407,15 +407,24 @@ if($accessDenied){
          * หน้าที่: ปรับความสูงของกล่องข้อความโค้ดและคอนเทนเนอร์ให้ตรงตามความยาวโค้ด
          */
         function autoResizeTextarea() {
+            if (!textarea || !lineNumbers) return;
             textarea.scrollTop = 0;
             lineNumbers.scrollTop = 0;
 
-            textarea.style.height = 'auto';
-            const scrollHeight = textarea.scrollHeight;
-            textarea.style.height = scrollHeight + 'px';
-
-            const finalHeight = Math.max(280, scrollHeight);
             const editorContainer = document.querySelector('.editor-container');
+            if (editorContainer) {
+                editorContainer.style.height = 'auto';
+            }
+            textarea.style.height = 'auto';
+
+            const hasHorizontalScroll = textarea.scrollWidth > textarea.clientWidth;
+            const scrollbarHeight = hasHorizontalScroll ? 16 : 0;
+            const scrollHeight = textarea.scrollHeight + scrollbarHeight;
+
+            const minHeight = 100;
+            const finalHeight = Math.max(minHeight, scrollHeight);
+
+            textarea.style.height = finalHeight + 'px';
             if (editorContainer) {
                 editorContainer.style.height = finalHeight + 'px';
             }
