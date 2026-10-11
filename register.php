@@ -120,7 +120,7 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
 
                 <div class="form-group-center">
                     <label for="answer">คำตอบความปลอดภัย <span style="color: red; margin-left: 5px;">*</span></label>
-                    <input type="text" name="answer" id="answer" placeholder="คำตอบของคุณ" value="<?php echo htmlspecialchars($answer); ?>" required>
+                    <input type="text" name="answer" id="answer" placeholder="คำตอบของคุณ" value="<?php echo htmlspecialchars($answer); ?>" autocomplete="off" required>
                 </div>
 
                 <div class="submit-group">

@@ -198,6 +198,10 @@ class User{
                 return ["success" => false, "message" => "คำตอบความปลอดภัยไม่ถูกต้อง"];
             }
             
+            if (mb_strlen($new_password) < 6) {
+                return ["success" => false, "message" => "รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 6 ตัวอักษร"];
+            }
+            
             $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
             $update_sql = "UPDATE user SET password = :password WHERE user_id = :user_id";
             $update_stmt = $this->db->prepare($update_sql);

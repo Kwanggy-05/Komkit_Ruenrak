@@ -30,6 +30,8 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     // ตรวจสอบความครบถ้วนของข้อมูล
     if($username === "" || $answer === "" || $new_password === "" || $confirm_new_password === ""){
         $error = "กรุณากรอกข้อมูลให้ครบทุกช่อง";
+    } elseif(mb_strlen($new_password) < 6){
+        $error = "รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 6 ตัวอักษร";
     } elseif($new_password !== $confirm_new_password){
         // ตรวจสอบความตรงกันของรหัสผ่านใหม่
         $error = "รหัสผ่านใหม่และยืนยันรหัสผ่านใหม่ไม่ตรงกัน";
@@ -94,17 +96,17 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 
                 <div class="form-group">
                     <label for="answer">คำตอบความปลอดภัย <span style="color: red; margin-left: 5px;">*</span></label>
-                    <input type="text" name="answer" id="answer" value="<?php echo htmlspecialchars($answer); ?>" placeholder="กรุณากรอกคำตอบของคุณ" required>
+                    <input type="text" name="answer" id="answer" value="<?php echo htmlspecialchars($answer); ?>" placeholder="กรุณากรอกคำตอบของคุณ" autocomplete="off" required>
                 </div>
 
                 <div class="form-group">
                     <label for="new_password">รหัสผ่านใหม่ <span style="color: red; margin-left: 5px;">*</span></label>
-                    <input type="password" name="new_password" id="new_password" required>
+                    <input type="password" name="new_password" id="new_password" minlength="6" placeholder="อย่างน้อย 6 ตัวอักษร" required>
                 </div>
 
                 <div class="form-group">
                     <label for="confirm_new_password">ยืนยันรหัสผ่านใหม่ <span style="color: red; margin-left: 5px;">*</span></label>
-                    <input type="password" name="confirm_new_password" id="confirm_new_password" required>
+                    <input type="password" name="confirm_new_password" id="confirm_new_password" minlength="6" placeholder="ยืนยันรหัสผ่านอีกครั้ง" required>
                 </div>
 
                 <?php if($error !== ""): ?>
