@@ -261,7 +261,7 @@ if($totalPages === 0) $totalPages = 1;
          * ฟังก์ชัน: changePerPage
          * ส่วนที่: JavaScript สำหรับควบคุมการแบ่งหน้า (Client-side Pagination)
          * หน้าที่: รีโหลดหน้าเว็บพร้อมเปลี่ยนค่าพารามิเตอร์ limit (จำนวนรายการต่อหน้า) และรีเซ็ตกลับหน้า 1
-         * พารามิเตอร์: val (จำนวนที่เลือก เช่น 10, 15, 20, 25)
+         * พารามิเตอร์: val (จำนวนที่เลือก เช่น 10,25,50)
          */
         function changePerPage(val) {
             const url = new URL(window.location.href);

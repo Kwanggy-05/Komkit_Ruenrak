@@ -53,8 +53,8 @@ $currentPage = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 
 // --- ส่วนที่ 5: ดึงข้อมูล Snippet ตามเงื่อนไข (บุ๊กมาร์ก / ค้นหา / ภาษา / Snippet ของฉัน) ---
 if($showBookmarks && $userId){
-    $totalSnippets = $control->getTotalBookmarkedSnippetCount($userId);
-    $result = $control->getBookmarkedSnippetsPaginated($userId, $currentPage, $itemsPerPage);
+    $totalSnippets = $control->getTotalBookmarkedSnippetCount($userId, $searchQuery, $selectedLanguage, $onlyOwn);
+    $result = $control->getBookmarkedSnippetsPaginated($userId, $currentPage, $itemsPerPage, $searchQuery, $selectedLanguage, $onlyOwn);
 }elseif($searchQuery !== '' || $selectedLanguage !== ''){
     $totalSnippets = $control->getTotalUserSnippetCount($userId, $searchQuery, $onlyOwn, $selectedLanguage);
     $result = $control->getUserSnippetsPaginated($userId, $currentPage, $itemsPerPage, $searchQuery, $onlyOwn, $selectedLanguage);
@@ -96,9 +96,6 @@ if($searchQuery !== ''){
 }
 if($selectedLanguage !== ''){
     $bookmarkParams['lang'] = $selectedLanguage;
-}
-if($onlyOwn){
-    $bookmarkParams['only_own'] = '1';
 }
 if($itemsPerPage !== 10 || isset($_GET['limit'])){
     $bookmarkParams['limit'] = $itemsPerPage;
@@ -202,7 +199,11 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                 <?php if($totalSnippets === 0): ?>
                     <div class="empty-state">
                         <?php if($showBookmarks): ?>
-                            ยังไม่มี Snippet ที่บุ๊กมาร์กไว้
+                            <?php if($onlyOwn): ?>
+                                ไม่พบ Snippet ของคุณที่บุ๊กมาร์กไว้
+                            <?php else: ?>
+                                ยังไม่มี Snippet ที่บุ๊กมาร์กไว้
+                            <?php endif; ?>
                         <?php elseif($selectedLanguage !== ''): ?>
                             ไม่มีโพสต์
                         <?php else: ?>
@@ -439,6 +440,8 @@ $bookmarkUrl = 'snippet_page.php' . (!empty($bookmarkParams) ? '?' . http_build_
                         this.classList.remove('liked');
                         this.title = 'ถูกใจ';
                         countEl.textContent = data.count;
+                    } else if(data.status === 'error') {
+                        // [จุดที่แก้]: ย้ายการแจ้งเตือนข้อผิดพลาดมาไว้ในเงื่อนไขสถานะ error
                         showToast('⚠ ' + (data.message || 'เกิดข้อผิดพลาด'));
                     }
                 } catch(err) {

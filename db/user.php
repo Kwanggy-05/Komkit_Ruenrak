@@ -15,7 +15,6 @@
  *   - resetPasswordWithSecurityAnswer() : รีเซ็ตรหัสผ่านด้วยคำถามความปลอดภัย (สำหรับหน้า Forget Password)
  *   - getUsersPaginated()               : ดึงรายชื่อผู้ใช้แบบแบ่งหน้า สำหรับระบบหลังบ้าน (Admin)
  *   - getTotalUsersCount()              : นับจำนวนผู้ใช้ตามตัวกรองค้นหา สำหรับแบ่งหน้า
- *   - adminResetPassword()              : ผู้ดูแลระบบสั่งตั้งรหัสผ่านใหม่ให้ผู้ใช้
  *   - getUserStats()                    : ดึงสถิติจำนวนผู้ใช้ (ทั้งหมด, สมัครวันนี้, ถูกแบน)
  *   - banUser()                         : ดำเนินการแบนผู้ใช้และบันทึกประวัติ
  *   - unbanUser()                       : ปลดแบนผู้ใช้และบันทึกข้อมูลผู้ปลดแบน
@@ -111,7 +110,7 @@ class User{
     /**
      * ฟังก์ชัน: getUser
      * ส่วนที่: การยืนยันตัวตนและการเข้าสู่ระบบ (Login Authentication)
-     * หน้าที่: ค้นหาผู้ใช้ ตรวจสอบความถูกต้องของรหัสผ่าน รองรับทั้ง Hash แบบใหม่และอัปเกรดจาก MD5 เก่า
+     * หน้าที่: ค้นหาผู้ใช้ ตรวจสอบความถูกต้องของรหัสผ่านด้วย password_verify
      *          พร้อมทั้งตรวจสอบสถานะการถูกระงับ/แบน (is_banned)
      * พารามิเตอร์: $username, $password
      * คืนค่า: array ข้อมูลผู้ใช้หากรหัสผ่านถูกต้อง, false หากไม่ถูกต้อง
@@ -125,33 +124,9 @@ class User{
             $stmt->execute();
             $result=$stmt->fetch();
             
-            if($result){
-                $isPasswordCorrect = false;
-                $isLegacyMd5 = false;
-                
-                if(password_verify($password, $result["password"])){
-                    $isPasswordCorrect = true;
-                } else {
-                    // Fallback for legacy MD5 users to migrate seamlessly
-                    $old_md5 = md5($password.$username);
-                    if($result["password"] === $old_md5){
-                        $isPasswordCorrect = true;
-                        $isLegacyMd5 = true;
-                    }
-                }
-                
-                if($isPasswordCorrect){
-                    if($isLegacyMd5){
-                        $new_hash = password_hash($password, PASSWORD_DEFAULT);
-                        $update_sql = "UPDATE user SET password = :password WHERE user_id = :user_id";
-                        $update_stmt = $this->db->prepare($update_sql);
-                        $update_stmt->bindParam(":password", $new_hash);
-                        $update_stmt->bindParam(":user_id", $result["user_id"]);
-                        $update_stmt->execute();
-                    }
-                    $result['is_banned'] = $this->isUserBanned((int)$result['user_id']);
-                    return $result;
-                }
+            if($result && password_verify($password, $result["password"])){
+                $result['is_banned'] = $this->isUserBanned((int)$result['user_id']);
+                return $result;
             }
             return false;
         }catch(PDOException $e){
@@ -255,8 +230,14 @@ class User{
                                SELECT COUNT(*) 
                                FROM snippet_suspensions ss 
                                JOIN snippet s ON ss.snippet_id = s.snippet_id 
+                               WHERE s.user_id = u.user_id AND ss.unsuspended_at IS NULL
+                           ) AS suspension_count,
+                           (
+                               SELECT COUNT(*) 
+                               FROM snippet_suspensions ss 
+                               JOIN snippet s ON ss.snippet_id = s.snippet_id 
                                WHERE s.user_id = u.user_id
-                           ) AS suspension_count
+                           ) AS total_suspension_history
                     FROM user u
                     LEFT JOIN user_bans ub ON u.user_id = ub.user_id AND ub.unbanned_at IS NULL
                     WHERE 1=1";
@@ -272,11 +253,11 @@ class User{
             } elseif ($status === 'active') {
                 $sql .= " AND ub.ban_id IS NULL";
             } elseif ($status === 'warning') {
-                $sql .= " AND (SELECT COUNT(*) FROM snippet_suspensions ss JOIN snippet s ON ss.snippet_id = s.snippet_id WHERE s.user_id = u.user_id) BETWEEN 1 AND 5";
+                $sql .= " AND (SELECT COUNT(*) FROM snippet_suspensions ss JOIN snippet s ON ss.snippet_id = s.snippet_id WHERE s.user_id = u.user_id AND ss.unsuspended_at IS NULL) BETWEEN 1 AND 5";
             } elseif ($status === 'over_limit') {
-                $sql .= " AND (SELECT COUNT(*) FROM snippet_suspensions ss JOIN snippet s ON ss.snippet_id = s.snippet_id WHERE s.user_id = u.user_id) > 5";
+                $sql .= " AND (SELECT COUNT(*) FROM snippet_suspensions ss JOIN snippet s ON ss.snippet_id = s.snippet_id WHERE s.user_id = u.user_id AND ss.unsuspended_at IS NULL) > 5";
             } elseif ($status === 'has_suspended_posts') {
-                $sql .= " AND (SELECT COUNT(*) FROM snippet_suspensions ss JOIN snippet s ON ss.snippet_id = s.snippet_id WHERE s.user_id = u.user_id) > 0";
+                $sql .= " AND (SELECT COUNT(*) FROM snippet_suspensions ss JOIN snippet s ON ss.snippet_id = s.snippet_id WHERE s.user_id = u.user_id AND ss.unsuspended_at IS NULL) > 0";
             }
 
             $sql .= " ORDER BY u.user_id DESC LIMIT :offset, :limit";
@@ -296,15 +277,6 @@ class User{
             
             $stmt->execute();
             $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            // ตรวจสอบและแบนบัญชีอัตโนมัติหากมีประวัติโพสต์ถูกระงับมากกว่า 5 ครั้ง (> 5 ครั้ง)
-            foreach ($users as &$row) {
-                $suspCount = (int)($row['suspension_count'] ?? 0);
-                if ($row['role'] !== 'admin' && $suspCount > 5 && empty($row['is_banned'])) {
-                    $this->banUser((int)$row['user_id'], 'System (ระบบอัตโนมัติ)', "ถูกแบนบัญชีอัตโนมัติ: โพสต์ถูกระงับสะสม {$suspCount} ครั้ง (มากกว่า 5 ครั้ง)");
-                    $row['is_banned'] = 1;
-                }
-            }
 
             return $users;
         } catch (PDOException $e) {
@@ -337,11 +309,11 @@ class User{
             } elseif ($status === 'active') {
                 $sql .= " AND ub.ban_id IS NULL";
             } elseif ($status === 'warning') {
-                $sql .= " AND (SELECT COUNT(*) FROM snippet_suspensions ss JOIN snippet s ON ss.snippet_id = s.snippet_id WHERE s.user_id = u.user_id) BETWEEN 1 AND 5";
+                $sql .= " AND (SELECT COUNT(*) FROM snippet_suspensions ss JOIN snippet s ON ss.snippet_id = s.snippet_id WHERE s.user_id = u.user_id AND ss.unsuspended_at IS NULL) BETWEEN 1 AND 5";
             } elseif ($status === 'over_limit') {
-                $sql .= " AND (SELECT COUNT(*) FROM snippet_suspensions ss JOIN snippet s ON ss.snippet_id = s.snippet_id WHERE s.user_id = u.user_id) > 5";
+                $sql .= " AND (SELECT COUNT(*) FROM snippet_suspensions ss JOIN snippet s ON ss.snippet_id = s.snippet_id WHERE s.user_id = u.user_id AND ss.unsuspended_at IS NULL) > 5";
             } elseif ($status === 'has_suspended_posts') {
-                $sql .= " AND (SELECT COUNT(*) FROM snippet_suspensions ss JOIN snippet s ON ss.snippet_id = s.snippet_id WHERE s.user_id = u.user_id) > 0";
+                $sql .= " AND (SELECT COUNT(*) FROM snippet_suspensions ss JOIN snippet s ON ss.snippet_id = s.snippet_id WHERE s.user_id = u.user_id AND ss.unsuspended_at IS NULL) > 0";
             }
 
             $stmt = $this->db->prepare($sql);
@@ -362,25 +334,6 @@ class User{
         }
     }
 
-    /**
-     * ฟังก์ชัน: adminResetPassword
-     * ส่วนที่: ระบบผู้ดูแลระบบ (Admin - User Management)
-     * หน้าที่: ให้แอดมินกำหนดรหัสผ่านใหม่แก่ผู้ใช้รายบุคคล (เช่น เมื่อผู้ใช้แจ้งปัญหาเข้าใช้งานไม่ได้)
-     * พารามิเตอร์: $userId, $newPassword
-     * คืนค่า: bool (true สำเร็จ, false ล้มเหลว)
-     */
-    function adminResetPassword($userId, $newPassword){
-        try {
-            $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-            $sql = "UPDATE user SET password = :password WHERE user_id = :user_id";
-            $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':password', $hashedPassword, PDO::PARAM_STR);
-            $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
-            return $stmt->execute();
-        } catch (PDOException $e) {
-            return false;
-        }
-    }
 
     /**
      * ฟังก์ชัน: getUserStats
@@ -402,20 +355,22 @@ class User{
             $stmt = $this->db->query("SELECT COUNT(DISTINCT user_id) as total_banned FROM user_bans WHERE unbanned_at IS NULL");
             $banned = (int)$stmt->fetch(PDO::FETCH_ASSOC)['total_banned'];
 
-            // Users with at least 1 suspended snippet
+            // Users with at least 1 currently suspended snippet
             $stmt = $this->db->query(
                 "SELECT COUNT(DISTINCT s.user_id) as total_suspended 
                  FROM snippet_suspensions ss 
-                 JOIN snippet s ON ss.snippet_id = s.snippet_id"
+                 JOIN snippet s ON ss.snippet_id = s.snippet_id
+                 WHERE ss.unsuspended_at IS NULL"
             );
             $suspendedUsers = (int)$stmt->fetch(PDO::FETCH_ASSOC)['total_suspended'];
 
-            // Users whose suspended snippets > 5
+            // Users whose active suspended snippets > 5
             $stmt = $this->db->query(
                 "SELECT COUNT(*) as total_over_limit FROM (
                     SELECT s.user_id, COUNT(*) as cnt 
                     FROM snippet_suspensions ss 
                     JOIN snippet s ON ss.snippet_id = s.snippet_id 
+                    WHERE ss.unsuspended_at IS NULL
                     GROUP BY s.user_id 
                     HAVING cnt > 5
                 ) as over_tbl"
@@ -621,7 +576,7 @@ class User{
     /**
      * ฟังก์ชัน: getUserSuspensionCount
      * ส่วนที่: ระบบนับจำนวนครั้งที่โพสต์ถูกระงับของผู้ใช้ (User Post Suspension System)
-     * หน้าที่: ดึงจำนวนครั้งที่โพสต์ (Snippet) ของผู้ใช้ถูกระงับทั้งหมด
+     * หน้าที่: ดึงจำนวนครั้งที่โพสต์ (Snippet) ของผู้ใช้กำลังถูกระงับอยู่ในปัจจุบัน (ไม่นับรายการที่ยกเลิกการระงับแล้ว)
      * พารามิเตอร์: $userId
      * คืนค่า: int
      */
@@ -631,7 +586,7 @@ class User{
                 "SELECT COUNT(*) as total 
                  FROM snippet_suspensions ss
                  JOIN snippet s ON ss.snippet_id = s.snippet_id
-                 WHERE s.user_id = :user_id"
+                 WHERE s.user_id = :user_id AND ss.unsuspended_at IS NULL"
             );
             $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
             $stmt->execute();
@@ -654,7 +609,7 @@ class User{
             $stmt = $this->db->prepare(
                 "SELECT ss.suspension_id, ss.snippet_id, ss.admin_suspended, ss.reason, 
                         ss.suspended_at, ss.admin_unsuspended, ss.unsuspended_at,
-                        s.title, s.visibility, s.is_suspended, u.username
+                        s.title, s.title as snippet_title, s.visibility, s.is_suspended, u.username
                  FROM snippet_suspensions ss
                  JOIN snippet s ON ss.snippet_id = s.snippet_id
                  JOIN user u ON s.user_id = u.user_id

@@ -6,9 +6,6 @@
  * ส่วนประกอบในไฟล์:
  *   1. โหลดระบบตรวจสอบสิทธิ์ผู้ดูแลระบบ (check_admin.php)
  *   2. ประมวลผลคำสั่ง POST จากแอดมิน:
- *      - action='soft_delete' : สั่งย้าย Snippet ไปยังถังขยะ ($control->softDeleteSnippetAdmin())
- *      - action='restore'     : สั่งกู้คืน Snippet ออกจากถังขยะ ($control->restoreSnippetAdmin())
- *      - action='hard_delete' : สั่งลบ Snippet ถาวรพร้อมไฟล์ภาพ ($control->deleteSnippetAdmin())
  *      - action='suspend'     : สั่งระงับ Snippet พร้อมระบุเหตุผล ($control->suspendSnippetAdmin())
  *      - action='unsuspend'   : ยกเลิกการระงับ Snippet ($control->unsuspendSnippetAdmin())
  *   3. ดึงรายการ Snippet ทั้งหมดในระบบ รวมทั้งที่ถูกลบและถูกระงับ ($control->getAllSnippetsAdmin())
@@ -30,29 +27,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if ($snippetId <= 0) {
             $errorMsg = "ข้อมูลไม่ถูกต้อง";
         } else {
-            // สั่งย้าย Snippet เข้าถังขยะ (Soft Delete)
-            if ($_POST['action'] === 'soft_delete') {
-                if ($control->softDeleteSnippetAdmin($snippetId)) {
-                    $successMsg = "ย้าย Snippet ไปยังถังขยะเรียบร้อยแล้ว";
-                } else {
-                    $errorMsg = "ไม่สามารถย้าย Snippet ไปยังถังขยะได้";
-                }
-            // สั่งกู้คืน Snippet จากถังขยะกลับมาใช้งาน
-            } elseif ($_POST['action'] === 'restore') {
-                if ($control->restoreSnippetAdmin($snippetId)) {
-                    $successMsg = "กู้คืน Snippet สำเร็จ";
-                } else {
-                    $errorMsg = "ไม่สามารถกู้คืน Snippet ได้";
-                }
-            // สั่งลบ Snippet ทิ้งอย่างถาวร (Hard Delete)
-            } elseif ($_POST['action'] === 'hard_delete') {
-                if ($control->deleteSnippetAdmin($snippetId)) {
-                    $successMsg = "ลบ Snippet ถาวรเรียบร้อยแล้ว";
-                } else {
-                    $errorMsg = "ไม่สามารถลบ Snippet ถาวรได้";
-                }
             // สั่งระงับการแสดงผล Snippet (Suspend)
-            } elseif ($_POST['action'] === 'suspend') {
+            if ($_POST['action'] === 'suspend') {
                 $reason = trim($_POST['reason'] ?? 'ทำผิดข้อกำหนดชุมชน');
                 if ($reason === '') {
                     $reason = 'ทำผิดข้อกำหนดชุมชน';

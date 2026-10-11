@@ -65,9 +65,7 @@ function getCurrentUserId(){
         return (int)$_SESSION['user_id'];
     }
 
-    if(isset($_SESSION['userid']) && is_numeric($_SESSION['userid'])){
-        return (int)$_SESSION['userid'];
-    }
+    
 
     return 0;
 }

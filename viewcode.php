@@ -37,8 +37,6 @@ if(isset($_GET['from_search']) && $_GET['from_search'] === '1'){
     }
 }elseif(isset($_GET['from_trash']) && $_GET['from_trash'] === '1'){
     $backUrl = 'remove.php';
-}elseif(isset($_GET['from_explore']) && $_GET['from_explore'] === '1'){
-    $backUrl = 'explore.php';
 }
 
 // --- ส่วนที่ 2: ดึงข้อมูล Snippet และตรวจสอบสิทธิ์/สถานะต่างๆ ---
@@ -522,6 +520,8 @@ if($accessDenied){
                     svg.setAttribute('stroke', '#111');
                     countEl.textContent = data.count;
                     showToast('👎 ยกเลิกถูกใจแล้ว');
+                } else if(data.status === 'error') {
+                    // [จุดที่แก้]: ย้ายการแจ้งเตือนข้อผิดพลาดมาไว้ในเงื่อนไขสถานะ error
                     showToast('⚠ ' + (data.message || 'เกิดข้อผิดพลาด'));
                 }
             } catch(err) {

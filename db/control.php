@@ -556,19 +556,52 @@ class Control{
     /**
      * ฟังก์ชัน: getTotalBookmarkedSnippetCount
      * ส่วนที่: [ส่วนที่ 4: การแบ่งหน้าและการนับจำนวน]
-     * หน้าที่: นับจำนวน Snippet ที่ผู้ใช้บุ๊กมาร์กไว้ทั้งหมด
-     * พารามิเตอร์: $user_id
+     * หน้าที่: นับจำนวน Snippet ที่ผู้ใช้บุ๊กมาร์กไว้ทั้งหมด (รองรับตัวกรองภาษา คำค้นหา และเฉพาะของฉัน)
+     * พารามิเตอร์: $user_id, $keyword, $language_id, $only_own
      * คืนค่า: int จำนวนที่คั่นหน้า
      */
-    function getTotalBookmarkedSnippetCount($user_id){
+    function getTotalBookmarkedSnippetCount($user_id, $keyword = '', $language_id = '', $only_own = false){
         try{
-            $sql = "SELECT COUNT(*) as total FROM bookmarks bk
+            $sql = "SELECT COUNT(DISTINCT a.snippet_id) as total FROM bookmarks bk
                 INNER JOIN snippet a ON bk.snippet_id = a.snippet_id
+                LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
+                LEFT JOIN tag t ON st.tag_id = t.tag_id
                 WHERE bk.user_id = :user_id 
-                AND (a.deleted = 0 OR a.deleted IS NULL)
-                AND (a.is_suspended = 0 OR a.is_suspended IS NULL)";
+                AND (a.deleted = 0 OR a.deleted IS NULL)";
+
+            if ($only_own) {
+                $sql .= " AND a.user_id = :owner_id";
+            } else {
+                $sql .= " AND (a.visibility IN ('public', 'protected') OR a.user_id = :owner_id)
+                          AND (a.is_suspended = 0 OR a.is_suspended IS NULL OR a.user_id = :owner_id)";
+            }
+
+            if($keyword !== ''){
+                $sql .= " AND (
+                    a.title LIKE :keyword
+                    OR a.description LIKE :keyword
+                    OR a.source_code LIKE :keyword
+                    OR t.tag_name LIKE :keyword
+                )";
+            }
+
+            if($language_id !== ''){
+                $sql .= " AND a.language_id = :language_id";
+            }
+
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+            $stmt->bindParam(':owner_id', $user_id, PDO::PARAM_INT);
+
+            if($keyword !== ''){
+                $searchTerm = '%' . $keyword . '%';
+                $stmt->bindParam(':keyword', $searchTerm, PDO::PARAM_STR);
+            }
+
+            if($language_id !== ''){
+                $stmt->bindParam(':language_id', $language_id, PDO::PARAM_INT);
+            }
+
             $stmt->execute();
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             return (int)$row['total'];
@@ -659,33 +692,68 @@ class Control{
     /**
      * ฟังก์ชัน: getBookmarkedSnippetsPaginated
      * ส่วนที่: [ส่วนที่ 4: การแบ่งหน้าและการนับจำนวน]
-     * หน้าที่: ดึงรายการ Snippet ที่ผู้ใช้กดบุ๊กมาร์กไว้แบบแบ่งหน้า (Pagination)
-     * พารามิเตอร์: $user_id, $page, $limit
+     * หน้าที่: ดึงรายการ Snippet ที่ผู้ใช้กดบุ๊กมาร์กไว้แบบแบ่งหน้า (Pagination) พร้อมรองรับการค้นหา กรองภาษา และเฉพาะของฉัน
+     * พารามิเตอร์: $user_id, $page, $limit, $keyword, $language_id, $only_own
      * คืนค่า: PDOStatement
      */
-    function getBookmarkedSnippetsPaginated($user_id, $page = 1, $limit = 10){
+    function getBookmarkedSnippetsPaginated($user_id, $page = 1, $limit = 10, $keyword = '', $language_id = '', $only_own = false){
         try{
             $page = max(1, (int)$page);
             $limit = max(1, (int)$limit);
             $offset = ($page - 1) * $limit;
 
             $sql = "SELECT a.*, b.language_name,
-                GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags
+                GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_name SEPARATOR ', ') AS tags,
+                MAX(susp.reason) as suspension_reason,
+                MAX(susp.suspended_at) as suspension_time
                 FROM bookmarks bk
                 INNER JOIN snippet a ON bk.snippet_id = a.snippet_id
                 INNER JOIN language b ON a.language_id = b.language_id
                 LEFT JOIN snippet_tag st ON a.snippet_id = st.snippet_id
                 LEFT JOIN tag t ON st.tag_id = t.tag_id
+                LEFT JOIN snippet_suspensions susp ON (a.snippet_id = susp.snippet_id AND susp.unsuspended_at IS NULL)
                 WHERE bk.user_id = :user_id 
-                AND (a.deleted = 0 OR a.deleted IS NULL)
-                AND (a.is_suspended = 0 OR a.is_suspended IS NULL)
-                GROUP BY a.snippet_id
+                AND (a.deleted = 0 OR a.deleted IS NULL)";
+
+            if ($only_own) {
+                $sql .= " AND a.user_id = :owner_id";
+            } else {
+                $sql .= " AND (a.visibility IN ('public', 'protected') OR a.user_id = :owner_id)
+                          AND (a.is_suspended = 0 OR a.is_suspended IS NULL OR a.user_id = :owner_id)";
+            }
+
+            if($keyword !== ''){
+                $sql .= " AND (
+                    a.title LIKE :keyword
+                    OR a.description LIKE :keyword
+                    OR a.source_code LIKE :keyword
+                    OR t.tag_name LIKE :keyword
+                )";
+            }
+
+            if($language_id !== ''){
+                $sql .= " AND a.language_id = :language_id";
+            }
+
+            $sql .= " GROUP BY a.snippet_id
                 ORDER BY bk.bookmarked_at DESC
                 LIMIT :offset, :limit";
+
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(":user_id", $user_id, PDO::PARAM_INT);
+            $stmt->bindParam(":owner_id", $user_id, PDO::PARAM_INT);
             $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
             $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+
+            if($keyword !== ''){
+                $searchTerm = '%' . $keyword . '%';
+                $stmt->bindParam(':keyword', $searchTerm, PDO::PARAM_STR);
+            }
+
+            if($language_id !== ''){
+                $stmt->bindParam(':language_id', $language_id, PDO::PARAM_INT);
+            }
+
             $stmt->execute();
             return $stmt;
         }catch(PDOException $e){
@@ -1255,41 +1323,6 @@ class Control{
         }
     }
 
-    /**
-     * ฟังก์ชัน: restoreSnippetAdmin
-     * ส่วนที่: [ส่วนที่ 9: จัดการ Snippet สำหรับผู้ดูแลระบบ]
-     * หน้าที่: แอดมินสั่งกู้คืน Snippet จากถังขยะ (deleted = 0)
-     * พารามิเตอร์: $snippet_id
-     * คืนค่า: bool
-     */
-    function restoreSnippetAdmin($snippet_id){
-        try{
-            $sql = "UPDATE snippet SET deleted = 0 WHERE snippet_id = :snippet_id";
-            $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
-            return $stmt->execute();
-        }catch(PDOException $e){
-            return false;
-        }
-    }
-
-    /**
-     * ฟังก์ชัน: softDeleteSnippetAdmin
-     * ส่วนที่: [ส่วนที่ 9: จัดการ Snippet สำหรับผู้ดูแลระบบ]
-     * หน้าที่: แอดมินสั่งย้าย Snippet ไปยังถังขยะ (deleted = 1)
-     * พารามิเตอร์: $snippet_id
-     * คืนค่า: bool
-     */
-    function softDeleteSnippetAdmin($snippet_id){
-        try{
-            $sql = "UPDATE snippet SET deleted = 1 WHERE snippet_id = :snippet_id";
-            $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
-            return $stmt->execute();
-        }catch(PDOException $e){
-            return false;
-        }
-    }
 
     /**
      * ฟังก์ชัน: suspendSnippetAdmin
@@ -1325,46 +1358,6 @@ class Control{
             $stmtReports->bindParam(":resolved_by", $admin_username, PDO::PARAM_STR);
             $stmtReports->execute();
 
-            // ตรวจสอบเจ้าของ Snippet: หากโพสต์ถูกระงับสะสมมากกว่า 5 ครั้ง (> 5 ครั้ง) ให้แบนบัญชีโดยอัตโนมัติ
-            $stmtOwner = $this->db->prepare("SELECT user_id FROM snippet WHERE snippet_id = :snippet_id");
-            $stmtOwner->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
-            $stmtOwner->execute();
-            $ownerRow = $stmtOwner->fetch(PDO::FETCH_ASSOC);
-
-            if ($ownerRow && !empty($ownerRow['user_id'])) {
-                $ownerUserId = (int)$ownerRow['user_id'];
-
-                // นับจำนวนครั้งที่โพสต์ของผู้ใช้นี้ถูกระงับทั้งหมดจากประวัติตาราง snippet_suspensions
-                $stmtCount = $this->db->prepare(
-                    "SELECT COUNT(*) as total 
-                     FROM snippet_suspensions ss
-                     JOIN snippet s ON ss.snippet_id = s.snippet_id
-                     WHERE s.user_id = :user_id"
-                );
-                $stmtCount->bindParam(":user_id", $ownerUserId, PDO::PARAM_INT);
-                $stmtCount->execute();
-                $totalSuspensions = (int)$stmtCount->fetch(PDO::FETCH_ASSOC)['total'];
-
-                // หากทำผิด (โพสต์ถูกระงับ) มากกว่า 5 ครั้ง (> 5 ครั้ง) ให้แบนบัญชีโดยอัตโนมัติ
-                if ($totalSuspensions > 5) {
-                    $chkBan = $this->db->prepare("SELECT ban_id FROM user_bans WHERE user_id = :user_id AND unbanned_at IS NULL LIMIT 1");
-                    $chkBan->bindParam(':user_id', $ownerUserId, PDO::PARAM_INT);
-                    $chkBan->execute();
-                    if ($chkBan->fetch() === false) {
-                        $autoBanReason = "ถูกแบนบัญชีอัตโนมัติ: โพสต์ถูกระงับสะสม {$totalSuspensions} ครั้ง (มากกว่า 5 ครั้ง)";
-                        $autoAdminText = $admin_username . ' (ระบบอัตโนมัติ)';
-                        $insBan = $this->db->prepare(
-                            "INSERT INTO user_bans (user_id, admin_banned, reason, banned_at)
-                             VALUES (:user_id, :admin_banned, :reason, NOW())"
-                        );
-                        $insBan->bindParam(':user_id', $ownerUserId, PDO::PARAM_INT);
-                        $insBan->bindParam(':admin_banned', $autoAdminText, PDO::PARAM_STR);
-                        $insBan->bindParam(':reason', $autoBanReason, PDO::PARAM_STR);
-                        $insBan->execute();
-                    }
-                }
-            }
-
             if($ownTx && $this->db->inTransaction()){
                 $this->db->commit();
             }
@@ -1395,8 +1388,7 @@ class Control{
 
             $sqlSuspension = "UPDATE snippet_suspensions 
                               SET admin_unsuspended = :admin_unsuspended, unsuspended_at = NOW() 
-                              WHERE snippet_id = :snippet_id AND unsuspended_at IS NULL
-                              ORDER BY suspension_id DESC LIMIT 1";
+                              WHERE snippet_id = :snippet_id AND unsuspended_at IS NULL";
             $stmtSuspension = $this->db->prepare($sqlSuspension);
             $stmtSuspension->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
             $stmtSuspension->bindParam(":admin_unsuspended", $admin_username, PDO::PARAM_STR);
@@ -1454,44 +1446,6 @@ class Control{
         }
     }
 
-    /**
-     * ฟังก์ชัน: deleteSnippetAdmin
-     * ส่วนที่: [ส่วนที่ 9: จัดการ Snippet สำหรับผู้ดูแลระบบ]
-     * หน้าที่: แอดมินลบ Snippet อย่างถาวร (Hard Delete) พร้อมลบไฟล์รูปภาพ
-     * พารามิเตอร์: $snippet_id
-     * คืนค่า: bool
-     */
-    function deleteSnippetAdmin($snippet_id){
-        try{
-            $this->db->beginTransaction();
-            
-            $sqlTag = "DELETE FROM snippet_tag WHERE snippet_id = :snippet_id";
-            $stmtTag = $this->db->prepare($sqlTag);
-            $stmtTag->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
-            $stmtTag->execute();
-            
-            $sqlBk = "DELETE FROM bookmarks WHERE snippet_id = :snippet_id";
-            $stmtBk = $this->db->prepare($sqlBk);
-            $stmtBk->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
-            $stmtBk->execute();
-            
-            $sqlLike = "DELETE FROM snippet_like WHERE snippet_id = :snippet_id";
-            $stmtLike = $this->db->prepare($sqlLike);
-            $stmtLike->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
-            $stmtLike->execute();
-            
-            $sql = "DELETE FROM snippet WHERE snippet_id = :snippet_id";
-            $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
-            $stmt->execute();
-            
-            $this->db->commit();
-            return true;
-        }catch(PDOException $e){
-            $this->db->rollBack();
-            return false;
-        }
-    }
 
     /**
      * ฟังก์ชัน: createReport
@@ -1864,8 +1818,7 @@ class Control{
             // 3. บันทึกการ unsuspend ใน snippet_suspensions
             $sqlSuspension = "UPDATE snippet_suspensions 
                               SET admin_unsuspended = :admin_unsuspended, unsuspended_at = NOW() 
-                              WHERE snippet_id = :snippet_id AND unsuspended_at IS NULL
-                              ORDER BY suspension_id DESC LIMIT 1";
+                              WHERE snippet_id = :snippet_id AND unsuspended_at IS NULL";
             $stmtSuspension = $this->db->prepare($sqlSuspension);
             $stmtSuspension->bindParam(":snippet_id", $snippet_id, PDO::PARAM_INT);
             $stmtSuspension->bindParam(":admin_unsuspended", $admin_username, PDO::PARAM_STR);

@@ -446,8 +446,8 @@ $stats = $user->getUserStats();
                             <option value="">สถานะทั้งหมด</option>
                             <option value="active" <?php echo $selectedStatus === 'active' ? 'selected' : ''; ?>>ปกติ (ไม่ถูกแบน)</option>
                             <option value="banned" <?php echo $selectedStatus === 'banned' ? 'selected' : ''; ?>>ผู้ใช้ที่ถูกแบน</option>
-                            <option value="warning" <?php echo $selectedStatus === 'warning' ? 'selected' : ''; ?>>โพสต์เคยถูกระงับ (1-5 ครั้ง)</option>
-                            <option value="over_limit" <?php echo $selectedStatus === 'over_limit' ? 'selected' : ''; ?>>ถูกระงับเกิน 5 ครั้ง (แบนอัตโนมัติ)</option>
+                            <option value="warning" <?php echo $selectedStatus === 'warning' ? 'selected' : ''; ?>>โพสต์ถูกระงับ (1-5 ครั้ง)</option>
+                            <option value="over_limit" <?php echo $selectedStatus === 'over_limit' ? 'selected' : ''; ?>>โพสต์ถูกระงับเกิน 5 ครั้ง</option>
                         </select>
                         
                         <?php if ($itemsPerPage !== 10): ?>
@@ -488,6 +488,7 @@ $stats = $user->getUserStats();
                                         $roleClass = $row['role'] === 'admin' ? 'badge-admin' : 'badge-user';
                                         $isBanned = !empty($row['is_banned']);
                                         $suspensionCount = (int)($row['suspension_count'] ?? 0);
+                                        $totalHistory = (int)($row['total_suspension_history'] ?? 0);
                                     ?>
                                     <tr>
                                         <td class="col-id"><?php echo htmlspecialchars($row['user_id']); ?></td>
@@ -499,18 +500,18 @@ $stats = $user->getUserStats();
                                                 <span style="color: var(--text-muted);">-</span>
                                             <?php else: ?>
                                                 <?php if ($suspensionCount === 0): ?>
-                                                    <span class="badge badge-suspension-clean">0 / 5 ครั้ง</span>
+                                                    <span class="badge badge-suspension-clean" <?php if ($totalHistory > 0): ?>onclick="openSuspensionHistoryModal(<?php echo (int)$row['user_id']; ?>, '<?php echo htmlspecialchars(addslashes($row['username']), ENT_QUOTES); ?>')" style="cursor: pointer;" title="คลิกดูประวัติโพสต์ที่เคยถูกระงับ (ยกเลิกการระงับแล้ว)"<?php endif; ?>>0 / 5 ครั้ง</span>
                                                 <?php elseif ($suspensionCount < 5): ?>
                                                     <span class="badge badge-suspension-warn" onclick="openSuspensionHistoryModal(<?php echo (int)$row['user_id']; ?>, '<?php echo htmlspecialchars(addslashes($row['username']), ENT_QUOTES); ?>')" title="คลิกดูประวัติโพสต์ที่ถูกระงับ">
                                                         <?php echo $suspensionCount; ?> / 5 ครั้ง
                                                     </span>
                                                 <?php elseif ($suspensionCount === 5): ?>
-                                                    <span class="badge badge-suspension-alert" onclick="openSuspensionHistoryModal(<?php echo (int)$row['user_id']; ?>, '<?php echo htmlspecialchars(addslashes($row['username']), ENT_QUOTES); ?>')" title="ถูกระงับโพสต์ 5 ครั้งแล้ว หากมีโพสต์ถูกระงับอีกครั้งจะถูกแบนบัญชี">
-                                                        5 / 5 (เตือนครั้งสุดท้าย)
+                                                    <span class="badge badge-suspension-alert" onclick="openSuspensionHistoryModal(<?php echo (int)$row['user_id']; ?>, '<?php echo htmlspecialchars(addslashes($row['username']), ENT_QUOTES); ?>')" title="ถูกระงับโพสต์สะสม 5 ครั้ง">
+                                                        5 / 5 ครั้ง
                                                     </span>
                                                 <?php else: ?>
-                                                    <span class="badge badge-suspension-banned" onclick="openSuspensionHistoryModal(<?php echo (int)$row['user_id']; ?>, '<?php echo htmlspecialchars(addslashes($row['username']), ENT_QUOTES); ?>')" title="ถูกระงับโพสต์เกิน 5 ครั้ง บัญชีถูกแบนอัตโนมัติ">
-                                                        <?php echo $suspensionCount; ?> ครั้ง (เกินเกณฑ์ - แบน)
+                                                    <span class="badge badge-suspension-banned" onclick="openSuspensionHistoryModal(<?php echo (int)$row['user_id']; ?>, '<?php echo htmlspecialchars(addslashes($row['username']), ENT_QUOTES); ?>')" title="ถูกระงับโพสต์สะสมเกิน 5 ครั้ง">
+                                                        <?php echo $suspensionCount; ?> ครั้ง (เกิน 5 ครั้ง)
                                                     </span>
                                                 <?php endif; ?>
                                             <?php endif; ?>
@@ -523,7 +524,7 @@ $stats = $user->getUserStats();
                                                 <span style="color: var(--text-muted); font-size: 1.1rem; font-weight: 600;">-</span>
                                             <?php else: ?>
                                                 <div style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap;">
-                                                    <?php if ($suspensionCount > 0): ?>
+                                                    <?php if ($suspensionCount > 0 || $totalHistory > 0): ?>
                                                         <!-- ปุ่มดูประวัติโพสต์ที่ถูกระงับ -->
                                                         <button type="button" class="btn-history" onclick="openSuspensionHistoryModal(<?php echo (int)$row['user_id']; ?>, '<?php echo htmlspecialchars(addslashes($row['username']), ENT_QUOTES); ?>')" title="ดูประวัติโพสต์ที่ถูกระงับ">
                                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -796,7 +797,7 @@ $stats = $user->getUserStats();
                         <span id="suspensionSummaryBadge" class="badge"></span>
                     </div>
                     <span style="font-size: 0.85rem; color: var(--text-muted);">
-                        * หากโพสต์ถูกระงับสะสมมากกว่า 5 ครั้ง (> 5 ครั้ง) ระบบจะทำการแบนบัญชีโดยอัตโนมัติ
+                        * แสดงจำนวนสะสมที่โพสต์ถูกระงับ (Admin พิจารณาแบนบัญชีตามดุลยพินิจ)
                     </span>
                 </div>
                 <div id="suspensionHistoryLoading" style="text-align: center; padding: 24px; color: var(--text-muted);">
@@ -1107,10 +1108,10 @@ $stats = $user->getUserStats();
                     const badgeElem = document.getElementById('suspensionSummaryBadge');
                     if (totalCount > 5) {
                         badgeElem.className = 'badge badge-suspension-banned';
-                        badgeElem.textContent = `${totalCount} ครั้ง (เกิน 5 ครั้ง - แบนอัตโนมัติ)`;
+                        badgeElem.textContent = `${totalCount} ครั้ง (เกิน 5 ครั้ง)`;
                     } else if (totalCount === 5) {
                         badgeElem.className = 'badge badge-suspension-alert';
-                        badgeElem.textContent = `5 / 5 ครั้ง (เตือนครั้งสุดท้าย)`;
+                        badgeElem.textContent = `5 / 5 ครั้ง`;
                     } else if (totalCount > 0) {
                         badgeElem.className = 'badge badge-suspension-warn';
                         badgeElem.textContent = `${totalCount} / 5 ครั้ง`;
@@ -1123,9 +1124,9 @@ $stats = $user->getUserStats();
                         data.data.forEach((item, index) => {
                             const tr = document.createElement('tr');
                             const statusBadge = item.unsuspended_at 
-                                ? `<span style="color: var(--surface); font-weight: 600; font-size: 0.85rem;">ปลดระงับแล้ว</span>` 
+                                ? `<span style="color: #10b981; font-weight: 600; font-size: 0.85rem;">ยกเลิกการระงับแล้ว</span>` 
                                 : `<span style="color: var(--danger); font-weight: 600; font-size: 0.85rem;">ยังถูกระงับ</span>`;
-                            const snippetTitle = item.snippet_title ? escapeHtml(item.snippet_title) : `Snippet #${escapeHtml(item.snippet_id)}`;
+                            const snippetTitle = item.snippet_title ? escapeHtml(item.snippet_title) : (item.title ? escapeHtml(item.title) : `Snippet #${escapeHtml(item.snippet_id)}`);
 
                             tr.innerHTML = `
                                 <td style="padding: 10px 14px; border-bottom: 1px solid var(--border-color);">${index + 1}</td>
