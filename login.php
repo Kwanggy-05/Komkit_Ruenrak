@@ -24,7 +24,7 @@ if(getCurrentUserId()){
 // --- ส่วนที่ 2: ตรวจสอบและแสดงข้อความแจ้งเตือนกรณีถูกแบน ---
 $errorAlert = "";
 if (isset($_GET['banned'])) {
-    $errorAlert = "บัญชีของคุณถูกระงับการใช้งานอย่างถาวร\nหากเชื่อว่าเป็นข้อผิดพลาด กรุณาติดต่อผู้ดูแลระบบ";
+    $errorAlert = "บัญชีของคุณถูกระงับการใช้งานอย่างถาวร\n กรุณาติดต่อผู้ดูแลระบบ \n email:admin@snippetbox.com";
 }
 
 // ตรวจสอบว่าในระบบมีผู้ใช้งานแล้วหรือไม่
@@ -46,7 +46,7 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
         if (isset($result['role']) && $result['role'] === 'admin') {
             $errorAlert = "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
         } elseif (!empty($result['is_banned'])) {
-            $errorAlert = "บัญชีของคุณถูกระงับการใช้งานอย่างถาวร\nหากเชื่อว่าเป็นข้อผิดพลาด กรุณาติดต่อผู้ดูแลระบบ";
+            $errorAlert = "บัญชีของคุณถูกระงับการใช้งานอย่างถาวร\n กรุณาติดต่อผู้ดูแลระบบ \n email:admin@snippetbox.com";
         } else {
             // บันทึกข้อมูลเข้า Session เมื่อล็อกอินสำเร็จ
             $_SESSION["username"] = $username;

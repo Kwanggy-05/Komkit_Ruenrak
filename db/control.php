@@ -284,6 +284,10 @@ class Control{
                         continue;
                     }
 
+                    if(mb_strlen($tagName) > 20){
+                        $tagName = mb_substr($tagName, 0, 20);
+                    }
+
                     $tag_id = $this->getTagIdByName($tagName);
                     if(!$tag_id){
                         $tag_id = $this->createTag($tagName);
@@ -379,6 +383,10 @@ class Control{
                 foreach($tagNames as $tagName){
                     if($tagName === ''){
                         continue;
+                    }
+
+                    if(mb_strlen($tagName) > 20){
+                        $tagName = mb_substr($tagName, 0, 20);
                     }
 
                     $tag_id = $this->getTagIdByName($tagName);

@@ -8,7 +8,7 @@
  *   2. ดึงข้อมูลภาษาและแท็กทั้งหมดสำหรับแสดงในตัวเลือก ($control->getLanguage(), getAllTags())
  *   3. จัดการการลบ Snippet ชั่วคราว (Soft Delete via $_GET['delete'])
  *   4. ดึงข้อมูลเดิมมาแสดงเมื่ออยู่ในโหมดแก้ไข (Edit Mode via $_GET['edit'])
- *   5. ประมวลผลการบันทึกข้อมูล (POST Submit): อัปโหลดรูปภาพ, ตรวจความยาวโค้ด <= 5,000 ตัว, แท็ก <= 5 แท็ก
+ *   5. ประมวลผลการบันทึกข้อมูล (POST Submit): อัปโหลดรูปภาพ, ตรวจความยาวโค้ด <= 5,000 ตัว, แท็ก <= 5 แท็ก (แท็กละไม่เกิน 20 ตัวอักษร)
  *   6. ส่วนแสดงผลฟอร์ม HTML (ชื่อเรื่อง, ภาษา, แท็ก, กล่องเขียนโค้ดพร้อมเลขบรรทัด, อัปโหลดรูป, การมองเห็น)
  *   7. สคริปต์ JavaScript สำหรับ Editor, นับตัวอักษร, ปรับขนาดอัตโนมัติ, ระบบแท็กแนะนำ, และ Preview รูป
  * ==============================================================================
@@ -79,28 +79,50 @@ if(isset($_POST["submit"])){
     $current_image_path = $_POST['current_image_path'] ?? '';
     $image_path = $current_image_path;
 
-    // จัดการการอัปโหลดไฟล์รูปภาพประกอบ
-    if(isset($_FILES["image_path"]) && $_FILES["image_path"]["error"] == 0){
-        $upload_dir = "uploads/"; 
-        if (!is_dir($upload_dir)) {
-            mkdir($upload_dir, 0777, true);
-        }
-        $file_name = basename($_FILES["image_path"]["name"]);
-        $new_file_name = time() . "_" . $file_name; 
-        $target_file = $upload_dir . $new_file_name;
-
-        if(move_uploaded_file($_FILES["image_path"]["tmp_name"], $target_file)){
-            $image_path = $target_file; 
+    // ตรวจสอบขนาดไฟล์รูปภาพ (ไม่เกิน 2MB)
+    $max_file_size = 2 * 1024 * 1024; // 2MB
+    if(isset($_FILES["image_path"]) && $_FILES["image_path"]["error"] != UPLOAD_ERR_NO_FILE){
+        if($_FILES["image_path"]["error"] == UPLOAD_ERR_INI_SIZE || $_FILES["image_path"]["size"] > $max_file_size){
+            $error = "ขนาดไฟล์รูปภาพต้องไม่เกิน 2MB";
+        } elseif($_FILES["image_path"]["error"] != 0){
+            $error = "เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ";
         }
     }
 
-    // ตรวจสอบความถูกต้อง: ความยาวโค้ดไม่เกิน 5,000 ตัวอักษร และแท็กไม่เกิน 5 แท็ก
+    // ตรวจสอบความถูกต้อง: ความยาวโค้ดไม่เกิน 5,000 ตัวอักษร, แท็กไม่เกิน 5 แท็ก และแต่ละแท็กไม่เกิน 20 ตัวอักษร
     $tags_arr = array_filter(array_map('trim', explode(',', $tags)));
-    if(mb_strlen($source_code) > 5000){
+    $tag_too_long = false;
+    foreach($tags_arr as $t){
+        if(mb_strlen($t) > 20){
+            $tag_too_long = true;
+            break;
+        }
+    }
+
+    if(!empty($error)){
+        // มีข้อผิดพลาดเกิดขึ้น (เช่น ขนาดไฟล์เกิน)
+    } else if(mb_strlen($source_code) > 5000){
         $error = "โค้ดต้องมีความยาวไม่เกิน 5,000 ตัวอักษรเท่านั้น (Code cannot exceed 5,000 characters)";
     } else if(count($tags_arr) > 5){
         $error = "คุณสามารถเพิ่มได้สูงสุด 5 tags เท่านั้น";
+    } else if($tag_too_long){
+        $error = "แต่ละแท็กต้องมีความยาวไม่เกิน 20 ตัวอักษร";
     } else {
+        // จัดการการอัปโหลดไฟล์รูปภาพประกอบ
+        if(isset($_FILES["image_path"]) && $_FILES["image_path"]["error"] == 0){
+            $upload_dir = "uploads/"; 
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0777, true);
+            }
+            $file_name = basename($_FILES["image_path"]["name"]);
+            $new_file_name = time() . "_" . $file_name; 
+            $target_file = $upload_dir . $new_file_name;
+
+            if(move_uploaded_file($_FILES["image_path"]["tmp_name"], $target_file)){
+                $image_path = $target_file; 
+            }
+        }
+
         // หากมีรหัส $snippet_id จะเป็นการอัปเดต ถ้าไม่มีจะเป็นการเพิ่มใหม่
         if($snippet_id){
             $status = $control->updateSnippet($snippet_id,$title,$source_code,$description,$visibility,$image_path,$language_id,$tags, $userId);
@@ -181,7 +203,7 @@ if(isset($_POST["submit"])){
 
         <div class="form-group tag-form-group">
             <div class="tags-label-wrapper">
-                <label for="tag_text_input">Tags</label>
+                <label for="tag_text_input">Tags <span style="font-size: 12px; font-weight: normal; color: var(--text-muted); margin-left: 4px;">(แท็กละไม่เกิน 20 ตัวอักษร)</span></label>
                 <span class="tags-count-info" id="tags-count-info"><span id="tags-count">0</span> / 5</span>
             </div>
             
@@ -190,7 +212,7 @@ if(isset($_POST["submit"])){
             <div class="tags-control-container">
                 <div class="tags-input-box" id="tags-input-box">
                     <div class="tag-pills-list" id="tag-pills-list"></div>
-                    <input type="text" id="tag_text_input" class="tag-text-input" placeholder="พิมพ์เพื่อค้นหาหรือเพิ่มแท็ก (เช่น JavaScript, regex...)" autocomplete="off">
+                    <input type="text" id="tag_text_input" class="tag-text-input" placeholder="พิมพ์เพื่อค้นหาหรือเพิ่มแท็ก (เช่น JavaScript, regex...)" maxlength="20" autocomplete="off">
                 </div>
 
                 <div class="tags-autocomplete-dropdown" id="tags-autocomplete-dropdown"></div>
@@ -203,6 +225,15 @@ if(isset($_POST["submit"])){
                     <line x1="12" y1="16" x2="12.01" y2="16"></line>
                 </svg>
                 <span>เลือกครบ 5 แท็กแล้ว</span>
+            </div>
+
+            <div id="tags-char-warning" class="tags-limit-msg" style="display: none; background-color: #f8d7da; border-color: #f5c6cb; color: #721c24;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px; flex-shrink: 0;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>แต่ละแท็กต้องมีความยาวไม่เกิน 20 ตัวอักษร</span>
             </div>
         </div>
 
@@ -409,6 +440,22 @@ if(isset($_POST["submit"])){
             const file = event.target.files[0]; // Get the first selected file
             
             if (file) {
+                const maxFileSize = 2 * 1024 * 1024; // 2MB
+                if (file.size > maxFileSize) {
+                    alert('ขนาดไฟล์รูปภาพต้องไม่เกิน 2MB');
+                    imageInput.value = ''; // รีเซ็ตการเลือกไฟล์
+                    if (currentImagePath) {
+                        imagePreview.src = currentImagePath;
+                        imagePreview.style.display = 'block';
+                        uploadBtnText.textContent = 'เปลี่ยนรูปภาพ';
+                    } else {
+                        imagePreview.src = '';
+                        imagePreview.style.display = 'none';
+                        uploadBtnText.textContent = 'อัปโหลดรูปภาพ';
+                    }
+                    return;
+                }
+
                 // Create temporary URL from file and assign to img src
                 imagePreview.src = URL.createObjectURL(file);
                 imagePreview.style.display = 'block'; // Show preview image
@@ -436,6 +483,7 @@ if(isset($_POST["submit"])){
         const tagPillsList = document.getElementById('tag-pills-list');
         const autocompleteDropdown = document.getElementById('tags-autocomplete-dropdown');
         const tagsLimitMsg = document.getElementById('tags-limit-msg');
+        const tagsCharWarning = document.getElementById('tags-char-warning');
         const tagsCountEl = document.getElementById('tags-count');
         const tagsCountInfo = document.getElementById('tags-count-info');
         const allTags = <?php echo json_encode($all_tags); ?> || [];
@@ -521,11 +569,27 @@ if(isset($_POST["submit"])){
 
         /**
          * ฟังก์ชัน: addTag
-         * หน้าที่: เพิ่มแท็กใหม่เข้าสู่รายการ (จำกัดไม่เกิน 5 แท็ก และไม่ซ้ำ)
+         * หน้าที่: เพิ่มแท็กใหม่เข้าสู่รายการ (จำกัดไม่เกิน 5 แท็ก, แต่ละแท็กไม่เกิน 20 ตัวอักษร และไม่ซ้ำ)
          */
         function addTag(tagName) {
             tagName = (tagName || '').trim();
             if (!tagName) return;
+
+            // ตรวจสอบความยาวแท็กต้องไม่เกิน 20 ตัวอักษร
+            if (tagName.length > 20) {
+                if (tagsCharWarning) {
+                    tagsCharWarning.style.display = 'inline-flex';
+                    setTimeout(() => {
+                        tagsCharWarning.style.display = 'none';
+                    }, 4000);
+                } else {
+                    alert('แต่ละแท็กต้องมีความยาวไม่เกิน 20 ตัวอักษร');
+                }
+                return;
+            }
+            if (tagsCharWarning) {
+                tagsCharWarning.style.display = 'none';
+            }
 
             if (selectedTags.length >= 5) {
                 syncTagsState();
@@ -627,8 +691,8 @@ if(isset($_POST["submit"])){
                 autocompleteDropdown.appendChild(item);
             });
 
-            // หากสิ่งที่พิมพ์ยังไม่มีในฐานข้อมูล ให้มีตัวเลือกเพิ่มเป็นแท็กใหม่ได้
-            if (!exactMatch && query.length > 0 && !currentLowerTags.includes(query)) {
+            // หากสิ่งที่พิมพ์ยังไม่มีในฐานข้อมูล ให้มีตัวเลือกเพิ่มเป็นแท็กใหม่ได้ (ต้องไม่เกิน 20 ตัวอักษร)
+            if (!exactMatch && query.length > 0 && query.length <= 20 && !currentLowerTags.includes(query)) {
                 const newItem = document.createElement('div');
                 newItem.className = 'autocomplete-item autocomplete-item-new';
                 newItem.dataset.tagName = query;
@@ -670,11 +734,12 @@ if(isset($_POST["submit"])){
                 if (tagTextInput.value.includes(',')) {
                     const parts = tagTextInput.value.split(',');
                     for (let i = 0; i < parts.length - 1; i++) {
-                        if (parts[i].trim() && selectedTags.length < 5) {
-                            addTag(parts[i].trim());
+                        const trimmed = parts[i].trim();
+                        if (trimmed && selectedTags.length < 5) {
+                            addTag(trimmed);
                         }
                     }
-                    tagTextInput.value = parts[parts.length - 1].trim();
+                    tagTextInput.value = parts[parts.length - 1].trim().slice(0, 20);
                 }
                 filterAndShowSuggestions(tagTextInput.value);
             });
@@ -749,6 +814,13 @@ if(isset($_POST["submit"])){
                 if (tagTextInput && !tagTextInput.disabled) tagTextInput.focus();
                 return;
             }
+            const tooLongTag = selectedTags.find(t => t.length > 20);
+            if (tooLongTag) {
+                e.preventDefault();
+                alert('แต่ละแท็กต้องมีความยาวไม่เกิน 20 ตัวอักษร');
+                if (tagTextInput && !tagTextInput.disabled) tagTextInput.focus();
+                return;
+            }
         });
 
         // กำหนดค่าเริ่มต้นของแท็กจากฐานข้อมูล (รองรับโหมดแก้ไข Snippet)
@@ -756,7 +828,7 @@ if(isset($_POST["submit"])){
             selectedTags = tagsHiddenInput.value
                 .split(',')
                 .map(t => t.trim())
-                .filter(t => t.length > 0)
+                .filter(t => t.length > 0 && t.length <= 20)
                 .slice(0, 5);
         }
         renderTagPills();
